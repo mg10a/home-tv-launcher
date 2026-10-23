@@ -8,6 +8,8 @@ import android.content.pm.ResolveInfo;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.net.Uri;
 import android.webkit.WebSettings;
 import android.widget.Toast;
 import java.util.List;
@@ -18,13 +20,23 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         web = new WebView(this);
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                // Keep GitHub Pages dashboard and its OAuth return within the WebView.
+                if ("https".equals(uri.getScheme()) && "mg10a.github.io".equals(uri.getHost())
+                    && uri.getPath() != null && uri.getPath().startsWith("/home-tv-launcher/")) return false;
+                // Let Android handle sign-in and external URLs without replacing the dashboard.
+                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) {}
+                return true;
+            }
+        });
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         web.addJavascriptInterface(new LauncherBridge(), "AndroidLauncher");
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+        web.loadUrl("https://mg10a.github.io/home-tv-launcher/");
     }
     private class LauncherBridge {
         @JavascriptInterface public void openApp(String name) {
