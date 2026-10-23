@@ -1,9 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
     <queries>
         <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
         <package android:name="com.justwatch.justwatch"/>
         <package android:name="com.netflix.mediaclient"/>
         <package android:name="com.google.android.youtube"/>
+        <package android:name="com.spotify.music"/>
+        <package android:name="com.amazon.avod.thirdpartyclient"/>
+        <package android:name="bbc.iplayer.android"/>
+        <package android:name="air.ITVMobilePlayer"/>
+        <package android:name="com.bskyb.nowtv.beta"/>
+        <package android:name="com.bskyb.nowtv"/>
     </queries>
     <application android:label="Home TV Launcher" android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="false" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
