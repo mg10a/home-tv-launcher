@@ -1,0 +1,36 @@
+# Salus iT500 — secure Home Assistant dashboard card
+# Paste into a Manual card in a Home Assistant dashboard (or use as a view's cards).
+# Uses Home Assistant's existing authenticated session, including Nabu Casa Cloud.
+# No tokens, remote URLs, or passwords belong in public GitHub Pages.
+type: vertical-stack
+cards:
+  - type: heading
+    heading: Brereton DS · Salus iT500
+    icon: mdi:radiator
+  - type: thermostat
+    entity: climate.brereton_ds
+    name: Heating control
+    show_current_as_primary: true
+  - type: entities
+    title: Live thermostat readings
+    show_header_toggle: false
+    entities:
+      - entity: sensor.brereton_ds_room_temperature
+        name: Room temperature
+      - entity: sensor.brereton_ds_setpoint
+        name: Setpoint
+      - entity: binary_sensor.brereton_ds_heating
+        name: Heating active
+      - entity: binary_sensor.brereton_ds_boost
+        name: Boost active
+      - entity: sensor.brereton_ds_boost_remaining
+        name: Boost remaining
+      - entity: binary_sensor.brereton_ds_frost_protection
+        name: Frost protection
+      - entity: binary_sensor.brereton_ds_gateway_online
+        name: Gateway online
+      - entity: sensor.brereton_ds_last_report
+        name: Last report
+# Heating adjustments and HVAC modes are supplied by the native thermostat card.
+# Available mode choices and temperature increments come from the climate entity.
+# Boost is status-only until we verify the integration's supported write services.
