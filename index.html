@@ -554,7 +554,7 @@ async function startHaOAuth(){
  try{
  const verifier=haRandom()+haRandom();const state=haRandom();
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
- const challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+ const challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).split('+').join('-').split('/').join('_').replace(/=+$/,'');
  sessionStorage.setItem('ha-oauth-pending',JSON.stringify({base,verifier,state,created:Date.now()}));
  const u=new URL(base+'/auth/authorize');u.search=new URLSearchParams({response_type:'code',client_id:HA_CLIENT_ID,redirect_uri:HA_REDIRECT,state,code_challenge:challenge,code_challenge_method:'S256'}).toString();
  haProgress('Opening Home Assistant secure sign-in…');window.location.assign(u.href);
