@@ -801,12 +801,12 @@ function salusTemperatureColour(t){
 // Sure Petcare: discover each pet's presence sensor from Home Assistant state names.
 // Prefer real Home/Away transitions from HA Recorder, not integration refresh timestamps.
 const petActivity={maia:null,solo:null};
-let petHistoryRequestId=null,petHistoryRefreshTimer=null;
+let petHistoryRequestId=null,petHistoryRefreshTimer=null,petHistoryLastFetch=0;
 let haHeartbeatTimer=null,haHeartbeatPending=null,haHeartbeatSent=0,haLastPong=0,haDisconnectCount=0,haLastDisconnect='';
 function petLoadHistory(){
  if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||petHistoryRequestId!==null)return;
  const end=new Date(),start=new Date(end.getTime()-3*86400000);
- petHistoryRequestId=haRequestId++;
+ petHistoryRequestId=haRequestId++;petHistoryLastFetch=Date.now();
  haSocket.send(JSON.stringify({id:petHistoryRequestId,type:'history/history_during_period',start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:['binary_sensor.maia','binary_sensor.solo'],minimal_response:false,no_attributes:true}));
 }
 function petHistoryResult(data){
@@ -841,7 +841,7 @@ function petObserveChange(change){
  }
  // Refresh Recorder on any cat update to recover transitions across unavailable periods.
  clearTimeout(petHistoryRefreshTimer);
- petHistoryRefreshTimer=setTimeout(petLoadHistory,3500);
+ petHistoryRefreshTimer=setTimeout(()=>{if(Date.now()-petHistoryLastFetch>60000)petLoadHistory()},5000);
 }
 function petEntity(name){
  const key=name.toLowerCase();
@@ -1205,9 +1205,10 @@ function connectHaSocket(base){
  if(haReconnectTimer){clearTimeout(haReconnectTimer);haReconnectTimer=null}if(haSocket)haSocket.close();
  const ws=new WebSocket(base.replace(/^https:/,'wss:')+'/api/websocket');haSocket=ws;
  const timeout=setTimeout(()=>{if(ws.readyState!==WebSocket.OPEN)ws.close()},12000);
- ws.onmessage=e=>{const data=JSON.parse(e.data);
+ ws.onmessage=e=>{if(haSocket!==ws)return;haLastMessageAt=Date.now();const data=JSON.parse(e.data);
+ if(data.type==='pong'&&data.id===haHeartbeatPending?.id)haHeartbeatPending=null;
  if(data.type==='auth_required')ws.send(JSON.stringify({type:'auth',access_token:haAccessToken}));
- if(data.type==='auth_ok'){clearTimeout(timeout);haRetryCount=0;haLastPong=Date.now();haHeartbeatPending=null;
+ if(data.type==='auth_ok'){clearTimeout(timeout);haStartHeartbeat(ws);haRetryCount=0;haLastPong=Date.now();haHeartbeatPending=null;
  clearInterval(haHeartbeatTimer);haHeartbeatTimer=setInterval(()=>{
   if(haSocket!==ws||ws.readyState!==WebSocket.OPEN||!haVerified||document.hidden)return;
   if(haHeartbeatPending!==null){if(Date.now()-haHeartbeatSent>20000){haLastDisconnect='Heartbeat timed out';ws.close()}return}
@@ -1223,12 +1224,12 @@ function connectHaSocket(base){
  if(data.type==='result'&&haServiceTimers.has(data.id)){clearTimeout(haServiceTimers.get(data.id));haServiceTimers.delete(data.id);salusNotice(data.success?'Command accepted ✓ · checking thermostat state':'Home Assistant rejected command: '+(data.error?.message||'unknown error'),6500)}
  if(data.type==='event'&&data.event?.event_type==='state_changed'){const change=data.event.data;if(change?.new_state){if(change.entity_id==='binary_sensor.brereton_ds_boost'&&change.new_state.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}haStates[change.entity_id]=change.new_state;petObserveChange(change);renderPets();if(change.entity_id.startsWith("lock.conservatory_"))petLockStateChanged();if(change.entity_id==='climate.brereton_ds'&&salusDraftTarget!=null&&Number(change.new_state.attributes?.temperature)===salusDraftTarget){clearTimeout(salusDebounceTimer);salusDraftTarget=null;salusNotice('Target confirmed ✓',2500)}salusRender()}}
  if(data.type==='result'&&data.success&&Array.isArray(data.result)){
- haStates=Object.fromEntries(data.result.map(x=>[x.entity_id,x]));renderPets();setTimeout(petLoadHistory,250);if(haStates['binary_sensor.brereton_ds_boost']?.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}
+ haStates=Object.fromEntries(data.result.map(x=>[x.entity_id,x]));renderPets();if(Date.now()-petHistoryLastFetch>300000)setTimeout(petLoadHistory,1500);if(haStates['binary_sensor.brereton_ds_boost']?.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}
  const entity=data.result.find(x=>x.entity_id==='climate.brereton_ds');
  if(!entity){haProgress('Connected to Home Assistant, but climate.brereton_ds was not found.');haSetStage('haStepLive','③ Verify live thermostat — entity missing');return}
  const temp=entity.attributes.current_temperature;const target=entity.attributes.temperature;
  haProgress('Live connection verified ✓ · Brereton DS '+(temp??'—')+'°C · target '+(target??'—')+'°C');
- haSetStage('haStepLive','③ Verify live thermostat — connected ✓');haConnectionStatus(true);haRetryCount=0;closeHaSetup();salusRender();salusHistory(document.getElementById('salusHistoryPeriod').value);
+ haSetStage('haStepLive','③ Verify live thermostat — connected ✓');haConnectionStatus(true);haRetryCount=0;closeHaSetup();salusRender();if(!document.getElementById('salusOverlay').classList.contains('hidden'))salusHistory(document.getElementById('salusHistoryPeriod').value);
  const pills=document.querySelectorAll('.offline-pill');if(pills[0])pills[0].textContent='Connected';if(pills[1])pills[1].textContent='Not configured';
  const small=document.querySelector('.salus-strip small');
  }
@@ -1238,6 +1239,8 @@ function connectHaSocket(base){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&haAccessToken){if(haSocket?.readyState!==WebSocket.OPEN){const base=haStoredUrl();if(base)connectHaSocket(base)}else if(haVerified){haHeartbeatPending=haRequestId++;haHeartbeatSent=Date.now();haSocket.send(JSON.stringify({id:haHeartbeatPending,type:'ping'}))}}});
 window.addEventListener('online',()=>{if(haAccessToken&&haSocket?.readyState!==WebSocket.OPEN){const base=haStoredUrl();if(base)connectHaSocket(base)}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&haAccessToken&&haStoredUrl()&&(!haSocket||haSocket.readyState!==WebSocket.OPEN)&&!haReconnectTimer)connectHaSocket(haStoredUrl())});
+window.addEventListener('online',()=>{if(haAccessToken&&haStoredUrl()&&(!haSocket||haSocket.readyState!==WebSocket.OPEN))connectHaSocket(haStoredUrl())});
 window.addEventListener('load',()=>{const gaugeSvg=document.querySelector('.salus-gauge svg');if(gaugeSvg){gaugeSvg.addEventListener('pointerdown',salusGaugePointerDown);gaugeSvg.addEventListener('pointermove',salusGaugePointerMove);gaugeSvg.addEventListener('pointerup',salusGaugePointerUp);gaugeSvg.addEventListener('pointercancel',salusGaugePointerUp)}if(new URLSearchParams(location.search).has('code')||new URLSearchParams(location.search).has('error'))finishHaOAuth();else resumeHaSession()});
 function setSalusHistoryPeriod(period){salusHistory(period)}
 function openSalusModal(){salusRender();if(haVerified)salusHistory(document.getElementById('salusHistoryPeriod').value);document.getElementById('salusOverlay').classList.remove('hidden');document.querySelector('.salus-close').focus()}
