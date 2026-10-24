@@ -1,0 +1,1501 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080d17"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg" type="image/svg+xml"><title>Home Cinema Launcher · Prototype</title><style>
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7ff;background:#080d17}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 0%,#253b5c 0%,#101b2e 32%,#080d17 74%)}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,.tile.focused{outline:3px solid #c5d9ff;outline-offset:3px;transform:scale(1.035)}.shell{max-width:1480px;margin:auto;padding:clamp(18px,4vw,58px)}header{display:flex;justify-content:space-between;align-items:center;gap:15px}.eyebrow{color:#95abc9;font-size:.76rem;letter-spacing:.2em;font-weight:750}.clock{text-align:right;font-weight:650;font-size:1.15rem}.clock small{display:block;color:#9eb0c9;font-size:.7rem;font-weight:450;margin-top:5px}.rooms{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px}.room{border:1px solid #34455f;background:#162337;padding:10px 16px;border-radius:999px;color:#b5c5dd}.room.active{background:#d8e7ff;color:#15253c;border-color:#d8e7ff;font-weight:750}.hero{position:relative;overflow:hidden;margin-top:25px;border-radius:24px;min-height:215px;background:linear-gradient(105deg,#273e61,#18273e 53%,#3c3b5c);display:flex;align-items:center;padding:clamp(22px,4vw,55px)}.hero:after{content:'✦';position:absolute;right:8%;top:-40px;font-size:260px;color:#ffffff12;pointer-events:none}.hero h1{font-size:clamp(30px,5vw,66px);line-height:1.03;letter-spacing:-.045em;margin:12px 0}.hero p{color:#c2d1e7;margin:0;max-width:600px}.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:30px 0 13px}.section-head h2{font-size:1rem;margin:0;letter-spacing:.025em}.section-head span{font-size:.78rem;color:#93a9c7}.apps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tile{border:1px solid #32425c;border-radius:15px;background:#1a293f;min-height:93px;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-weight:800;transition:transform .15s,background .15s;letter-spacing:-.025em}.tile:hover{background:#2b4162}.app{font-size:clamp(.9rem,2vw,1.45rem)}.now{background:#25336d}.netflix{background:#311f31;color:#ff5967}.disney{background:#173754}.youtube{background:#37252b}.prime{background:#153a49}.widget-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.widget{background:#162338;border:1px solid #304059;border-radius:15px;min-height:135px;padding:18px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start}.widget .symbol{font-size:25px}.widget strong{font-size:1.05rem}.widget small{color:#9fb1cc;line-height:1.5}.footer{margin-top:25px;color:#8da1bd;font-size:.75rem;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.notice{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dceaff;color:#17263b;padding:13px 20px;border-radius:12px;box-shadow:0 12px 40px #0008;max-width:90%;font-size:.88rem;z-index:10}.hidden{display:none}@media(max-width:640px){.apps{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.tile{min-height:68px;padding:7px;font-size:.77rem}.widget-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.widget{min-height:115px;padding:13px}.hero{min-height:180px}.shell{padding:16px}.rooms{margin-top:20px}.room{font-size:.8rem;padding:9px 12px}}@media(orientation:landscape) and (max-height:550px){.shell{padding-top:13px}.hero{min-height:130px;margin-top:13px}.hero h1{font-size:30px}.section-head{margin:17px 0 9px}.tile{min-height:62px}.widget{min-height:105px}.rooms{margin-top:10px}}
+
+/* v0.2: viewport-fitted, device-independent responsive layout */
+html,body{width:100%;min-height:100%;overflow-x:hidden}
+.shell{width:100%;max-width:1600px}
+.tile,.widget{min-width:0}
+.widget small{overflow-wrap:anywhere;word-break:break-word}
+@media (orientation:landscape){
+ html,body{height:100%;height:100dvh;overflow:hidden}
+ .shell{height:100vh;height:100dvh;display:flex;flex-direction:column;gap:clamp(5px,1.1vh,13px);padding:clamp(8px,1.7vh,22px) clamp(12px,3vw,48px);overflow:hidden}
+ header{flex:0 0 auto}
+ .rooms{margin-top:0;flex:0 0 auto}
+ .room{padding:clamp(5px,1vh,10px) 13px}
+ .hero{margin-top:0;min-height:0;flex:1 1 16%;padding:clamp(12px,2vh,30px);border-radius:16px}
+ .hero h1{font-size:clamp(23px,4.3vh,52px);margin:5px 0}
+ .hero p{font-size:clamp(11px,1.9vh,17px)}
+ .hero:after{font-size:clamp(100px,25vh,230px);top:-25px}
+ .section-head{margin:0;flex:0 0 auto}
+ .section-head h2{font-size:clamp(12px,2.3vh,19px)}
+ .section-head span{font-size:clamp(10px,1.8vh,14px)}
+ .apps{flex:1 1 23%;min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(5px,1.1vh,13px)}
+ .tile{min-height:0;border-radius:12px}
+ .app{font-size:clamp(11px,2.7vh,25px)}
+ .widget-grid{flex:1 1 22%;min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1.1vh,13px)}
+ .widget{min-height:0;padding:clamp(6px,1.5vh,18px);gap:2px;overflow:hidden}
+ .widget .symbol{font-size:clamp(14px,3.5vh,28px)}
+ .widget strong{font-size:clamp(10px,2.3vh,18px);line-height:1.1}
+ .widget small{font-size:clamp(9px,1.7vh,13px);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .footer{margin:0;flex:0 0 auto;font-size:clamp(9px,1.5vh,12px)}
+}
+@media (orientation:landscape) and (max-height:470px){
+ .shell{gap:5px;padding-top:6px;padding-bottom:6px}
+ header .eyebrow{font-size:10px}header div[style]{display:none}
+ .clock{font-size:14px}.clock small{font-size:10px;margin-top:0}
+ .room{font-size:11px;padding:4px 10px}
+ .hero{flex-basis:13%;padding:8px 16px}
+ .hero .eyebrow{font-size:10px}
+ .hero h1{font-size:22px;margin:2px 0}
+ .hero p{font-size:11px}
+ .widget .symbol{font-size:16px}
+ .footer span:last-child{display:none}
+}
+@media (orientation:portrait) and (max-width:700px){
+ html,body{height:100%;height:100dvh;overflow:hidden}
+ .shell{height:100vh;height:100dvh;display:flex;flex-direction:column;gap:clamp(6px,1.1vh,12px);padding:clamp(10px,2vh,20px);overflow:hidden}
+ header{flex:0 0 auto}
+ .rooms{margin-top:0;flex:0 0 auto}
+ .room{font-size:12px;padding:7px 10px}
+ .hero{flex:1 1 14%;min-height:0;margin-top:0;padding:13px 17px;border-radius:15px}
+ .hero h1{font-size:clamp(23px,4vh,36px);margin:4px 0}
+ .hero p{font-size:12px}
+ .hero:after{font-size:130px;top:-12px}
+ .section-head{margin:0;flex:0 0 auto}
+ .section-head h2{font-size:14px}
+ .section-head span{font-size:10px}
+ .apps{flex:1 1 30%;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:7px}
+ .tile{min-height:0;font-size:clamp(11px,1.8vh,16px)}
+ .widget-grid{flex:1 1 27%;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:7px}
+ .widget{min-height:0;padding:9px;overflow:hidden}
+ .widget .symbol{font-size:18px}
+ .widget strong{font-size:clamp(11px,1.7vh,15px);line-height:1.15}
+ .widget small{font-size:10px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .footer{margin:0;font-size:9px;flex:0 0 auto}
+ .footer span:last-child{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.hidden{display:none!important}.dashboard-toggle{border:1px solid #6780a3;background:#d8e7ff;color:#14253b;padding:7px 14px;border-radius:11px;font-weight:800;white-space:nowrap}.footer{align-items:center}.footer .dashboard-toggle{font-size:clamp(11px,1.9vh,15px)}@media(orientation:landscape){.apps{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex-basis:28%}.app{font-size:clamp(10px,2.4vh,22px)}.hero{flex-basis:13%}.widget-grid{flex-basis:19%}}@media(orientation:portrait) and (max-width:700px){.apps{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));flex-basis:33%}.app{font-size:clamp(10px,1.6vh,15px)}.hero{flex-basis:12%}.widget-grid{flex-basis:24%}.footer{gap:7px}}.dashboard-page{min-height:100dvh;padding:clamp(16px,4vw,48px);max-width:1300px;margin:auto}.dashboard-top{display:flex;align-items:center;justify-content:space-between;gap:15px}.dashboard-page h1{font-size:clamp(30px,5vw,60px);margin:28px 0 8px}.dashboard-intro{color:#a8bbd4}.dashboard-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:25px}.dashboard-cards button{background:#192a42;border:1px solid #354c6b;border-radius:17px;padding:22px;text-align:left;display:flex;flex-direction:column;gap:10px;min-height:145px}.dashboard-cards button span{font-size:26px}.dashboard-cards button strong{font-size:clamp(15px,2vw,22px)}.dashboard-cards button small{color:#9fb4d1}.dashboard-note{color:#94a9c5;font-size:12px;margin-top:25px}@media(max-width:680px){.dashboard-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.dashboard-cards button{padding:13px;min-height:120px}.dashboard-page h1{margin-top:18px}}@media(orientation:landscape) and (max-height:550px){.dashboard-page{height:100dvh;overflow:auto}.dashboard-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.dashboard-cards button{min-height:95px;padding:12px;gap:5px}.dashboard-page h1{font-size:25px;margin:12px 0 4px}}body.dashboard-open{height:auto!important;overflow:auto!important}.room-card-off{opacity:.43;filter:grayscale(1);cursor:not-allowed}.room-card-off small{color:#aab4c3!important}/* v0.4 TV-first header and 5-by-2 entertainment grid */
+.header-right{display:flex;align-items:center;gap:clamp(9px,1.8vw,26px)}
+.mini-status{display:flex;gap:clamp(5px,1vw,15px);align-items:center;flex-wrap:wrap;justify-content:flex-end;color:#b4c7e0;font-size:clamp(10px,1.3vw,14px)}
+.mini-status span{white-space:nowrap}.mini-status b{font-weight:500}
+.header-dashboard{font-size:clamp(11px,1.3vw,15px)}
+@media(orientation:landscape){
+ .apps{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex:1 1 auto}
+ .hero{flex:0 1 26%;min-height:0}
+ .shell{justify-content:space-between}
+ .footer{flex:0 0 auto}
+}
+@media(orientation:landscape) and (max-height:550px){
+ .hero{flex:0 1 23%}
+ .apps{flex:1 1 auto}
+ .mini-status{font-size:10px}
+ .mini-status span:nth-child(3){display:none}
+ .header-dashboard{padding:5px 9px}
+}
+@media(orientation:portrait) and (max-width:700px){
+ .header-right{gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:60%}
+ .mini-status{order:3;width:100%;font-size:10px;gap:8px}
+ .mini-status span:nth-child(3){display:none}
+ .header-dashboard{font-size:11px;padding:5px 8px}
+ .apps{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));flex:1 1 43%}
+ .hero{flex:0 1 17%}
+ .footer{flex:0 0 auto}
+}
+/* v0.5 remote focus indicator */
+button{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+button:focus{outline:none}
+body:not(.using-pointer) button:focus-visible,body:not(.using-pointer) button:focus{outline:3px solid #e9f3ff;outline-offset:2px;box-shadow:0 0 0 5px #6fa8ff66,0 10px 25px #0007;transform:scale(1.035);z-index:2;position:relative}
+body.using-pointer button:focus:not(:focus-visible){outline:none;box-shadow:none;transform:none}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+ .app-disabled,.app-disabled:hover{background:#202633!important;color:#7f899a!important;border-color:#303746!important;opacity:.5;filter:grayscale(1);cursor:not-allowed;transform:none!important} /* v1.1 single-screen dashboard */.dashboard-page{max-width:1800px}.dash-heading{display:flex;justify-content:space-between;align-items:end;gap:12px}.dash-heading h1{margin:16px 0 4px;font-size:clamp(29px,3.6vw,52px)}.dash-date{color:#b3c5dd;font-size:.86rem}.demo-label{letter-spacing:.05em;font-size:.65rem;color:#e4bc7c;margin-left:8px}.overview-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(245px,.85fr) minmax(280px,1fr);gap:14px;margin-top:23px;align-items:stretch}.overview-panel{background:linear-gradient(145deg,#1b2b43,#101c30);border:1px solid #344864;border-radius:22px;padding:20px;min-width:0;display:flex;flex-direction:column;gap:15px}.panel-heading{display:flex;align-items:start;justify-content:space-between;gap:8px}.panel-heading h2{font-size:clamp(18px,1.7vw,25px);margin:5px 0 0}.panel-kicker{font-size:10px;color:#91aacf;letter-spacing:.16em;font-weight:800}.offline-pill{background:#3c3540;border:1px solid #695568;color:#e4bdc3;border-radius:20px;font-size:10px;padding:5px 8px;white-space:nowrap}.overview-subheading{font-size:12px;color:#9fb4d1}.home-room-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.home-room{background:#20334e;border:1px solid #38516e;border-radius:13px;padding:11px;min-height:100px;text-align:left;display:flex;flex-direction:column;gap:8px}.home-room strong{font-size:13px}.home-room .room-info{color:#a9bfd9;font-size:11px}.home-room .room-icon{font-size:17px}.home-room.disabled{opacity:.38;filter:grayscale(1);cursor:not-allowed}.music-strip{display:flex;align-items:center;gap:11px;background:#142239;border:1px solid #314763;border-radius:13px;padding:12px}.music-symbol{font-size:25px}.music-strip div:nth-child(2){flex:1;min-width:0}.music-strip strong,.music-strip small{display:block}.music-strip strong{font-size:13px}.music-strip small{font-size:11px;color:#a5bad4;margin-top:3px}.music-strip button{background:#304c6f;border:1px solid #52749c;border-radius:9px;padding:7px 10px;font-size:11px}.subtle-link{border:0;background:none;text-align:left;color:#a6c8ff;font-size:12px;padding:4px 0}.doorbell-preview{flex:1;min-height:210px;border:1px dashed #53667c;border-radius:15px;background:linear-gradient(150deg,#101926,#24374b);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;text-align:center;padding:15px}.doorbell-symbol{font-size:48px;color:#8ca7c7}.doorbell-preview strong{font-size:16px}.doorbell-preview span{font-size:12px;color:#a2b5ce;max-width:190px}.doorbell-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}.doorbell-footer small{color:#a0b3cd}.family-sections{display:flex;flex-direction:column;gap:15px}.family-section{background:#14243a;border:1px solid #30445e;border-radius:14px;padding:13px}.family-title{font-weight:750;font-size:13px;display:flex;justify-content:space-between;gap:6px}.family-title span{font-weight:400;color:#a6bad2}.empty-row{font-size:12px;color:#9db0c9;padding:13px 0}.calendar-layers{display:flex;gap:5px;flex-wrap:wrap}.calendar-layers span{font-size:10px;border-radius:20px;background:#2d4261;padding:5px 7px;color:#d4e2f7}@media(max-width:1100px){.overview-layout{grid-template-columns:1.2fr 1fr}.family-panel{grid-column:1/-1}.family-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}}@media(max-width:670px){.overview-layout{grid-template-columns:1fr;margin-top:17px;gap:12px}.family-panel{grid-column:auto}.family-sections{display:flex}.overview-panel{padding:15px}.home-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-date{display:none}.doorbell-preview{min-height:180px}}@media(orientation:landscape) and (max-height:550px){.dashboard-page{height:100dvh;overflow:auto}.overview-layout{margin-top:12px}.overview-panel{padding:12px;gap:8px}.home-room{min-height:72px;padding:8px;gap:3px}.doorbell-preview{min-height:150px}.dash-heading h1{font-size:26px;margin:8px 0 2px}}/* v1.2: aspect-ratio aware dashboard; 16:9 TV and 16:10 tablet */
+@media (orientation:landscape) and (min-width:700px){
+ .dashboard-page{width:100%;max-width:none;height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:clamp(9px,1.7vh,22px) clamp(12px,2vw,32px);gap:clamp(5px,1vh,12px)}
+ .dashboard-page.hidden{display:none}
+ .dashboard-top{flex:0 0 auto}
+ .dashboard-top .dashboard-toggle{padding:6px 12px;font-size:clamp(11px,1.6vh,15px)}
+ .dash-heading{flex:0 0 auto}
+ .dash-heading h1{font-size:clamp(22px,3.3vh,39px);margin:0 0 2px}
+ .dashboard-intro{font-size:clamp(11px,1.7vh,15px);margin:0}
+ .overview-layout{flex:1 1 0;min-height:0;margin-top:0;display:grid;grid-template-columns:minmax(0,1.36fr) minmax(0,.82fr) minmax(0,1fr);gap:clamp(7px,1vw,15px);align-items:stretch}
+ .overview-panel{min-height:0;overflow:hidden;padding:clamp(9px,1.4vh,18px);gap:clamp(5px,.9vh,11px);border-radius:15px}
+ .panel-heading h2{font-size:clamp(14px,2.3vh,22px);margin:3px 0 0}
+ .panel-kicker{font-size:clamp(8px,1.3vh,11px)}
+ .offline-pill{font-size:clamp(8px,1.2vh,10px);padding:3px 6px}
+ .overview-subheading{font-size:clamp(10px,1.6vh,13px)}
+ .home-room-grid{flex:1 1 0;min-height:0;overflow-y:auto;align-content:start;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(4px,.7vh,8px);scrollbar-width:thin}
+ .home-room{min-height:0;padding:clamp(5px,.9vh,10px);gap:clamp(2px,.35vh,5px)}
+ .home-room .room-icon{font-size:clamp(12px,1.9vh,18px)}
+ .home-room strong{font-size:clamp(10px,1.65vh,14px)}
+ .home-room .room-info{font-size:clamp(9px,1.4vh,11px);line-height:1.2}
+ .music-strip{flex:0 0 auto;padding:clamp(5px,.9vh,10px);gap:7px}
+ .music-symbol{font-size:clamp(15px,2.3vh,23px)}
+ .music-strip strong{font-size:clamp(10px,1.6vh,13px)}
+ .music-strip small{font-size:clamp(9px,1.4vh,11px)}
+ .music-strip button{padding:5px 7px}
+ .subtle-link{flex:0 0 auto;font-size:clamp(10px,1.5vh,12px);padding:0}
+ .doorbell-preview{min-height:0;flex:1 1 0}
+ .doorbell-symbol{font-size:clamp(22px,5vh,46px)}
+ .doorbell-preview strong{font-size:clamp(12px,2vh,16px)}
+ .doorbell-preview span{font-size:clamp(10px,1.6vh,12px)}
+ .doorbell-footer{font-size:clamp(10px,1.6vh,12px)}
+ .family-panel{grid-column:auto}
+ .family-sections{display:flex;flex:1 1 0;min-height:0;overflow-y:auto;flex-direction:column;gap:clamp(5px,.8vh,10px);scrollbar-width:thin}
+ .family-section{padding:clamp(7px,1vh,12px);flex:0 0 auto}
+ .family-title{font-size:clamp(10px,1.7vh,13px)}
+ .empty-row{font-size:clamp(10px,1.5vh,12px);padding:clamp(5px,1vh,11px) 0}
+ .calendar-layers span{font-size:clamp(8px,1.2vh,10px);padding:3px 6px}
+ .dashboard-note{flex:0 0 auto;margin:0;font-size:clamp(9px,1.3vh,12px)}
+}
+@media (orientation:landscape) and (min-width:700px) and (max-aspect-ratio:17/10){
+ .overview-layout{grid-template-columns:minmax(0,1.32fr) minmax(0,.78fr) minmax(0,1fr)}
+ .dashboard-page{padding-left:12px;padding-right:12px}
+}
+@media (orientation:portrait){
+ .dashboard-page{height:auto;min-height:100dvh;overflow:visible}
+ .overview-layout{grid-template-columns:1fr}
+ .family-panel{grid-column:auto}
+ .family-sections{display:flex;flex-direction:column}
+}
+/* v1.3: compact camera, room metrics and history preview */.room-readings{font-size:clamp(10px,1.65vh,14px);font-weight:700;color:#dcecff}.doorbell-preview{width:100%;font:inherit;color:inherit;cursor:pointer;aspect-ratio:16/9;max-height:38vh;flex:0 1 auto}.doorbell-preview:hover{border-color:#b2d1ff}.doorbell-panel{justify-content:space-between}.history-controls{display:flex;flex-wrap:wrap;gap:24px;background:#17263c;border:1px solid #354c6b;border-radius:15px;padding:18px;margin:16px 0}.history-controls>div{min-width:160px}.history-options{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.history-options label{background:#243954;border-radius:9px;padding:8px;font-size:13px}.history-empty{border:1px dashed #516b8c;border-radius:15px;min-height:32vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#b9cce5;padding:22px}.history-empty small{margin-top:12px}.camera-expanded{flex:1;min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed #53667c;border-radius:20px;background:#122035;text-align:center}.camera-expanded span{font-size:65px}.camera-expanded strong{font-size:26px}.camera-expanded p{color:#a4b9d4}@media(orientation:landscape) and (min-width:700px){.doorbell-preview{max-height:40%;min-height:90px}.doorbell-symbol{font-size:clamp(18px,3.5vh,34px)}.history-empty{flex:1;min-height:0}.history-controls{margin:4px 0;padding:9px}.camera-expanded{min-height:0}} @media(orientation:landscape){html,body,body.dashboard-open{height:100dvh!important;overflow:hidden!important}#dashboardPage{height:100dvh!important;min-height:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;padding:8px 12px!important;gap:5px!important}#dashboardPage.hidden{display:none!important}#dashboardPage .dashboard-top,#dashboardPage .dash-heading,#dashboardPage .dashboard-note{flex:0 0 auto!important}#dashboardPage .dash-heading h1{font-size:clamp(18px,3.5vh,30px);margin:0}#dashboardPage .dashboard-intro{font-size:11px;margin:0}#dashboardPage .overview-layout{display:grid!important;grid-template-columns:minmax(0,1.45fr) minmax(0,.75fr) minmax(0,1.1fr)!important;grid-template-rows:minmax(0,1fr)!important;flex:1 1 0!important;min-height:0!important;margin:0!important;gap:8px!important}#dashboardPage .overview-panel{min-height:0!important;min-width:0!important;overflow:hidden!important;padding:8px!important;gap:5px!important}#dashboardPage .home-room-grid{flex:1 1 0!important;min-height:0!important;overflow-y:auto!important;align-content:start!important;gap:4px!important}#dashboardPage .home-room{min-height:0!important;padding:5px!important;gap:2px!important}#dashboardPage .home-room strong{font-size:11px}#dashboardPage .room-readings,#dashboardPage .room-info{font-size:10px!important}#dashboardPage .music-strip{flex:0 0 auto;padding:5px}#dashboardPage .subtle-link{flex:0 0 auto;font-size:10px}#dashboardPage .doorbell-preview{flex:0 0 auto!important;min-height:0!important;max-height:none!important;aspect-ratio:16/9!important;padding:4px}#dashboardPage .doorbell-symbol{font-size:22px}#dashboardPage .doorbell-preview strong{font-size:11px}#dashboardPage .family-panel{grid-column:auto!important}#dashboardPage .family-sections{display:flex!important;flex-direction:column!important;flex:1 1 0!important;min-height:0!important;overflow-y:auto!important;gap:4px}#dashboardPage .family-section{flex:0 0 auto;padding:6px}#dashboardPage .dashboard-note{margin:0;font-size:9px}}/* v1.5: TV-first two-zone dashboard; small doorbell beneath organiser */
+@media(orientation:landscape){
+ #dashboardPage{padding:5px 12px!important;gap:3px!important}
+ #dashboardPage .dashboard-top{min-height:0!important;display:flex;align-items:center}
+ #dashboardPage .dashboard-top .dashboard-toggle{padding:4px 9px!important;font-size:11px!important}
+ #dashboardPage .dashboard-top .eyebrow{font-size:9px!important;letter-spacing:.09em}
+ #dashboardPage .dash-heading{display:flex;align-items:center;gap:10px;min-height:0}
+ #dashboardPage .dash-heading h1{font-size:clamp(15px,2.6vh,23px)!important;line-height:1.1}
+ #dashboardPage .dashboard-intro{display:none!important}
+ #dashboardPage .dash-date{font-size:clamp(9px,1.5vh,12px)!important}
+ #dashboardPage .overview-layout{grid-template-columns:minmax(0,1.22fr) minmax(0,1fr)!important;grid-template-rows:minmax(0,1.8fr) minmax(0,1fr)!important;gap:7px!important}
+ #dashboardPage .home-panel{grid-column:1!important;grid-row:1 / 3!important}
+ #dashboardPage .family-panel{grid-column:2!important;grid-row:1!important}
+ #dashboardPage .doorbell-panel{grid-column:2!important;grid-row:2!important;display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr)!important;gap:3px!important}
+ #dashboardPage .doorbell-panel .panel-heading{grid-column:1!important;grid-row:1!important}
+ #dashboardPage .doorbell-panel .doorbell-preview{grid-column:2!important;grid-row:1 / 3!important;width:100%!important;max-height:100%!important;aspect-ratio:auto!important;height:100%!important}
+ #dashboardPage .doorbell-panel .doorbell-footer{grid-column:1!important;grid-row:2!important;display:flex!important;flex-direction:column!important;justify-content:end!important;gap:2px}
+ #dashboardPage .doorbell-panel .doorbell-footer small{font-size:9px}
+ #dashboardPage .doorbell-panel .panel-heading h2{font-size:clamp(11px,2vh,16px)!important}
+ #dashboardPage .doorbell-panel .offline-pill{display:none!important}
+ #dashboardPage .home-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #dashboardPage .home-room{padding:clamp(5px,1vh,9px)!important}
+ #dashboardPage .home-room strong{font-size:clamp(11px,1.8vh,14px)!important}
+ #dashboardPage .room-readings,#dashboardPage .room-info{font-size:clamp(10px,1.5vh,12px)!important}
+ #dashboardPage .family-sections{gap:5px!important}
+ #dashboardPage .family-section{padding:7px!important}
+ #dashboardPage .dashboard-note{font-size:9px!important;line-height:1.1}
+}
+/* v1.6 dense TV/tablet dashboard: compact tiles, no clipped family start */
+@media(orientation:landscape){
+ #dashboardPage{padding:3px 9px!important;gap:2px!important}
+ #dashboardPage .dashboard-top .dashboard-toggle{font-size:10px!important;padding:3px 7px!important}
+ #dashboardPage .dashboard-top .eyebrow{font-size:8px!important}
+ #dashboardPage .dash-heading h1{font-size:15px!important}
+ #dashboardPage .dash-date{font-size:10px!important}
+ #dashboardPage .overview-layout{grid-template-rows:minmax(0,1.7fr) minmax(0,.75fr)!important;gap:5px!important}
+ #dashboardPage .overview-panel{padding:6px!important;gap:3px!important;border-radius:14px!important}
+ #dashboardPage .panel-heading{gap:3px!important}
+ #dashboardPage .panel-kicker{font-size:9px!important;letter-spacing:.08em!important}
+ #dashboardPage .panel-heading h2{font-size:clamp(13px,2.7vh,20px)!important;line-height:1.1!important;margin:0!important}
+ #dashboardPage .offline-pill{font-size:9px!important;padding:2px 6px!important}
+ #dashboardPage .overview-subheading{font-size:10px!important;margin:0!important}
+ #dashboardPage .home-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(0,1fr)!important;overflow-y:auto!important;gap:3px!important}
+ #dashboardPage .home-room{padding:3px 6px!important;gap:0!important;border-radius:8px!important;min-height:29px!important}
+ #dashboardPage .home-room strong{font-size:10px!important;line-height:1.05!important}
+ #dashboardPage .room-readings,#dashboardPage .room-info{font-size:9px!important;line-height:1.05!important}
+ #dashboardPage .music-strip{padding:4px 7px!important;gap:6px!important;border-radius:9px!important}
+ #dashboardPage .music-strip strong{font-size:11px!important}
+ #dashboardPage .music-strip small{font-size:9px!important}
+ #dashboardPage .music-strip button{padding:4px 7px!important;font-size:10px!important}
+ #dashboardPage .music-symbol{font-size:16px!important}
+ #dashboardPage .subtle-link{font-size:9px!important;padding:2px!important}
+ #dashboardPage .family-sections{overflow-y:auto!important;scrollbar-width:thin;gap:3px!important}
+ #dashboardPage .family-section{padding:5px 7px!important;border-radius:8px!important}
+ #dashboardPage .family-title{font-size:11px!important}
+ #dashboardPage .empty-row{font-size:10px!important;padding:3px 0!important}
+ #dashboardPage .calendar-layers{gap:3px!important}
+ #dashboardPage .calendar-layers span{font-size:9px!important;padding:2px 4px!important}
+ #dashboardPage .doorbell-panel .panel-heading h2{font-size:11px!important}
+ #dashboardPage .doorbell-preview strong{font-size:10px!important}
+ #dashboardPage .doorbell-preview span{display:none!important}
+ #dashboardPage .doorbell-footer{font-size:9px!important}
+ #dashboardPage .dashboard-note{font-size:8px!important}
+}
+/* v1.7 dashboard utility bar and organiser mosaic */
+@media(orientation:landscape){
+ #dashboardPage .dashboard-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important}
+ #dashboardPage .dashboard-top .eyebrow{flex:0 0 auto!important}
+ #dashboardPage .dash-top-info{display:flex;align-items:center;gap:12px;margin-left:auto;font-size:11px;color:#c7d5eb;white-space:nowrap}
+ #dashboardPage .dash-top-info #dashTopTime{font-weight:800;color:#fff;font-size:14px}
+ #dashboardPage .dashboard-top .dashboard-toggle{order:3!important;flex:0 0 auto!important}
+ #dashboardPage .dash-heading{display:none!important}
+ #dashboardPage .overview-layout{grid-template-rows:minmax(0,1.9fr) minmax(0,.7fr)!important}
+ #dashboardPage .family-sections{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;overflow:hidden!important;gap:5px!important}
+ #dashboardPage .family-section{min-height:0!important;overflow:hidden!important}
+ #dashboardPage .family-section:first-child{grid-column:1!important;grid-row:1 / 3!important}
+ #dashboardPage .family-section:nth-child(2){grid-column:2!important;grid-row:1!important}
+ #dashboardPage .family-section:nth-child(3){grid-column:2!important;grid-row:2!important}
+ #dashboardPage .family-title{font-size:10px!important;line-height:1.15!important}
+ #dashboardPage .empty-row{font-size:9px!important;line-height:1.2!important}
+ #dashboardPage .calendar-layers{display:flex!important;flex-wrap:wrap!important}
+}
+/* v1.8 remove redundant subtitle and contain Eufy placeholders */
+@media(orientation:landscape){
+ #dashboardPage .doorbell-panel{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)!important;align-items:stretch!important}
+ #dashboardPage .doorbell-panel .panel-heading{min-width:0!important;align-self:start!important}
+ #dashboardPage .doorbell-panel .doorbell-preview{min-width:0!important;min-height:0!important;overflow:hidden!important;padding:4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important}
+ #dashboardPage .doorbell-panel .doorbell-preview strong{font-size:9px!important;line-height:1.15!important;max-width:100%!important;overflow-wrap:anywhere!important;text-align:center!important}
+ #dashboardPage .doorbell-panel .doorbell-symbol{font-size:13px!important;line-height:1!important}
+ #dashboardPage .doorbell-panel .doorbell-footer{min-width:0!important;overflow:hidden!important;justify-content:center!important}
+ #dashboardPage .doorbell-panel .doorbell-footer span,#dashboardPage .doorbell-panel .doorbell-footer small{display:block!important;font-size:9px!important;line-height:1.1!important;white-space:normal!important;overflow-wrap:anywhere!important}
+}
+/* v1.9 single-line landscape room readings */
+@media(orientation:landscape){
+ #dashboardPage .home-room-grid{grid-auto-rows:minmax(0,1fr)!important;align-content:stretch!important}
+ #dashboardPage .home-room{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;flex-wrap:nowrap!important;min-height:0!important;height:auto!important;padding:2px 7px!important;gap:7px!important;overflow:hidden!important}
+ #dashboardPage .home-room strong{flex:1 1 auto!important;min-width:0!important;font-size:clamp(9px,1.7vh,12px)!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+ #dashboardPage .home-room .room-readings{flex:0 0 auto!important;font-size:clamp(8px,1.45vh,11px)!important;white-space:nowrap!important}
+ #dashboardPage .home-room .room-info{flex:0 0 auto!important;font-size:clamp(8px,1.45vh,11px)!important;white-space:nowrap!important}
+ #dashboardPage .home-room.disabled{display:none!important}
+}
+/* v2.0: reserve stable width for full room names */
+@media(orientation:landscape){
+ #dashboardPage .home-room{gap:4px!important;padding:2px 6px!important}
+ #dashboardPage .home-room strong{flex:1 1 auto!important;min-width:0!important;font-size:clamp(9px,1.6vh,11px)!important;letter-spacing:-.02em!important;white-space:nowrap!important;text-overflow:clip!important}
+ #dashboardPage .home-room .room-readings{font-size:clamp(8px,1.3vh,10px)!important;letter-spacing:-.03em!important}
+ #dashboardPage .home-room .room-info{font-size:clamp(8px,1.3vh,10px)!important;letter-spacing:-.03em!important}
+}
+/* v2.1 compact paired integrations */
+@media(orientation:landscape){
+ #dashboardPage .home-services{display:grid;grid-template-columns:1fr 1fr;gap:5px;min-width:0;flex:0 0 auto}
+ #dashboardPage .home-services .music-strip{min-width:0;gap:5px!important}
+ #dashboardPage .home-services .music-strip strong{font-size:11px!important}
+ #dashboardPage .home-services .music-strip button{padding:3px 6px!important}
+ #dashboardPage .salus-strip{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:3px;padding:4px 10px;border:1px solid #38516e;border-radius:9px;background:#142239;color:inherit}
+ #dashboardPage .salus-strip strong{font-size:11px}
+ #dashboardPage .salus-strip small{font-size:9px;color:#a5bad4}
+ #dashboardPage .doorbell-panel{display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:minmax(0,1fr)!important;gap:6px!important}
+ #dashboardPage .compact-eufy,#dashboardPage .compact-pets{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;padding:7px 10px;border:1px solid #38516e;border-radius:10px;background:#142239;color:inherit;text-align:left;overflow:hidden}
+ #dashboardPage .compact-eufy strong,#dashboardPage .compact-pets strong{font-size:clamp(10px,1.9vh,14px);white-space:nowrap}
+ #dashboardPage .compact-eufy small,#dashboardPage .compact-pets small{font-size:9px;color:#a5bad4}
+}
+
+/* v2.2: current service identity on launcher tiles; retain accessible app names */
+#apps .brand-logo{width:min(72%,160px);height:clamp(28px,7vh,64px);object-fit:contain;display:block;filter:drop-shadow(0 2px 5px #0005)}
+#apps .brand-fallback{display:none;font-weight:850;font-size:clamp(12px,2.7vh,24px)}
+#apps .brand-logo.logo-error{display:none}
+#apps .brand-logo.logo-error+.brand-fallback{display:block}
+#apps .tile{overflow:hidden}
+@media(orientation:portrait){#apps .brand-logo{height:clamp(30px,5vh,54px);width:min(60%,100px)}}
+
+/* v2.3: move doorbell and pets into Smart Home; expand organiser */
+#dashboardPage .home-security{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0}
+#dashboardPage .home-security .compact-eufy,#dashboardPage .home-security .compact-pets{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:2px;padding:5px 9px;border:1px solid #38516e;border-radius:9px;background:#142239;color:inherit}
+#dashboardPage .home-security strong{font-size:clamp(10px,1.7vh,13px);white-space:nowrap}
+#dashboardPage .home-security small{font-size:clamp(9px,1.3vh,11px);color:#a5bad4}
+#dashboardPage .home-security .panel-kicker{font-size:9px}
+#dashboardPage .home-history-link{min-width:0;min-height:0;display:flex;align-items:center;justify-content:flex-start;text-align:left;padding:3px 7px;border:1px dashed #536b8b;border-radius:8px;background:#17283e;color:#b8d6fa;font-size:clamp(9px,1.45vh,12px)}
+#dashboardPage .home-room-grid{overflow:hidden!important}
+#dashboardPage .family-panel{min-height:0}
+#dashboardPage .family-sections{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.1fr) minmax(0,.75fr) minmax(0,1.1fr)!important;gap:6px!important;overflow:hidden!important}
+#dashboardPage .family-sections .family-section{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:3px}
+#dashboardPage .family-sections .family-section:first-child{grid-column:1;grid-row:1 / 3}
+#dashboardPage .family-sections .family-section:nth-child(2){grid-column:2;grid-row:1}
+#dashboardPage .family-sections .family-section:nth-child(3){grid-column:2;grid-row:2}
+#dashboardPage .family-sections .meal-plan{grid-column:1;grid-row:3}
+#dashboardPage .family-sections .find-panel{grid-column:2;grid-row:3}
+#dashboardPage .meal-days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;flex:1;align-content:stretch}
+#dashboardPage .meal-days span{border-radius:5px;background:#233651;padding:3px 4px;font-size:clamp(9px,1.35vh,11px);display:flex;justify-content:space-between;align-items:center;gap:3px}
+#dashboardPage .meal-days b{font-weight:400;color:#9cb4d1}
+#dashboardPage .find-map{flex:1;min-height:28px;border:1px dashed #54708d;border-radius:7px;background:linear-gradient(145deg,#23374a,#17293b);display:flex;align-items:center;justify-content:center;padding:6px;text-align:center;color:#acc0d9;font-size:clamp(9px,1.35vh,11px)}
+#dashboardPage .find-categories{font-size:clamp(8px,1.2vh,10px);color:#9cb4d1}
+@media(orientation:landscape){
+ #dashboardPage .overview-layout{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
+ #dashboardPage .home-panel{grid-column:1!important;grid-row:1!important}
+ #dashboardPage .family-panel{grid-column:2!important;grid-row:1!important}
+ #dashboardPage .home-room-grid{grid-template-rows:repeat(4,minmax(0,1fr))!important;flex:1 1 0!important}
+ #dashboardPage .home-security{flex:0 0 auto}
+ #dashboardPage .home-security .compact-eufy,#dashboardPage .home-security .compact-pets{min-height:0}
+}
+@media(orientation:portrait){
+ #dashboardPage .family-sections{display:flex!important;flex-direction:column!important;overflow:visible!important}
+ #dashboardPage .home-room-grid{overflow:visible!important}
+ #dashboardPage .home-history-link{min-height:44px}
+ #dashboardPage .meal-days{grid-template-columns:repeat(4,minmax(0,1fr))}
+ #dashboardPage .find-map{min-height:100px}
+}
+
+/* v2.4 weekly calendar and illustrative Cheshire East Find preview */
+#dashboardPage .calendar-open{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:2px 0;border:0;background:none;color:#f5f7ff;font-weight:750;text-align:left;font-size:clamp(10px,1.6vh,13px)}
+#dashboardPage .calendar-open span:last-child{font-weight:500;color:#b5c7e0;font-size:clamp(9px,1.35vh,11px)}
+#dashboardPage .week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+#dashboardPage .week-strip span{border-radius:5px;background:#233752;text-align:center;padding:5px 1px;font-size:clamp(9px,1.3vh,11px);line-height:1.25}
+#dashboardPage .week-strip span.today{background:#c8e0ff;color:#14243b;font-weight:800}
+#dashboardPage .family-sections{grid-template-rows:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.5fr)!important}
+#dashboardPage .find-local{padding:0!important;overflow:hidden;min-height:50px!important}
+#dashboardPage .find-local svg{display:block;width:100%;height:100%;min-height:0}
+#dashboardPage .find-categories{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calendar-overlay{position:fixed;inset:0;z-index:100;background:#020916db;display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,35px)}
+.calendar-overlay.hidden{display:none!important}
+.calendar-dialog{width:min(100%,850px);max-height:95dvh;overflow:auto;border:1px solid #5b7495;background:#15243a;border-radius:18px;padding:clamp(12px,2vw,22px);box-shadow:0 22px 80px #000b}
+.calendar-dialog-head,.calendar-toolbar{display:flex;align-items:center;gap:9px;justify-content:space-between;margin-bottom:13px}
+.calendar-dialog-head strong{font-size:20px}.calendar-dialog button,.calendar-dialog select{border:1px solid #536b8b;border-radius:8px;background:#263a56;color:#eef5ff;padding:7px 12px}
+.calendar-toolbar strong{flex:1;text-align:center;font-size:clamp(12px,2vw,18px)}
+.calendar-full-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.calendar-full-grid .cal-cell{background:#22354e;border:1px solid #354d69;border-radius:8px;padding:8px 5px;min-height:65px;font-size:12px}
+.calendar-full-grid .cal-cell.today{border-color:#c3dcff;background:#2b476b}
+.calendar-full-grid .cal-cell.muted{opacity:.42}
+.calendar-full-grid .cal-day{min-height:0;text-align:center;background:none;border:0;font-weight:800;color:#adc8e8}
+.calendar-dialog-foot{margin-top:12px;font-size:12px;color:#afc2d9}
+@media(max-width:650px){.calendar-full-grid .cal-cell{min-height:48px;padding:5px 3px;font-size:10px}.calendar-dialog button,.calendar-dialog select{padding:6px}.calendar-toolbar{gap:4px}}
+
+/* v2.6: Salus modal, safe preview until authenticated live integration */
+.salus-overlay{position:fixed;inset:0;z-index:105;background:#020916db;display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,32px)}
+.salus-overlay.hidden{display:none!important}
+.salus-dialog{width:min(94vw,690px);max-height:92dvh;overflow:auto;border:1px solid #57749a;border-radius:17px;background:#16263e;color:#f2f6ff;padding:clamp(13px,2.3vw,23px);box-shadow:0 20px 80px #000a}
+.salus-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.salus-dialog-head h2{margin:4px 0 12px;font-size:clamp(16px,2.5vw,23px)}
+.salus-close{background:#293d59;border:1px solid #607797;color:#fff;border-radius:9px;padding:8px 13px}
+.salus-preview-banner{border:1px solid #68748b;border-radius:8px;padding:7px 10px;color:#f4dca9;background:#3c3440;font-size:12px;margin-bottom:12px}
+.salus-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.salus-metrics>div{background:#213650;border:1px solid #3c5573;border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.salus-metrics span{font-size:12px;color:#b5c8df}
+.salus-metrics strong{font-size:clamp(15px,2.3vw,22px)}
+.salus-controls-preview{margin-top:12px;border:1px solid #425c7b;border-radius:10px;padding:10px;text-align:center}
+.salus-control-title{font-size:13px;color:#b5c8df}
+.salus-setpoint-row{display:flex;align-items:center;justify-content:center;gap:20px;margin:9px 0}
+.salus-setpoint-row strong{font-size:24px;min-width:85px}
+.salus-setpoint-row button{font-size:26px;width:45px;height:43px}
+.salus-modes{display:flex;justify-content:center;gap:8px;margin-bottom:8px}
+.salus-controls-preview button{background:#30445e;border:1px solid #62758c;color:#d5deeb;border-radius:9px;padding:7px 14px}
+.salus-controls-preview button:disabled{opacity:.5;cursor:not-allowed}
+.salus-controls-preview small,.salus-modal-foot{color:#a8bdd7;font-size:11px}
+.salus-status-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
+.salus-status-grid span{background:#213650;padding:8px;border-radius:7px;font-size:12px;display:flex;justify-content:space-between;gap:6px}
+.salus-status-grid b{color:#b5c8df}
+.salus-modal-foot{margin:12px 0 0}
+
+/* v2.7: landscape modal sizing and scroll on short TV/phone viewports */
+@media(orientation:landscape){
+ .salus-overlay{padding:8px 14px;align-items:center}
+ .salus-dialog{width:min(90vw,850px);max-height:calc(100dvh - 16px);padding:12px 17px;overscroll-behavior:contain}
+ .salus-dialog-head h2{margin:2px 0 7px;font-size:clamp(15px,2.2vw,20px)}
+ .salus-preview-banner{margin-bottom:7px;padding:5px 8px;font-size:11px}
+ .salus-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .salus-metrics>div{padding:6px 8px;gap:2px}
+ .salus-metrics span{font-size:10px}
+ .salus-metrics strong{font-size:clamp(12px,1.7vw,17px)}
+ .salus-controls-preview{margin-top:7px;padding:6px 10px}
+ .salus-setpoint-row{margin:3px 0;gap:12px}
+ .salus-setpoint-row button{height:31px;width:40px;font-size:21px;padding:0}
+ .salus-setpoint-row strong{font-size:19px}
+ .salus-modes{margin-bottom:3px}
+ .salus-controls-preview button{padding:4px 12px}
+ .salus-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:7px}
+ .salus-status-grid span{padding:5px 7px;font-size:11px}
+ .salus-modal-foot{margin-top:6px}
+}
+
+/* v2.8: two-column thermostat dial and history; no vertical scroll on landscape phones */
+.salus-v28{width:min(94vw,950px);padding:clamp(9px,1.5vw,15px);box-sizing:border-box}
+.salus-v28-body{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:12px;min-height:0}
+.salus-v28-left,.salus-v28-right{min-width:0;display:flex;flex-direction:column;gap:5px}
+.salus-gauge{position:relative;flex:1;min-height:120px;max-height:190px;display:flex;justify-content:center;align-items:center}
+.salus-gauge svg{width:100%;height:100%;max-width:300px}
+.salus-gauge-reading{position:absolute;inset:30% 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
+.salus-gauge-reading span,.salus-gauge-reading small{font-size:11px;color:#b3c6dc}
+.salus-gauge-reading strong{font-size:clamp(22px,3vw,32px)}
+.salus-v28 .salus-setpoint-row{margin:0;gap:10px}
+.salus-v28 .salus-setpoint-row button,.salus-v28 .salus-modes button{background:#30445e;border:1px solid #62758c;color:#d5deeb;border-radius:8px;padding:4px 12px;opacity:.5}
+.salus-v28 .salus-setpoint-row button{width:40px;height:34px;font-size:22px}
+.salus-v28 .salus-setpoint-row strong{font-size:19px}
+.salus-v28 .salus-modes{margin:0}
+.salus-history-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+.salus-history-heading span{color:#afc3dc;font-size:10px}
+.salus-history-preview{position:relative;flex:1;min-height:75px;border:1px solid #405c78;border-radius:8px;background:#1c314a;overflow:hidden}
+.salus-history-preview svg{width:100%;height:100%}
+.salus-history-preview span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b7c8dc;font-size:12px;text-align:center;padding:8px}
+.salus-v28 .salus-status-grid{margin:0;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.salus-v28 .salus-status-grid span{padding:5px;font-size:10px}
+.salus-v28-foot{font-size:10px;color:#b3c6dc;text-align:center;margin-top:6px}
+@media(orientation:landscape){
+ .salus-overlay{padding:5px 10px}
+ .salus-v28{width:min(94vw,980px);max-height:calc(100dvh - 10px);overflow:hidden}
+ .salus-v28 .salus-dialog-head h2{font-size:clamp(14px,2vw,19px);margin:0 0 4px}
+ .salus-v28 .salus-close{padding:5px 10px}
+ .salus-v28-body{height:clamp(170px,48dvh,300px);gap:9px}
+ .salus-gauge{min-height:0;max-height:none}
+ .salus-gauge-reading span,.salus-gauge-reading small{font-size:10px}
+ .salus-v28 .salus-setpoint-row button{height:29px}
+ .salus-v28 .salus-modes button{padding:3px 9px}
+ .salus-v28 .salus-status-grid span{padding:4px}
+}
+@media(orientation:portrait){
+ .salus-v28{max-height:90dvh;overflow:auto}
+ .salus-v28-body{grid-template-columns:1fr}
+ .salus-gauge{height:170px;flex:none}
+ .salus-history-preview{min-height:130px}
+}
+
+/* v2.9: prevent SVG and flex intrinsic sizes from pushing controls below modal */
+.salus-v28-body{min-height:0}
+.salus-v28-left{display:grid;grid-template-rows:minmax(0,1fr) auto auto;min-height:0;gap:5px}
+.salus-v28-right{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;gap:5px}
+.salus-v28 .salus-gauge{height:100%;min-height:0;max-height:none;overflow:hidden}
+.salus-v28 .salus-gauge svg{position:absolute;inset:0;width:100%;height:100%}
+.salus-v28 .salus-gauge-reading{inset:28% 0 0}
+.salus-v28 .salus-history-preview{min-height:0;height:100%;box-sizing:border-box}
+.salus-v28 .salus-history-preview svg{position:absolute;inset:0}
+.salus-v28 .salus-setpoint-row{min-height:28px}
+.salus-v28 .salus-modes{min-height:26px}
+.salus-v28 .salus-status-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.salus-v28 .salus-status-grid span{white-space:nowrap;overflow:hidden}
+.salus-v28-foot{position:relative;line-height:1.25}
+@media(orientation:landscape){
+ .salus-v28{display:flex;flex-direction:column;max-height:calc(100dvh - 14px);overflow:hidden}
+ .salus-v28-body{height:auto;flex:1;min-height:0;max-height:none}
+ .salus-v28 .salus-dialog-head{flex:0 0 auto}
+ .salus-v28-foot{flex:0 0 auto}
+ .salus-v28 .salus-gauge-reading{inset:23% 0 0}
+ .salus-v28 .salus-gauge-reading strong{font-size:clamp(17px,2.6vw,27px)}
+ .salus-v28 .salus-history-preview span{font-size:11px}
+}
+@media(orientation:portrait){
+ .salus-v28-body{height:auto}
+ .salus-v28-left{grid-template-rows:170px auto auto}
+ .salus-v28-right{grid-template-rows:auto 130px auto}
+}
+
+/* v3.0: deterministic Salus layout: allocate height before distributing children */
+@media (orientation:landscape) {
+ .salus-overlay{padding:8px;box-sizing:border-box}
+ .salus-dialog.salus-v28{
+  box-sizing:border-box;width:min(94vw,1040px);
+  height:min(82dvh,510px);max-height:calc(100dvh - 16px);
+  padding:10px 14px;overflow:hidden;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:5px;
+ }
+ .salus-v28 .salus-dialog-head{min-height:0;align-items:center}
+ .salus-v28 .salus-dialog-head h2{font-size:clamp(15px,1.65vw,20px);margin:0}
+ .salus-v28 .panel-kicker{font-size:10px}
+ .salus-v28 .salus-close{padding:5px 9px}
+ .salus-v28-body{
+  display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);
+  gap:12px;height:100%;min-height:0;overflow:hidden;
+ }
+ .salus-v28-left{
+  display:grid;grid-template-rows:minmax(0,1fr) 32px 29px;
+  min-height:0;overflow:hidden;gap:4px;
+ }
+ .salus-v28-right{
+  display:grid;grid-template-rows:22px minmax(0,1fr) 55px;
+  min-height:0;overflow:hidden;gap:4px;
+ }
+ .salus-v28 .salus-gauge{position:relative;min-height:0;height:100%;width:100%;overflow:hidden}
+ .salus-v28 .salus-gauge svg{position:absolute;inset:0;width:100%;height:100%;max-width:none}
+ .salus-v28 .salus-gauge-reading{inset:22% 0 0;justify-content:center}
+ .salus-v28 .salus-setpoint-row{height:32px;min-height:0;margin:0}
+ .salus-v28 .salus-modes{height:29px;min-height:0;align-items:center}
+ .salus-v28 .salus-history-preview{height:100%;min-height:0;overflow:hidden}
+ .salus-v28 .salus-status-grid{height:55px;min-height:0;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,1fr);gap:4px}
+ .salus-v28 .salus-status-grid span{display:flex;align-items:center;min-width:0;padding:3px 5px}
+ .salus-v28-foot{font-size:10px;line-height:1.2;margin:0;text-align:center}
+}
+@media (orientation:landscape) and (max-height:390px) {
+ .salus-dialog.salus-v28{height:calc(100dvh - 12px);padding:6px 10px;gap:3px}
+ .salus-v28 .salus-dialog-head h2{font-size:14px}
+ .salus-v28 .panel-kicker{font-size:9px}
+ .salus-v28 .salus-gauge-reading span,.salus-v28 .salus-gauge-reading small{font-size:9px}
+ .salus-v28 .salus-gauge-reading strong{font-size:19px}
+ .salus-v28-foot{font-size:9px}
+}
+
+/* v3.1: gauge SVG uses preserved geometry, with the entire arc in view */
+.salus-v28 .salus-gauge svg{object-fit:contain;overflow:visible}
+.salus-v28 .salus-gauge-reading{inset:33% 0 0}
+.salus-v28 .salus-history-heading select{background:#263b55;border:1px solid #526e8c;color:#e4eefc;border-radius:6px;padding:3px 6px;font-size:11px;max-width:105px}
+@media(orientation:landscape){
+ .salus-v28 .salus-gauge svg{inset:0;max-width:100%;max-height:100%;object-fit:contain}
+ .salus-v28 .salus-gauge-reading{inset:31% 0 0}
+}
+
+/* v3.3 secure connection setup: configuration only, no credentials */
+.ha-setup{position:fixed;inset:0;z-index:9999;background:#000b;display:flex;align-items:center;justify-content:center;padding:16px}.ha-setup.hidden{display:none}.ha-setup-panel{background:#172942;border:1px solid #6b89ab;border-radius:18px;padding:22px;max-width:480px;width:100%;color:#edf4ff;box-shadow:0 12px 40px #0008}.ha-setup-panel h2{margin:0 0 10px}.ha-setup-panel p{line-height:1.45;color:#b9cbe0}.ha-setup-panel input{width:100%;padding:12px;border-radius:9px;background:#0e1c30;color:#fff;border:1px solid #7890ae;font:inherit}.ha-setup-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.ha-setup-actions button,.ha-connect-trigger{padding:9px 14px;border:1px solid #7890ae;background:#294565;color:white;border-radius:9px;font:inherit;cursor:pointer}.ha-setup-status{font-size:13px;min-height:22px;margin-top:12px}.ha-connect-trigger{font-size:12px;margin-left:8px}
+
+/* v3.4: visible HA connection entry beside Live Overview */
+.dashboard-heading-tools{display:flex;align-items:center;gap:9px;flex-wrap:nowrap;min-width:0}.dashboard-heading-tools .eyebrow{white-space:nowrap}.dashboard-heading-tools .ha-connect-trigger{margin:0;padding:5px 9px;font-size:clamp(10px,1vw,13px);white-space:nowrap;background:#294565;border:1px solid #7890ae;border-radius:9px;color:#fff;cursor:pointer}@media(max-width:740px){.dashboard-heading-tools .ha-connect-trigger{font-size:10px;padding:4px 6px}}
+
+/* v3.5: landscape-safe HA setup dialog */
+.ha-setup{overflow-y:auto;overscroll-behavior:contain;align-items:safe center;padding:12px}
+.ha-setup-panel{box-sizing:border-box;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;max-width:min(92vw,720px);padding:clamp(12px,2vh,22px)}
+.ha-setup-panel p{margin:8px 0;line-height:1.35}
+@media(orientation:landscape) and (max-height:650px){.ha-setup{align-items:center}.ha-setup-panel{max-height:calc(100dvh - 20px);padding:12px 18px}.ha-setup-panel h2{font-size:clamp(17px,3.5vh,24px);margin:0 0 4px}.ha-setup-panel p{font-size:clamp(12px,2.4vh,15px);margin:5px 0}.ha-setup-panel input{padding:8px}.ha-setup-actions{margin-top:8px}.ha-setup-actions button{padding:7px 10px}}
+.ha-steps{display:grid;gap:5px;padding:9px 12px;background:#203957;border-radius:9px;font-size:clamp(11px,1.6vw,14px)}.ha-steps div:first-child{color:#bde8c6}
+.ha-connect-trigger.ha-connected{background:#1d503e!important;border-color:#61a989!important;color:#e1ffed!important}
+.salus-modes button.active{border-color:#86cba9;background:#245541;color:#f1fff7}.salus-status-grid span{cursor:default}
+.salus-modes{flex-wrap:wrap}.salus-modes #salusBoost{border-color:#8bafdf;background:#28496c}.salus-modes #salusBoost.active{background:#7a4e25;border-color:#d6a468;color:white}
+.salus-boost-options{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:7px}.salus-boost-options label{font-size:12px;color:#c1d2e8;display:flex;align-items:center;gap:5px}.salus-boost-options select{max-width:180px;background:#263e5c;color:#fff;border:1px solid #627e9d;border-radius:7px;padding:5px;font-size:12px}
+.salus-boost-compact{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:5px;flex-wrap:wrap}.salus-boost-compact button{border:1px solid #85a6cc;border-radius:11px;background:#274667;color:white;padding:7px 13px;font-weight:700;font-size:15px;min-width:90px}.salus-boost-compact button.active{background:#80501f;border-color:#e0b16e}.salus-boost-compact span{font-size:11px;color:#aebfda}.salus-v28-left .salus-modes{margin-top:5px}
+.salus-boost-compact{margin-top:5px;justify-content:center}.salus-boost-compact #salusBoost{min-width:54px;width:54px;height:43px;padding:4px;font-size:24px;line-height:1}.salus-boost-compact #salusBoost sup{font-size:13px;vertical-align:super}
+/* v3.15: single control row, stable gauge geometry and readable landscape layout */
+.salus-v28-left{grid-template-rows:minmax(0,1fr) 37px 38px!important}
+.salus-v28 .salus-modes{display:flex;align-items:center;justify-content:center;gap:6px;height:38px!important;min-height:38px!important;flex-wrap:nowrap!important}
+.salus-v28 .salus-modes button{height:35px;min-width:0;padding:3px 12px;opacity:1}
+.salus-v28 .salus-modes button:disabled{opacity:.45}
+.salus-v28 .salus-modes #salusBoost{width:42px;min-width:42px;padding:2px 4px;font-size:22px;background:#294867;border:1px solid #85a6cc;border-radius:9px}
+.salus-v28 .salus-modes #salusBoost.active{background:#80501f;border-color:#e0b16e}
+.salus-v28 .salus-modes #salusBoost sup{font-size:11px}
+.salus-v28 .salus-gauge{display:block;position:relative;min-height:0}
+.salus-v28 .salus-gauge svg{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
+.salus-v28 .salus-gauge-reading{position:absolute;inset:36% 0 0!important;display:flex;flex-direction:column;justify-content:center;gap:2px;pointer-events:none}
+@media(orientation:landscape){.salus-v28 .salus-gauge-reading{inset:33% 0 0!important}.salus-v28 .salus-gauge-reading strong{font-size:clamp(21px,2.5vw,29px)}}
+/* v3.16: single-arc thermometer fill; controls never overflow */
+.salus-v28-left{grid-template-rows:minmax(0,1fr) 39px 31px!important;gap:3px!important}
+.salus-v28 .salus-gauge svg{height:100%!important;width:100%!important;object-fit:contain}
+.salus-v28 .salus-gauge-reading{inset:31% 0 0!important;justify-content:center}
+.salus-v28 .salus-setpoint-row{display:grid!important;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;justify-content:center;width:min(100%,280px);margin:0 auto!important;gap:4px!important;height:39px!important}
+.salus-v28 .salus-setpoint-row strong{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.salus-v28 .salus-setpoint-row button{height:36px!important;width:46px!important;padding:0!important}
+.salus-v28 .salus-modes{height:31px!important;min-height:31px!important;gap:5px!important;align-self:center;width:100%;margin:0!important}
+.salus-v28 .salus-modes button{height:29px!important;min-height:29px!important;padding:1px 8px!important;font-size:clamp(12px,1.25vw,16px)!important;line-height:1!important;border-radius:8px}
+.salus-v28 .salus-modes #salusBoost{width:37px!important;min-width:37px!important;font-size:18px!important;padding:0 3px!important}
+.salus-v28 .salus-modes #salusBoost sup{font-size:10px}
+@media(orientation:landscape){.salus-v28 .salus-gauge-reading{inset:32% 0 0!important}}
+/* v3.17: keep setpoint and +/- as one centered compact cluster */
+.salus-v28 .salus-setpoint-row{width:230px!important;max-width:100%!important;grid-template-columns:36px minmax(0,1fr) 36px!important;gap:7px!important;margin:0 auto!important;height:35px!important}
+.salus-v28 .salus-setpoint-row button{width:36px!important;height:33px!important;font-size:21px!important;border-radius:9px!important}
+.salus-v28 .salus-setpoint-row strong{text-align:center!important;font-size:clamp(21px,2.1vw,29px)!important}
+/* v3.18: minus and plus sit over gaps between mode buttons */
+.salus-v28 .salus-setpoint-row{width:100%!important;max-width:360px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;align-items:center!important;justify-items:center!important;height:30px!important;margin:0 auto!important;position:relative}
+.salus-v28 .salus-setpoint-row button{width:28px!important;height:27px!important;min-width:28px!important;min-height:27px!important;padding:0!important;font-size:17px!important;line-height:1!important;border-radius:7px!important}
+.salus-v28 .salus-setpoint-row #salusMinus{grid-column:1 / 2;justify-self:end;transform:translateX(16px)}
+.salus-v28 .salus-setpoint-row #salusPlus{grid-column:4 / 5;justify-self:start;transform:translateX(-16px)}
+.salus-v28 .salus-setpoint-row #salusSetpoint{grid-column:2 / 4;grid-row:1;text-align:center!important;white-space:nowrap;font-size:clamp(21px,2.1vw,29px)!important}
+.salus-v28 .salus-setpoint-row #salusMinus,.salus-v28 .salus-setpoint-row #salusPlus{grid-row:1}
+/* v3.19: Salus-inspired temperature ramp and gentle heating emphasis */
+.salus-v28 #salusGaugeFill{stroke:url(#salusTempGradient)}
+.salus-v28 .salus-gauge.salus-heating{filter:drop-shadow(0 0 9px rgba(255,141,57,.30))}
+.salus-v28 .salus-gauge.salus-heating #salusGaugeDot{stroke:#f0a15c}
+.salus-v28 .salus-gauge-reading strong{background:linear-gradient(90deg,#37aaff,#36d9b5,#a2df5e,#f4b349,#f06b4a);background-clip:text;-webkit-background-clip:text;color:transparent}
+/* v3.20: discrete comfort colour and status beneath thermostat only */
+.salus-v28 .salus-gauge-reading strong{background:none!important;background-clip:initial!important;-webkit-background-clip:initial!important;color:#81d88e}
+.salus-dialog.salus-v28{grid-template-rows:auto minmax(0,1fr)!important}
+.salus-v28-left{grid-template-rows:minmax(0,1fr) 30px 31px 15px!important}
+.salus-v28-left .salus-v28-foot{font-size:10px!important;line-height:14px!important;text-align:center!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center;margin:0!important;color:#b7c8dc}
+/* v3.21: restore fixed modal height, no duplicate bottom footer */
+.salus-v28 .salus-v28-body{min-height:0!important;height:100%!important}
+.salus-v28 .salus-v28-left{min-height:0!important;grid-template-rows:minmax(0,1fr) 30px 31px 19px!important}
+.salus-v28 .salus-v28-foot{position:static!important;grid-column:auto!important;grid-row:auto!important;width:100%!important;margin:0!important;padding:0!important;line-height:18px!important;text-align:center!important;font-size:12px!important;white-space:nowrap!important}
+.salus-v28 .salus-gauge-reading small:empty{display:none!important}
+.salus-v28 .salus-setpoint-row{position:relative}
+.salus-v28 .salus-setpoint-row:before{content:"Target";position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:11px;color:#a9bbd2}
+/* v3.22: one interpolated colour per number, never text gradients */
+.salus-v28 #salusCurrent,.salus-v28 #salusSetpoint{background:none!important;background-image:none!important;background-clip:initial!important;-webkit-background-clip:initial!important;-webkit-text-fill-color:currentColor!important}
+/* v3.24: touch-friendly target arc */
+.salus-v28 .salus-gauge svg{touch-action:none;cursor:crosshair}
+.salus-v28 #salusGaugeTarget{stroke-width:2.5;filter:drop-shadow(0 0 2px #e8e7c2)}
+/* v3.25: target is the primary gauge number, current below */
+.salus-v28 .salus-setpoint-row:before{content:"Current"!important}
+/* v3.27 history axes, tappable sample dots */
+.salus-history-preview svg{overflow:visible}
+.salus-history-preview svg circle[role="button"]{cursor:pointer;outline:none}
+.salus-history-preview svg circle[role="button"]:focus{stroke:#fff;stroke-width:2}
+#salusHistoryTooltip:not([hidden]){position:absolute;top:5px;left:50%;transform:translateX(-50%);padding:4px 8px;background:#0c1c31;border:1px solid #89b9d5;border-radius:5px;color:#fff;font-size:11px;white-space:nowrap;pointer-events:none;z-index:3}
+/* v3.28: compact in-theme history selector */
+.salus-period-picker{position:relative;flex:none}
+#salusPeriodButton{border:1px solid #587694;background:#29415f;color:#e6f0ff;border-radius:7px;padding:5px 10px;font:inherit;font-size:13px;min-width:93px;text-align:left;cursor:pointer}
+.salus-period-menu:not([hidden]){display:grid;position:absolute;right:0;top:calc(100% + 3px);min-width:100%;z-index:30;padding:3px;background:#1d304a;border:1px solid #6583a1;border-radius:7px;box-shadow:0 6px 18px #08111d99}
+.salus-period-menu button{font:inherit;font-size:12px;text-align:left;color:#e6f0ff;background:transparent;border:0;border-radius:4px;padding:7px 9px;white-space:nowrap;cursor:pointer}
+.salus-period-menu button:focus,.salus-period-menu button:hover{background:#385573}
+#salusGaugeFill{pointer-events:none}
+/* v3.29: align the compact history picker and keep the full report timestamp readable */
+.salus-history-heading{min-height:30px!important;overflow:visible!important;align-items:center!important}
+.salus-period-picker{align-self:center;z-index:5}
+#salusPeriodButton{display:block;height:28px;line-height:20px;padding:3px 9px;min-width:99px;white-space:nowrap}
+.salus-v28 .salus-status-grid span:last-child{min-width:0;gap:4px;font-size:11px;white-space:nowrap}
+.salus-v28 .salus-status-grid span:last-child b{font-size:10px;letter-spacing:-.2px;white-space:nowrap}
+/* v3.30: give history and six status tiles more horizontal room */
+.salus-v28 .salus-v28-body{grid-template-columns:minmax(0,.76fr) minmax(0,1.24fr)!important;gap:10px!important}
+.salus-v28 .salus-history-heading{min-height:26px!important;height:26px!important;align-items:center!important}
+.salus-v28 .salus-period-picker{align-self:center!important;transform:translateY(-5px);z-index:8}
+.salus-v28 #salusPeriodButton{height:27px!important;min-width:92px!important;padding:3px 22px 3px 9px!important;position:relative;text-align:left!important;font-size:12px!important}
+.salus-v28 .salus-period-menu:not([hidden]){top:calc(100% + 3px)}
+.salus-v28 .salus-status-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.salus-v28 .salus-status-grid span:last-child{font-size:10px!important;padding:3px 4px!important}
+.salus-v28 .salus-status-grid span:last-child b{font-size:10px!important;letter-spacing:-.25px!important}
+.salus-v28 .salus-close{padding:5px 9px!important;font-size:18px!important;line-height:1.1!important}
+/* v3.31: compact close button and right-aligned history chevron */
+.salus-v28 .salus-close{width:31px!important;height:31px!important;min-width:31px!important;padding:0!important;border-radius:8px!important;font-size:17px!important;display:flex;align-items:center;justify-content:center;line-height:1!important}
+.salus-v28 #salusPeriodButton{position:relative!important;min-width:105px!important;padding:3px 25px 3px 9px!important;text-align:left!important;line-height:20px!important}
+.salus-v28 #salusPeriodButton::after{content:'';position:absolute;right:11px;top:50%;width:7px;height:7px;border-right:1.6px solid #d7e7fa;border-bottom:1.6px solid #d7e7fa;transform:translateY(-65%) rotate(45deg);pointer-events:none}
+/* v3.32: landscape modal — stop clipping the history selector at its top edge */
+@media (orientation:landscape){
+ .salus-v28 .salus-close{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;padding:0!important;font-size:13px!important;border-radius:6px!important;flex:0 0 24px!important}
+ .salus-v28 .salus-history-heading{height:32px!important;min-height:32px!important;overflow:visible!important}
+ .salus-v28 .salus-period-picker{transform:none!important;align-self:center!important;z-index:10!important}
+ .salus-v28 #salusPeriodButton{height:26px!important;line-height:18px!important;box-sizing:border-box!important}
+ .salus-v28 .salus-v28-right{overflow:visible!important}
+}
+/* v3.33: balanced landscape spacing between close, period selector and graph */
+@media (orientation:landscape){
+ .salus-v28 .salus-period-picker{transform:translateY(-3px)!important}
+ .salus-v28 .salus-history-preview{margin-top:5px!important}
+}
+/* v3.37: restore clear separation between history chart and six status cards */
+@media (orientation:landscape){
+ .salus-v28 .salus-v28-right{row-gap:9px!important}
+ .salus-v28 .salus-history-preview{margin-bottom:3px!important;min-height:0!important}
+}
+/* v3.38: consistent installed-PWA and browser landscape geometry */
+.salus-period-picker select[hidden]{display:none!important}
+@media (orientation:landscape){
+ .salus-v28 .salus-v28-right{
+  display:grid!important;
+  grid-template-rows:32px minmax(0,1fr) 55px!important;
+  gap:9px!important;
+  min-height:0!important;
+  overflow:visible!important;
+ }
+ .salus-v28 .salus-history-preview{
+  height:auto!important;min-height:0!important;
+  margin:0!important;box-sizing:border-box!important;
+  align-self:stretch!important;
+ }
+ .salus-v28 .salus-status-grid{
+  height:55px!important;min-height:55px!important;
+  margin:0!important;align-self:end!important;
+ }
+ .salus-v28 .salus-period-picker{transform:none!important}
+}
+/* v3.34: make the active boost status as clear as the HA Connected indicator */
+.salus-v28 .salus-status-grid span.salus-boost-on{background:#1d503e!important;border:1px solid #61a989!important;color:#e1ffed!important}
+.salus-v28 .salus-status-grid span.salus-boost-on b{color:#e1ffed!important}
+#dashboardPage .salus-strip small .salus-inline-on{color:#8ee5b1;font-weight:700}
+/* v3.42 Sure Petcare responsive detail modal */
+.pet-overlay{position:fixed;inset:0;background:#020813bd;z-index:1500;display:flex;align-items:center;justify-content:center;padding:12px}
+.pet-overlay.hidden{display:none}
+.pet-dialog{width:min(94vw,850px);max-height:92dvh;overflow:auto;background:#182b45;border:1px solid #6683a5;border-radius:18px;padding:17px;color:#e9f2ff;box-shadow:0 18px 55px #0009}
+.pet-dialog header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pet-dialog h2{font-size:19px;margin:4px 0 10px}
+.pet-dialog header button{border:1px solid #6482a3;border-radius:10px;background:#29405e;padding:7px 13px}
+.pet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pet-block{background:#203752;border:1px solid #3b5977;border-radius:11px;padding:12px;min-width:0}
+.pet-block h3{font-size:14px;margin:0 0 8px}.pet-block p{margin:5px 0;font-size:13px}.pet-block small{font-size:11px;color:#b6c8dd}
+@media(max-width:560px) and (orientation:portrait){.pet-grid{grid-template-columns:1fr}}
+/* v3.43: keep dashboard battery in corner and fit all four modal panels in landscape */
+#dashboardPage .compact-pets{position:relative!important;padding-right:10px!important;gap:2px!important}
+#dashboardPage .compact-pets #petBattery{position:absolute;right:8px;top:7px;font-size:10px!important;font-weight:700;white-space:nowrap}
+#dashboardPage .compact-pets .panel-kicker{padding-right:55px}
+@media (orientation:landscape){
+ .pet-overlay{padding:8px!important}
+ .pet-dialog{max-height:calc(100dvh - 16px)!important;overflow:hidden!important;padding:10px 14px!important;display:flex;flex-direction:column;gap:6px}
+ .pet-dialog header{flex:none}
+ .pet-dialog h2{font-size:clamp(14px,2.7vh,19px)!important;margin:0!important}
+ .pet-dialog .panel-kicker{font-size:10px}
+ .pet-dialog header button{padding:4px 10px!important}
+ .pet-grid{flex:1;min-height:0;grid-template-rows:repeat(2,minmax(0,1fr));gap:7px!important}
+ .pet-block{min-height:0;padding:8px 11px!important;overflow:hidden}
+ .pet-block h3{font-size:clamp(12px,2.7vh,15px)!important;margin:0 0 5px!important}
+ .pet-block p{font-size:clamp(11px,2.5vh,14px)!important;margin:3px 0!important;line-height:1.25}
+ .pet-block small{font-size:clamp(9px,2.1vh,11px)!important;line-height:1.2}
+}
+.pet-diagnostic{margin-top:7px;display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap}.pet-diagnostic button{background:#345477;border:1px solid #7896b5;border-radius:7px;padding:5px 9px;font-size:11px;white-space:nowrap}.pet-diagnostic small{flex:1;min-width:130px;font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+@media(orientation:landscape){.pet-dialog .pet-block:last-child{overflow:auto}}
+.pet-lock-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:5px 0}
+.pet-lock-actions button{border:1px solid #6d8aa9;background:#2b496b;border-radius:7px;padding:5px 3px;font-size:11px;min-width:0}
+.pet-lock-actions button:disabled{opacity:.5}
+.pet-device-diagnostic{margin-top:5px}.pet-device-diagnostic summary{font-size:10px;color:#aebfd3;cursor:pointer}
+#petLockNotice{display:block;font-size:10px;line-height:1.2}
+@media(orientation:landscape){.pet-lock-actions button{padding:3px 2px;font-size:clamp(9px,2vh,11px)}.pet-device-diagnostic{margin-top:2px}}
+.pet-lock-actions button.pet-lock-active{background:#23684c!important;border-color:#84e2b2!important;color:#effff5!important;font-weight:750;box-shadow:inset 0 0 0 1px #65b992}
+/* v3.56: allocate landscape space to the denser activity and controls panels */
+@media (orientation:landscape){
+ .pet-dialog{gap:4px!important;padding:8px 12px!important}
+ .pet-dialog header{min-height:0}
+ .pet-dialog .panel-kicker{font-size:9px!important}
+ .pet-dialog h2{font-size:15px!important}
+ .pet-grid{grid-template-rows:minmax(0,.72fr) minmax(0,1.28fr)!important;gap:5px!important}
+ .pet-block{padding:6px 9px!important}
+ .pet-block h3{font-size:12px!important;margin:0 0 3px!important}
+ .pet-block p{font-size:11px!important;margin:2px 0!important;line-height:1.15!important}
+ .pet-block small{font-size:9px!important}
+ .pet-block:nth-child(2) #petBatteryAdvice{display:none}
+ .pet-block:nth-child(2) #petDetailVoltage{display:none!important}
+ .pet-block:nth-child(2) #petDetailBattery{font-size:clamp(10px,1.9vh,12px)!important;white-space:normal}
+ .pet-block:nth-child(2) #petDetailVoltage{font-size:10px!important}
+ .pet-block:nth-child(2)>div{margin-top:3px!important;padding-top:3px!important;font-size:10px!important}
+ .pet-block:nth-child(3),.pet-block:nth-child(4){overflow:hidden!important}
+ #petDailyStats{font-size:10px!important;line-height:1.15!important}
+ #petCurfewBanner{font-size:10px!important;line-height:1.15!important;margin:0 0 3px!important}
+ .pet-lock-actions{gap:4px!important;margin:3px 0!important}
+ .pet-lock-actions button{padding:4px 2px!important;font-size:10px!important}
+ #petLockNotice{font-size:9px!important}
+}
+</style><style>
+/* Front Door overlay: independent of fixed-height launcher layout */
+.eufy-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;box-sizing:border-box;z-index:10001!important;background:#030915ed!important;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vh,24px);visibility:visible!important;opacity:1!important}.eufy-overlay.hidden{display:none!important}
+.eufy-overlay.hidden{display:none!important}
+.eufy-dialog{width:min(94vw,860px);max-height:94dvh;min-height:0;display:flex;flex-direction:column;gap:9px;padding:clamp(12px,2vh,20px);border:1px solid #486181;border-radius:17px;background:#142239;box-shadow:0 20px 80px #000b;color:#f5f7ff}
+.eufy-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.eufy-dialog-head strong{font-size:clamp(16px,2.8vh,24px)}
+.eufy-dialog button{border:1px solid #577296;background:#263e5d;border-radius:9px;padding:8px 13px;color:#f5f7ff}
+.eufy-still{display:block;width:100%;height:auto;max-height:48dvh;object-fit:contain;border-radius:10px;background:#0b1422}
+.eufy-still-placeholder{display:flex;align-items:center;justify-content:center;min-height:22vh;border:1px dashed #53667c;border-radius:10px;color:#afc3df;text-align:center;padding:12px}
+.eufy-meta{color:#a9bed8;font-size:12px}
+.eufy-actions{display:flex;gap:8px;flex-wrap:wrap}
+.eufy-recordings{border-top:1px solid #344b68;padding-top:9px;min-height:0;overflow:auto}
+.eufy-recordings p{color:#a9bed8;font-size:12px;line-height:1.4;margin:5px 0}
+@media(orientation:landscape) and (max-height:550px){.eufy-dialog{width:min(94vw,940px);max-height:95dvh;gap:5px;padding:9px}.eufy-still{max-height:36dvh}.eufy-dialog button{padding:5px 9px}.eufy-still-placeholder{min-height:15vh}}
+.eufy-recording-toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.eufy-recording-toolbar input{background:#223853;color:#fff;border:1px solid #577296;border-radius:8px;padding:7px;max-width:165px}.eufy-recording-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;max-height:28dvh;overflow:auto;margin-top:7px}.eufy-recording{min-width:0;padding:5px!important;text-align:left;font-size:11px}.eufy-recording-thumb{display:grid;place-items:center;background:#0b1422;aspect-ratio:16/9;margin-bottom:5px}.eufy-recording-thumb img{width:100%;height:100%;object-fit:contain}#eufyPlayer{width:100%;max-height:47dvh;background:#000}@media(max-width:520px){.eufy-recording-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head><body><div id="petOverlay" class="pet-overlay hidden" role="dialog" aria-modal="true" aria-label="Sure Petcare details"><section class="pet-dialog"><header><div><span class="panel-kicker">SMART HOME · CAT FLAP</span><h2>🐈 Sure Petcare · Conservatory</h2></div><button type="button" onclick="closePetDetails()" aria-label="Close Sure Petcare details">✕</button></header><div class="pet-grid"><div class="pet-block"><h3>Maia & Solo</h3><p id="petDetailMaia">Maia · —</p><p id="petDetailSolo">Solo · —</p></div><div class="pet-block"><h3>🔋 Flap battery</h3><p id="petDetailBattery">—</p><p id="petDetailVoltage">Voltage not exposed</p><small id="petBatteryAdvice"></small><div style="border-top:1px solid #49627c;margin-top:6px;padding-top:5px;font-size:11px"><strong>Connectivity</strong> · <span id="petDetailFlap">Flap · —</span> · <span id="petDetailHub">Hub · —</span></div></div><div class="pet-block"><h3>📊 Daily activity · 7 days</h3><div id="petDailyStats" style="font-size:11px;line-height:1.35">Loading Home Assistant history…</div></div><div class="pet-block"><h3>Flap lock mode</h3><div id="petCurfewBanner" style="font-size:11px;line-height:1.25;color:#e9d9a3;margin:1px 0 6px">🌙 Curfew 20:15–06:00 · schedule from Petcare app</div><div class="pet-lock-actions"><button type="button" data-pet-lock="unlocked" onclick="petSetLock('unlocked')">🔓 Unlocked</button><button type="button" data-pet-lock="locked_in" onclick="petSetLock('locked_in')">↘ Entry only</button><button type="button" data-pet-lock="locked_out" onclick="petSetLock('locked_out')">↗ Exit only</button><button type="button" data-pet-lock="locked_all" onclick="petSetLock('locked_all')">🔒 Locked</button></div><small id="petLockNotice" aria-live="polite">Select a mode to confirm a change.</small></div></section></div><main class="shell"><header><div><div class="eyebrow">HOME • CINEMA</div><div style="color:#a7b8d1;margin-top:7px;font-size:.83rem">Your entertainment. Your home.</div></div><div class="header-right"><div class="mini-status"><span title="Weather demo">☁ <b>Weather</b></span><span title="Lounge temperature demo">🌡 <b>Lounge</b></span><span title="Kitchen temperature demo">🌡 <b>Kitchen</b></span></div><div class="clock" id="clock">--:--<small id="date">Prototype</small></div><button class="dashboard-toggle header-dashboard" id="dashboardButton" onclick="showDashboard(true)">☷ Dashboard</button></div></header><nav class="rooms" aria-label="TV room selection"><button class="room active" data-room="living">Living room</button><button class="room" data-room="zwift">Zwift TV</button><button class="room" data-room="office">Office</button></nav><section class="hero"><div><div class="eyebrow" id="roomLabel">LIVING ROOM</div><h1 id="greeting">Good evening.</h1><p id="subtitle">A better way to watch, listen and control your home.</p></div></section><div class="section-head"><h2>Entertainment</h2><span>Choose an app</span></div><section class="apps" id="apps" aria-label="Streaming apps"></section><div class="footer"><span>PROTOTYPE v3.67-dev · Eufy JPEG viewer test</span><span>Tap an app to open it · remote navigation trial</span></div></main><section id="dashboardPage" class="dashboard-page hidden" aria-label="Home dashboard"><div class="dashboard-top"><div class="dashboard-heading-tools"><div class="eyebrow">HOME · LIVE OVERVIEW</div><button class="ha-connect-trigger" onclick="openHaSetup()">⚙ Connect Home Assistant</button></div><div class="dash-top-info"><span id="dashTopTime">--:--</span><span id="dashTopDate">Today</span><span id="dashTopWeather" title="Weather awaiting Home Assistant">☁ --°C</span></div><button class="dashboard-toggle" onclick="showDashboard(false)">← TV launcher</button></div><div class="dash-heading"><div><h1>Good to be home.</h1><p class="dashboard-intro">Your home, family and entertainment in one place.</p></div><div class="dash-date" id="dashDate">Today</div></div><div class="overview-layout"><div class="overview-panel home-panel"><div class="panel-heading"><div><span class="panel-kicker">SMART HOME</span><h2>Comfort & control</h2></div><span class="offline-pill">Not connected</span></div><div class="home-room-grid" id="homeRoomGrid"></div><div class="home-services"><div class="music-strip"><div class="music-symbol">♫</div><div><strong>Sonos</strong><small>Living Room · --</small></div><button onclick="notify('Sonos playback will be available once Home Assistant is connected.')">Open</button></div><button class="salus-strip" onclick="openSalusModal()"><strong>♨ Salus iT500</strong><small>Heating · --°C</small></button></div><div class="home-security"><button class="compact-eufy" onclick="openEufyOverlay()" aria-label="Open Front Door snapshot and recordings"><span class="panel-kicker">FRONT DOOR</span><strong>◉ Eufy doorbell</strong><small id="eufyTileStatus">Latest snapshot · connecting…</small></button><button class="compact-pets" onclick="showPetDetails()" aria-label="Sure Petcare pet presence"><span class="panel-kicker">CAT FLAP</span><small id="petBattery">🔋 —</small><strong>🐈 Sure Petcare</strong><small id="petMaia">Maia · awaiting HA</small><small id="petSolo">Solo · awaiting HA</small></button></div></div><div class="overview-panel family-panel"><div class="panel-heading"><div><span class="panel-kicker">FAMILY</span><h2>Our organiser</h2></div><span class="offline-pill">Not connected</span></div><div class="family-sections"><div class="family-section"><button class="calendar-open" onclick="openCalendar()" aria-label="Expand calendar"><span>📅 Calendar</span><span id="calendarWeekLabel">This week · Mon–Sun ↗</span></button><div class="week-strip" id="calendarWeekStrip" aria-label="Current week Monday to Sunday"></div><div class="empty-row">Events will appear when calendars are connected</div><div class="calendar-layers"><span>Mine</span><span>Wife</span><span>Son</span><span>Family</span><span>Birthdays</span></div></div><div class="family-section"><div class="family-title">☑ To-dos & reminders</div><div class="empty-row">Your tasks and reminders will appear here</div></div><div class="family-section"><div class="family-title">🛒 Shopping list</div><div class="empty-row">Home Assistant shopping items will appear here</div></div><div class="family-section meal-plan"><div class="family-title">🍽 Weekly meal plan <span>This week</span></div><div class="meal-days"><span>Mon <b>—</b></span><span>Tue <b>—</b></span><span>Wed <b>—</b></span><span>Thu <b>—</b></span><span>Fri <b>—</b></span><span>Sat <b>—</b></span><span>Sun <b>—</b></span></div></div><div class="family-section find-panel"><div class="family-title">📍 Samsung Find · people & things</div><div class="find-map find-local" role="img" aria-label="Illustrative map of three tag locations in Cheshire East; not live Samsung Find data"><svg viewBox="0 0 330 140" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><rect width="330" height="140" rx="8" fill="#1c3440"/><path d="M0 27Q70 12 120 47T330 19M-10 108Q70 83 130 112T340 80" stroke="#466052" stroke-width="16" fill="none" opacity=".55"/><path d="M-10 108Q70 83 130 112T340 80M0 27Q70 12 120 47T330 19" stroke="#90a2a1" stroke-width="2" fill="none" opacity=".6"/><path d="M36 140L124 0M140 140L220 0M0 70L330 106" stroke="#7b9197" stroke-width="2" fill="none" opacity=".5"/><path d="M30 0L300 140" stroke="#8a9e9f" stroke-width="1.5" stroke-dasharray="4 4" opacity=".5"/><g font-size="10" font-family="system-ui" font-weight="700" fill="#e7f3fc"><circle cx="90" cy="36" r="6" fill="#ffcf75" stroke="#0c2637" stroke-width="2"/><text x="101" y="33">Barony</text><circle cx="165" cy="68" r="6" fill="#ffcf75" stroke="#0c2637" stroke-width="2"/><text x="176" y="65">Nantwich</text><circle cx="263" cy="112" r="6" fill="#ffcf75" stroke="#0c2637" stroke-width="2"/><text x="215" y="130">Crewe</text></g><text x="8" y="133" font-size="8" fill="#d3e0e9">ILLUSTRATIVE · NOT LIVE</text></svg></div><div class="find-categories">3 example tags · Barony · Nantwich · Crewe</div></div></div></div></div><p class="dashboard-note">Some cards are placeholders; connected devices display live data where configured</p></section><div id="haSetup" class="ha-setup hidden" role="dialog" aria-modal="true" aria-labelledby="haSetupTitle"><div class="ha-setup-panel"><h2 id="haSetupTitle">Connect Home Assistant</h2><div class="ha-steps"><div id="haStepAddress">① Save address — not completed</div><div id="haStepAuth">② Sign in securely — pending</div><div id="haStepLive">③ Verify live thermostat — pending</div></div><p>Sign in using Home Assistant’s own login page. This demo keeps your login session only in this browser tab; you may need to sign in again later.</p><label for="haBaseUrl">Your Nabu Casa address</label><input id="haBaseUrl" type="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://your-instance.ui.nabu.casa"><div class="ha-setup-actions"><button onclick="saveHaAddress()">Save address</button><button onclick="startHaOAuth()">② Sign in securely ↗</button><button onclick="openHaLogin()">Open HA separately ↗</button><button onclick="closeHaSetup()">Close</button></div><p id="haSetupStatus" class="ha-setup-status" aria-live="polite"></p><p style="font-size:12px">Your address is saved only on this device. Never paste passwords or access tokens here. The authenticated connection is the next step.</p></div></div><div id="salusOverlay" class="salus-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="salusModalTitle"><div class="salus-dialog salus-v28"><div class="salus-dialog-head"><div><div class="panel-kicker">SMART HOME · HEATING</div><h2 id="salusModalTitle">♨ Salus iT500 · Brereton DS</h2></div><button class="salus-close" onclick="closeSalusModal()" aria-label="Close heating details">✕</button></div><div class="salus-v28-body"><div class="salus-v28-left"><div class="salus-gauge" aria-label="Live room temperature gauge"><svg viewBox="0 0 240 145" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><linearGradient id="salusTempGradient" gradientUnits="userSpaceOnUse" x1="28" y1="125" x2="212" y2="125"><stop offset="0%" stop-color="#163b88"/><stop offset="0%" stop-color="#2764c5"/><stop offset="11.666666666666666%" stop-color="#367bd6"/><stop offset="13.333333333333334%" stop-color="#4896e9"/><stop offset="23.333333333333332%" stop-color="#69b9f4"/><stop offset="25%" stop-color="#50c9f2"/><stop offset="33.33333333333333%" stop-color="#37d9e4"/><stop offset="35%" stop-color="#34d7c7"/><stop offset="41.66666666666667%" stop-color="#42cfa6"/><stop offset="43.333333333333336%" stop-color="#56cd81"/><stop offset="46.666666666666664%" stop-color="#5fd477"/><stop offset="50%" stop-color="#8bd66d"/><stop offset="51.66666666666667%" stop-color="#d7d66b"/><stop offset="56.666666666666664%" stop-color="#edce62"/><stop offset="60%" stop-color="#f2be58"/><stop offset="61.66666666666667%" stop-color="#f2a452"/><stop offset="71.66666666666667%" stop-color="#eb784c"/><stop offset="73.33333333333333%" stop-color="#e95751"/><stop offset="100%" stop-color="#d33c4b"/></linearGradient></defs><path id="salusGaugeTrack" d="M28 125 A92 92 0 1 1 212 125" stroke="#314155" stroke-width="13" stroke-linecap="round" fill="none" pathLength="100"/><g id="salusGaugeFill" aria-hidden="true"></g><circle id="salusGaugeTarget" cx="28" cy="125" r="5.5" fill="#f9f4b0" stroke="#14263e" stroke-width="2"/><circle id="salusGaugeDot" cx="28" cy="125" r="8" fill="#e8f8ee" stroke="#55a16f" stroke-width="3"/></svg><div class="salus-gauge-reading"><span>Target</span><strong id="salusCurrent">— °C</strong><small id="salusTargetDetail"></small></div></div><div class="salus-setpoint-row"><button id="salusMinus" disabled onclick="salusAdjust(-0.5)" aria-label="Decrease setpoint by 0.5 degrees">−</button><strong id="salusSetpoint">— °C</strong><button id="salusPlus" disabled onclick="salusAdjust(0.5)" aria-label="Increase setpoint by 0.5 degrees">+</button></div><div class="salus-modes"><button id="salusOff" disabled onclick="salusMode('off')">Off</button><button id="salusManual" disabled onclick="salusMode('heat')">Manual</button><button id="salusAuto" disabled onclick="salusMode('auto')">Auto</button><button id="salusBoost" disabled onclick="salusBoostToggle()" aria-label="Start one-hour Boost; tap again to cancel" title="One-hour Boost · tap again to cancel">♨<sup>+</sup></button></div><div class="salus-v28-foot" role="status">Idle</div></div><div class="salus-v28-right"><div class="salus-history-heading"><strong>Room temperature history</strong><div class="salus-period-picker"><select id="salusHistoryPeriod" aria-label="Temperature history period" onchange="setSalusHistoryPeriod(this.value)" hidden><option value="24h">24 hours</option><option value="7d">7 days</option></select><button type="button" id="salusPeriodButton" aria-haspopup="true" aria-expanded="false" onclick="salusTogglePeriodMenu()">24 hours</button><div id="salusPeriodMenu" class="salus-period-menu" hidden><button type="button" onclick="salusChoosePeriod('24h')">24 hours</button><button type="button" onclick="salusChoosePeriod('7d')">7 days</button></div></div></div><div class="salus-history-preview" role="img" aria-label="No temperature history shown until connected to Home Assistant"><svg viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 25H320M0 60H320M0 95H320" stroke="#3d5872" stroke-dasharray="3 5"/><path d="M40 0V120M120 0V120M200 0V120M280 0V120" stroke="#344b62" stroke-dasharray="3 5"/></svg><span>Awaiting Home Assistant history · 24 hours</span><div id="salusHistoryTooltip" aria-live="polite" hidden></div></div><div class="salus-status-grid"><span>Heating <b>—</b></span><span>Boost <b>—</b></span><span>Boost left <b>—</b></span><span>Frost <b>—</b></span><span>Gateway <b>—</b></span><span>Last report <b>—</b></span></div></div></div><div id="calendarOverlay" class="calendar-overlay hidden" role="dialog" aria-modal="true" aria-label="Calendar planner"><div class="calendar-dialog"><div class="calendar-dialog-head"><strong>📅 Family calendar</strong><button onclick="closeCalendar()" aria-label="Close calendar">✕</button></div><div class="calendar-toolbar"><button onclick="moveCalendar(-1)" aria-label="Previous period">‹</button><button onclick="resetCalendar()">Today</button><strong id="calendarPeriodLabel"></strong><button onclick="moveCalendar(1)" aria-label="Next period">›</button><select id="calendarView" aria-label="Calendar view" onchange="changeCalendarView(this.value)"><option value="week">Week</option><option value="month">Month</option></select></div><div class="calendar-full-grid" id="calendarFullGrid"></div><div class="calendar-dialog-foot">Calendar data not connected yet · Preview of date navigation</div></div></div><section id="historyPage" class="dashboard-page hidden" aria-label="Sensor history"><div class="dashboard-top"><button class="dashboard-toggle" onclick="showHistory(false)">← Dashboard</button><div class="eyebrow">HOME · SENSOR HISTORY</div></div><h1>Climate history</h1><p class="dashboard-intro">Select one or more rooms and readings to compare. Historical chart data will load from Home Assistant once connected.</p><div class="history-controls"><div><strong>Rooms</strong><div id="historyRooms" class="history-options"></div></div><div><strong>Readings</strong><div class="history-options"><label><input type="checkbox" checked> Temperature</label><label><input type="checkbox" checked> Humidity</label></div></div><div><strong>Period</strong><select id="historyPeriod"><option>24 hours</option><option>7 days</option><option>30 days</option><option>90 days</option><option selected>1 year</option></select></div></div><div class="history-empty">📈 Chart awaiting Home Assistant history connection<br><small>Your selected sensors will appear together here for comparison.</small></div></section><section id="cameraPage" class="dashboard-page hidden" aria-label="Doorbell full screen"><div class="dashboard-top"><button class="dashboard-toggle" onclick="showCamera(false)">← Dashboard</button><div class="eyebrow">FRONT DOOR · EUFY</div></div><div class="camera-expanded"><span>◉</span><strong>Eufy doorbell</strong><p>Live camera feed pending Home Assistant integration.</p></div></section><section id="roomsPage" class="dashboard-page hidden" aria-label="Rooms and devices"><div class="dashboard-top"><button class="dashboard-toggle" onclick="showRooms(null)">← Back to dashboard</button><div class="eyebrow">HOME · ROOMS</div></div><h1 id="roomsTitle">Climate</h1><p class="dashboard-intro">Rooms are ready for Home Assistant. Live readings and controls are not connected yet.</p><div class="dashboard-cards" id="roomCards"></div><p class="dashboard-note">Room layout preview · no live readings or lighting actions yet</p></section><div role="status" aria-live="polite" class="notice hidden" id="notice"></div><script>
+
+/* v2.4: local date navigation only; no calendar service connection yet. */
+let calendarCursor=new Date(),calendarMode='week';
+function calendarMonday(date){const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()-(d.getDay()+6)%7);return d}
+function sameCalendarDay(a,b){return a.toDateString()===b.toDateString()}
+function renderCalendar(){const today=new Date(),monday=calendarMonday(today),short=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const strip=document.getElementById('calendarWeekStrip');if(strip){strip.replaceChildren(...Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(d.getDate()+i);const s=document.createElement('span');s.className=sameCalendarDay(d,today)?'today':'';s.textContent=short[d.getDay()]+' '+d.getDate();return s}));document.getElementById('calendarWeekLabel').textContent='This week · Mon–Sun ↗'}const grid=document.getElementById('calendarFullGrid');if(!grid)return;const start=calendarMode==='week'?calendarMonday(calendarCursor):calendarMonday(new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1));const count=calendarMode==='week'?7:42;const cells=[];for(let i=0;i<7;i++){const h=document.createElement('div');h.className='cal-day';h.textContent=short[(i+1)%7];cells.push(h)}for(let i=0;i<count;i++){const d=new Date(start);d.setDate(d.getDate()+i);const cell=document.createElement('div');cell.className='cal-cell'+(sameCalendarDay(d,today)?' today':'')+(calendarMode==='month'&&d.getMonth()!==calendarCursor.getMonth()?' muted':'');cell.textContent=d.getDate();cells.push(cell)}grid.replaceChildren(...cells);const end=new Date(start);end.setDate(end.getDate()+count-1);document.getElementById('calendarPeriodLabel').textContent=calendarMode==='week'?start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+end.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):calendarCursor.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
+function openCalendar(){calendarCursor=new Date();calendarMode='week';document.getElementById('calendarView').value='week';document.getElementById('calendarOverlay').classList.remove('hidden');renderCalendar();document.querySelector('.calendar-dialog-head button').focus()}
+function closeCalendar(){document.getElementById('calendarOverlay').classList.add('hidden');document.querySelector('.calendar-open')?.focus()}
+function moveCalendar(n){if(calendarMode==='week')calendarCursor.setDate(calendarCursor.getDate()+n*7);else calendarCursor.setMonth(calendarCursor.getMonth()+n);renderCalendar()}
+function resetCalendar(){calendarCursor=new Date();renderCalendar()}
+function changeCalendarView(mode){calendarMode=mode;renderCalendar()}
+
+const HA_URL_KEY='home-tv-ha-base-url';
+function haStoredUrl(){try{return localStorage.getItem(HA_URL_KEY)||''}catch{return ''}}
+function openHaSetup(){const el=document.getElementById('haSetup');el.classList.remove('hidden');document.getElementById('haBaseUrl').value=haStoredUrl();document.getElementById('haSetupStatus').textContent=haVerified?'Live connection verified ✓ · No action required.':haStoredUrl()?'Address saved ✓ · Sign in to connect live data.':'';document.getElementById('haStepAddress').textContent=haStoredUrl()?'① Save address — completed ✓':'① Save address — not completed';document.getElementById('haBaseUrl').focus()}
+function closeHaSetup(){document.getElementById('haSetup').classList.add('hidden')}
+function validHaUrl(raw){try{const u=new URL(raw.trim());if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash||u.pathname!=='/'||!u.hostname.endsWith('.ui.nabu.casa'))return null;return u.origin}catch{return null}}
+function saveHaAddress(){const url=validHaUrl(document.getElementById('haBaseUrl').value);const s=document.getElementById('haSetupStatus');if(!url){s.textContent='Enter your HTTPS Nabu Casa address (ending .ui.nabu.casa), without a path or password.';return}try{localStorage.setItem(HA_URL_KEY,url);s.textContent='Address saved ✓ · Nothing more to do yet. Dashboard authentication is the next development step.';document.getElementById('haStepAddress').textContent='① Save address — completed ✓'}catch{s.textContent='This browser does not allow local storage.'}}
+function openHaLogin(){const url=validHaUrl(document.getElementById('haBaseUrl').value)||haStoredUrl();if(!url){document.getElementById('haSetupStatus').textContent='Save a valid Nabu Casa address first.';return}window.open(url,'_blank','noopener,noreferrer')}
+const HA_CLIENT_ID='https://mg10a.github.io/home-tv-launcher/';
+const HA_REDIRECT='https://mg10a.github.io/home-tv-launcher/';
+let salusBoostHours=0,haBoostRequestId=null;
+const BOOST_END_KEY='home-tv-salus-boost-end';
+let boostEnd=Number(localStorage.getItem(BOOST_END_KEY))||0;
+function syncBoostEnd(){
+ const sensor=haStates['binary_sensor.brereton_ds_boost'];
+ if(sensor?.state!=='on')return;
+ const started=Date.parse(sensor.last_changed||'');
+ if(Number.isFinite(started)&&started<=Date.now()&&Date.now()-started<86400000){
+  const sensorEnd=started+3600000;
+  if(!boostEnd||sensorEnd<boostEnd-30000){boostEnd=sensorEnd;localStorage.setItem(BOOST_END_KEY,String(boostEnd))}
+ }
+}
+function boostCountdown(){
+ syncBoostEnd();
+ const active=haStates['binary_sensor.brereton_ds_boost']?.state==='on';
+ const b=document.querySelectorAll('.salus-status-grid span b')[2];
+ if(!b||!active||!boostEnd)return;
+ const mins=Math.max(0,Math.ceil((boostEnd-Date.now())/60000));
+ b.textContent=mins+' mins';
+ b.title=mins?'Estimated remaining time since activation':'Timer elapsed; awaiting Salus state update';
+}
+setInterval(boostCountdown,10000);let haAccessToken=null,haSocket=null,haRequestId=1,haVerified=false,haStates={},haPendingTarget=null,haServiceRequest=null,haHistoryRequest=0,haHistoryWsId=null,haReconnectTimer=null,haRetryCount=0,haServiceTimers=new Map();
+function haConnectionStatus(ok,reason){haVerified=ok;const b=document.querySelector('.ha-connect-trigger');if(b){b.textContent=ok?'✓ HA Connected':'⚙ Connect Home Assistant';b.title=ok?'Home Assistant connected — tap for details':(reason||'Sign in to Home Assistant');b.classList.toggle('ha-connected',ok)}if(!ok){document.querySelectorAll('.offline-pill').forEach(x=>x.textContent='Not connected');if(reason)haProgress(reason)}}
+function haProgress(msg){const e=document.getElementById('haSetupStatus');if(e)e.textContent=msg}
+function haSetStage(id,msg){const e=document.getElementById(id);if(e)e.textContent=msg}
+function haRandom(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
+async function startHaOAuth(){
+ const base=validHaUrl(document.getElementById('haBaseUrl').value)||haStoredUrl();
+ if(!base){haProgress('Step 1: save a valid Nabu Casa address first.');return}
+ if(!window.crypto?.subtle){haProgress('Secure sign-in needs a modern HTTPS browser.');return}
+ try{
+ const verifier=haRandom()+haRandom();const state=haRandom();
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
+ const challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).split('+').join('-').split('/').join('_').replace(/=+$/,'');
+ sessionStorage.setItem('ha-oauth-pending',JSON.stringify({base,verifier,state,created:Date.now()}));
+ const u=new URL(base+'/auth/authorize');u.search=new URLSearchParams({response_type:'code',client_id:HA_CLIENT_ID,redirect_uri:HA_REDIRECT,state,code_challenge:challenge,code_challenge_method:'S256'}).toString();
+ haProgress('Opening Home Assistant secure sign-in…');window.location.assign(u.href);
+ }catch{haProgress('Could not start secure sign-in. Please try again.')}
+}
+async function finishHaOAuth(){
+ const url=new URL(location.href);const code=url.searchParams.get('code'),state=url.searchParams.get('state'),error=url.searchParams.get('error');
+ if(!code&&!error)return;
+ url.searchParams.delete('code');url.searchParams.delete('state');url.searchParams.delete('error');url.searchParams.delete('error_description');history.replaceState(null,'',url.pathname+url.search+url.hash);
+ const pending=JSON.parse(sessionStorage.getItem('ha-oauth-pending')||'null');sessionStorage.removeItem('ha-oauth-pending');
+ if(error){haProgress('Home Assistant sign-in was cancelled or rejected.');openHaSetup();return}
+ if(!pending||pending.state!==state||Date.now()-pending.created>600000){openHaSetup();haProgress('Sign-in expired or failed verification. Please start again.');return}
+ try{
+ const body=new URLSearchParams({grant_type:'authorization_code',code,client_id:HA_CLIENT_ID,code_verifier:pending.verifier});
+ const response=await fetch(pending.base+'/auth/token',{method:'POST',body});
+ if(!response.ok)throw Error('Token exchange failed ('+response.status+')');
+ const data=await response.json();haAccessToken=data.access_token;
+ localStorage.setItem('ha-oauth-session',JSON.stringify({base:pending.base,refresh:data.refresh_token}));
+ haSetStage('haStepAuth','② Sign in securely — completed ✓');
+ haProgress('Signed in ✓ · Connecting to Home Assistant live data…');openHaSetup();connectHaSocket(pending.base);
+ }catch(err){openHaSetup();haProgress('Sign-in could not finish: '+err.message+'. Check browser privacy settings and try again.')}
+}
+async function resumeHaSession(){
+ const session=JSON.parse(localStorage.getItem('ha-oauth-session')||sessionStorage.getItem('ha-oauth-session')||'null');
+ if(!session||!validHaUrl(session.base)){if(haStoredUrl())haProgress('Saved address found, but no saved sign-in in this browser profile.');return}haProgress('Restoring saved Home Assistant connection…');
+ try{const response=await fetch(session.base+'/auth/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:session.refresh,client_id:HA_CLIENT_ID})});
+ if(!response.ok)throw Error('Session expired');
+ const data=await response.json();haAccessToken=data.access_token;if(data.refresh_token){localStorage.setItem('ha-oauth-session',JSON.stringify({base:session.base,refresh:data.refresh_token}))}else if(!localStorage.getItem('ha-oauth-session'))localStorage.setItem('ha-oauth-session',JSON.stringify(session));haSetStage('haStepAuth','② Sign in securely — completed ✓');connectHaSocket(session.base);
+ }catch(err){haProgress('Saved connection could not be restored ('+(err?.message||'network error')+'). Retry by reopening the page; sign in again only if the session expired.');}
+}
+function salusText(id,value){const el=document.getElementById(id);if(el)el.textContent=value}
+function salusStateValue(id){const s=haStates[id];return s?.state==='unavailable'||s?.state==='unknown'||!s?'—':s.state}
+function salusTemperatureColour(t){
+ // Smooth, continuous comfort ramp; each reading uses one interpolated solid colour.
+ const stops=[[4.5,"#163b88"],[5,"#2764c5"],[8.5,"#367bd6"],[9,"#4896e9"],[12,"#69b9f4"],[12.5,"#50c9f2"],[15,"#37d9e4"],[15.5,"#34d7c7"],[17.5,"#42cfa6"],[18,"#56cd81"],[19,"#5fd477"],[20,"#8bd66d"],[20.5,"#d7d66b"],[22,"#edce62"],[23,"#f2be58"],[23.5,"#f2a452"],[26.5,"#eb784c"],[27.5,"#e95751"],[29,"#e04449"],[31,"#d63843"],[31.5,"#ac243c"],[35,"#79192f"]];
+ t=Math.max(stops[0][0],Math.min(stops[stops.length-1][0],Number(t)));
+ for(let i=1;i<stops.length;i++)if(t<=stops[i][0]){
+  const [a,ac]=stops[i-1],[b,bc]=stops[i],f=(t-a)/(b-a);
+  const hex=n=>parseInt(n,16),x=ac.slice(1),y=bc.slice(1);
+  return '#'+[0,2,4].map(k=>Math.round(hex(x.slice(k,k+2))*(1-f)+hex(y.slice(k,k+2))*f).toString(16).padStart(2,'0')).join('');
+ }
+ return stops[stops.length-1][1];
+}
+
+// Sure Petcare: discover each pet's presence sensor from Home Assistant state names.
+// Prefer real Home/Away transitions from HA Recorder, not integration refresh timestamps.
+const petActivity={maia:null,solo:null};
+const petDailyHistory={maia:[],solo:[]};
+let petHistoryRequestId=null,petHistoryRefreshTimer=null,petHistoryLastFetch=0;
+let haGetStatesRequestId=null;
+let haHeartbeatTimer=null,haHeartbeatPending=null,haHeartbeatSent=0,haLastPong=0,haDisconnectCount=0,haLastDisconnect='';
+function petLoadHistory(){
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||petHistoryRequestId!==null)return;
+ const end=new Date(),start=new Date(end.getTime()-8*86400000);
+ petHistoryRequestId=haRequestId++;petHistoryLastFetch=Date.now();
+ haSocket.send(JSON.stringify({id:petHistoryRequestId,type:'history/history_during_period',start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:['binary_sensor.maia','binary_sensor.solo'],minimal_response:false,no_attributes:true}));
+}
+function petHistoryResult(data){
+ petHistoryRequestId=null;
+ if(!data.success){console.warn('Pet history request failed:',data.error?.code||'unknown');return}
+ const raw=data.result;
+ const groups=Array.isArray(raw)?raw:(raw&&typeof raw==='object'?Object.values(raw):[]);
+ const stamp=p=>{
+  const value=p.last_changed??p.last_updated??p.lc??p.lu??p.last_changed_iso;
+  if(typeof value==='number')return value<1e11?value*1000:value;
+  if(typeof value==='string'&&/^\\d+(\\.\\d+)?$/.test(value)){const n=Number(value);return n<1e11?n*1000:n}
+  return Date.parse(value||'');
+ };
+ for(let i=0;i<groups.length;i++){
+  const group=groups[i];if(!Array.isArray(group)||!group.length)continue;
+  const entity=group.find(p=>p?.entity_id)?.entity_id||(['binary_sensor.maia','binary_sensor.solo'][i]);
+  const name=entity?.split('.')[1];if(!['maia','solo'].includes(name))continue;
+  const points=group.map(p=>({state:p.state??p.s,t:stamp(p)})).filter(p=>Number.isFinite(p.t)).sort((a,b)=>a.t-b.t);
+  petDailyHistory[name]=points;
+  let previous=null,lastTransition=null,hadUnavailable=false;
+  for(const p of points){
+   if(p.state!=='on'&&p.state!=='off'){hadUnavailable=true;continue}
+   if(previous!==null&&p.state!==previous&&!hadUnavailable)lastTransition={state:p.state,t:p.t};
+   previous=p.state;hadUnavailable=false;
+  }
+  if(lastTransition&&(!petActivity[name]||lastTransition.t>=petActivity[name].t))petActivity[name]=lastTransition;
+ }
+ renderPets();
+}
+function petRenderDailyStats(){
+ const el=document.getElementById('petDailyStats');if(!el)return;
+ const now=new Date(),days=Array.from({length:7},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-6+i);return {start:+d,end:Math.min(+new Date(d.getFullYear(),d.getMonth(),d.getDate()+1),Date.now()),label:d.toLocaleDateString('en-GB',{weekday:'short'})}});
+ const calculate=(name,day)=>{
+  const points=petDailyHistory[name]||[];if(!points.length)return null;
+  const before=points.filter(p=>p.t<=day.start).slice(-1)[0];
+  let state=before?.state||null,from=day.start,entries=0,outside=0,gap=!['on','off'].includes(state);
+  for(const p of points){
+   if(p.t<=day.start)continue;if(p.t>day.end)break;
+   if(state==='off')outside+=Math.max(0,p.t-from);
+   if(state==='off'&&p.state==='on')entries++;
+   if(!['on','off'].includes(state)||!['on','off'].includes(p.state))gap=true;
+   state=p.state;from=p.t;
+  }
+  if(state==='off')outside+=Math.max(0,day.end-from);
+  return {entries,outside,gap};
+ };
+ el.replaceChildren();
+ const headings=document.createElement('div');headings.style.cssText='display:grid;grid-template-columns:42px repeat(7,minmax(0,1fr));gap:2px;font-size:9px;color:#b4c9de';
+ headings.append(document.createElement('span'));days.forEach(d=>{const x=document.createElement('span');x.style.textAlign='center';x.textContent=d.label;headings.append(x)});el.append(headings);
+ for(const name of ['maia','solo']){
+  const stats=days.map(d=>calculate(name,d));
+  const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:42px repeat(7,minmax(0,1fr));gap:2px;align-items:center;margin:3px 0 5px';
+  const label=document.createElement('strong');label.style.fontSize='11px';label.textContent=name==='maia'?'Maia':'Solo';row.append(label);
+  stats.forEach(v=>{const cell=document.createElement('div');cell.style.cssText='text-align:center;min-width:0;font-size:10px;line-height:1.3';
+   const entries=document.createElement('div');entries.style.color='#8fe1b7';entries.textContent=v?(v.gap?'~':'')+v.entries:'—';
+   const hours=document.createElement('div');hours.style.color='#a9cfff';hours.textContent=v?(Math.round(v.outside/360000)/10)+'h':'—';
+   cell.append(entries,hours);row.append(cell);
+  });el.append(row);
+ }
+ const legend=document.createElement('div');legend.style.cssText='font-size:9px;color:#b5c8dc';legend.textContent='Green: entries · Blue: hours outside · ~ incomplete';el.append(legend);
+}
+function petObserveChange(change){
+ const name=change.entity_id?.split('.')[1];
+ if(!['maia','solo'].includes(name))return;
+ const before=change.old_state?.state,after=change.new_state?.state;
+ if(['on','off'].includes(before)&&['on','off'].includes(after)&&before!==after){
+  const t=Date.parse(change.new_state.last_changed||'');
+  if(Number.isFinite(t))petActivity[name]={state:after,t};
+ }
+ // Refresh Recorder on any cat update to recover transitions across unavailable periods.
+ clearTimeout(petHistoryRefreshTimer);
+ petHistoryRefreshTimer=setTimeout(()=>{if(Date.now()-petHistoryLastFetch>60000)petLoadHistory()},5000);
+}
+function petEntity(name){
+ const key=name.toLowerCase();
+ const entries=Object.values(haStates||{});
+ return entries.find(e=>e.entity_id==='binary_sensor.'+key)
+  ||entries.find(e=>e.entity_id==='binary_sensor.'+key+'_presence')
+  ||entries.find(e=>e.entity_id.startsWith('binary_sensor.')&&e.entity_id.includes(key)&&e.attributes?.device_class==='presence')
+  ||entries.find(e=>e.entity_id.startsWith('binary_sensor.')&&e.entity_id.includes(key)&&/presence|inside|outside/i.test(e.attributes?.friendly_name||''));
+}
+function petStatus(name){
+ const e=petEntity(name);
+ if(!e)return name+' · not configured';
+ if(e.state!=='on'&&e.state!=='off')return name+' · unavailable';
+ const inside=e.state==='on',record=petActivity[name.toLowerCase()];
+ const since=record?.state===e.state?record.t:NaN;
+ let age='';
+ if(Number.isFinite(since)){
+  const mins=Math.max(0,Math.floor((Date.now()-since)/60000));
+  age=mins<1?' · just now':mins<60?' · '+mins+'m':mins<1440?' · '+Math.floor(mins/60)+'h '+(mins%60)+'m':' · '+Math.floor(mins/1440)+'d';
+ }
+ return name+' · '+(inside?'Home':'Away')+(age||' · time pending');
+}
+function renderPets(){
+ for(const name of ['Maia','Solo']){
+  const el=document.getElementById('pet'+name);if(!el)continue;
+  const entity=petEntity(name);el.textContent=petStatus(name);
+  el.style.color=entity?.state==='on'?'#83ddb2':entity?.state==='off'?'#f5c37b':'#a5bad4';
+ }
+ const battery=haStates['sensor.conservatory_battery_level'],pct=Number(battery?.state),valid=battery&&Number.isFinite(pct)&&!['unknown','unavailable'].includes(battery.state);
+ const b=document.getElementById('petBattery');if(b){b.textContent='🔋 '+(valid?pct+'%':'—');b.style.color=valid&&pct<=30?'#ffbd75':'#a5bad4'}
+ renderPetDetails();
+}
+function petState(id){return haStates[id]?.state}
+function petReadable(id){const s=petState(id);return s==='on'?'Online':s==='off'?'Offline':s||'Unavailable'}
+function petCurfewActive(){
+ const now=new Date(),minutes=now.getHours()*60+now.getMinutes();
+ return minutes>=1215||minutes<360;
+}
+function petLockMode(){
+ if(petState('lock.conservatory_locked_all')==='locked')return 'Locked both ways';
+ if(petState('lock.conservatory_locked_in')==='locked')return 'Entry only · cannot exit';
+ if(petState('lock.conservatory_locked_out')==='locked')return 'Exit only · cannot enter';
+ const vals=['lock.conservatory_locked_all','lock.conservatory_locked_in','lock.conservatory_locked_out'].map(petState);
+ return vals.every(v=>v==='unlocked')?'Unlocked · both ways':'Unknown / updating';
+}
+function renderPetDetails(){
+ if(document.getElementById('petOverlay')?.classList.contains('hidden'))return;
+ for(const name of ['Maia','Solo']){
+  const stamp=petActivity[name.toLowerCase()]?.t;
+  const date=stamp?new Date(stamp).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  document.getElementById('petDetail'+name).textContent=petStatus(name)+(date?' · '+date:'');
+ }
+ const battery=haStates['sensor.conservatory_battery_level'];
+ const pct=Number(battery?.state),valid=Number.isFinite(pct)&&battery?.state!=='unknown'&&battery?.state!=='unavailable';
+ document.getElementById('petDetailBattery').textContent=valid?pct+'% remaining':'Battery reading unavailable';
+ const attrs=battery?.attributes||{};
+ const volts=Object.entries(attrs).filter(([k,v])=>/volt/i.test(k)&&typeof v!=='object');
+ const voltageText=volts.length?volts.map(([k,v])=>k.replace(/_/g,' ')+': '+v).join(' · '):'Voltage unavailable';
+ document.getElementById('petDetailVoltage').textContent=voltageText;
+ document.getElementById('petDetailBattery').textContent=(valid?pct+'% remaining':'Battery reading unavailable')+' · '+voltageText;
+ document.getElementById('petBatteryAdvice').textContent=!valid?'':pct<=15?'Very low — replace batteries promptly':pct<=30?'Low — prepare replacement batteries':'Battery level currently above early-warning threshold';
+ document.getElementById('petDetailFlap').textContent='Flap · '+petReadable('binary_sensor.conservatory_connectivity');
+ document.getElementById('petDetailHub').textContent='Hub · '+petReadable('binary_sensor.home_hub');
+ petRenderDailyStats();
+ const curfew=petCurfewActive(),banner=document.getElementById('petCurfewBanner');
+ if(banner)banner.textContent=curfew?'🌙 Curfew 20:15–06:00 · Entry only (scheduled) · controls paused':'☀ Curfew 20:15–06:00 · inactive (app reference)';
+ document.querySelectorAll('[data-pet-lock]').forEach(b=>{
+  const mode=b.dataset.petLock;
+  const active=curfew?mode==='locked_in':(mode==='unlocked'&&petLockMode()==='Unlocked · both ways')||(mode==='locked_all'&&petLockMode()==='Locked both ways')||(mode==='locked_in'&&petLockMode().startsWith('Entry only'))||(mode==='locked_out'&&petLockMode().startsWith('Exit only'));
+  b.classList.toggle('pet-lock-active',active);b.setAttribute('aria-pressed',String(active));b.disabled=curfew||petLockRequestId!==null;
+ });
+}
+const PET_FLAP_ID=1005728;
+let petLockRequestId=null,petLockPendingMode=null,petLockTimer=null;
+const petLockLabels={unlocked:'Unlocked · both ways',locked_in:'Entry only · no exit',locked_out:'Exit only · no entry',locked_all:'Locked both ways'};
+function petSetLock(mode){
+ if(!(mode in petLockLabels)||petLockRequestId!==null)return;
+ if(petCurfewActive()){document.getElementById('petLockNotice').textContent='Curfew schedule active · change lock settings in Sure Petcare app if necessary.';return}
+ const notice=document.getElementById('petLockNotice');
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN){notice.textContent='Connect Home Assistant first.';return}
+ if(haStates['binary_sensor.conservatory_connectivity']?.state!=='on'){notice.textContent='Flap is not reporting online. No command sent.';return}
+ const current=petLockMode();
+ if(current===petLockLabels[mode]||(mode==='unlocked'&&current==='Unlocked · both ways')){notice.textContent='Already set to '+petLockLabels[mode];return}
+ if(!window.confirm('Set Conservatory flap to '+petLockLabels[mode]+'?\n\nThis changes which direction Maia and Solo can pass.'))return;
+ petLockPendingMode=mode;petLockRequestId=haRequestId++;
+ notice.textContent='Sending '+petLockLabels[mode]+' to Home Assistant…';
+ document.querySelectorAll('[data-pet-lock]').forEach(b=>b.disabled=true);
+ haSocket.send(JSON.stringify({id:petLockRequestId,type:'call_service',domain:'surepetcare',service:'set_lock_state',service_data:{flap_id:PET_FLAP_ID,lock_state:mode}}));
+ clearTimeout(petLockTimer);
+ petLockTimer=setTimeout(()=>{if(petLockRequestId!==null){petLockRequestId=null;petLockPendingMode=null;notice.textContent='No response from HA. Check actual flap state before retrying.';document.querySelectorAll('[data-pet-lock]').forEach(b=>b.disabled=false)}},15000);
+}
+function petLockResult(data){
+ clearTimeout(petLockTimer);petLockRequestId=null;
+ document.querySelectorAll('[data-pet-lock]').forEach(b=>b.disabled=false);
+ const notice=document.getElementById('petLockNotice');
+ notice.textContent=data.success?'Command accepted by HA · waiting for updated flap status…':'HA rejected command: '+(data.error?.message||'unknown error');
+ if(!data.success)petLockPendingMode=null;
+}
+function petLockStateChanged(){
+ if(petLockPendingMode===null)return;
+ const current=petLockMode(),wanted=petLockLabels[petLockPendingMode];
+ if(current===wanted||(petLockPendingMode==='unlocked'&&current==='Unlocked · both ways')){
+  const notice=document.getElementById('petLockNotice');if(notice)notice.textContent='Confirmed by Home Assistant: '+current+' ✓';
+  petLockPendingMode=null;
+ }
+}
+let petRegistryRequestId=null;
+function petFindDeviceId(){
+ const output=document.getElementById('petDeviceResult');
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN){output.textContent='Home Assistant is not connected';return}
+ if(petRegistryRequestId!=null)return;
+ petRegistryRequestId=haRequestId++;
+ output.textContent='Checking Home Assistant device registry…';
+ haSocket.send(JSON.stringify({id:petRegistryRequestId,type:'config/device_registry/list'}));
+}
+function petRegistryResult(data){
+ const output=document.getElementById('petDeviceResult');petRegistryRequestId=null;
+ if(!output)return;
+ if(!data.success||!Array.isArray(data.result)){output.textContent='Registry query unavailable: '+(data.error?.message||'no device data');return}
+ const matches=data.result.filter(d=>{
+  const words=[d.name,d.name_by_user,d.model,d.manufacturer,...(d.identifiers||[]).flat()].join(' ').toLowerCase();
+  return /conservatory|sure.?pet|cat.?flap/.test(words);
+ });
+ if(!matches.length){output.textContent='No matching device found in registry. Try HA → Settings → Devices → Conservatory.';return}
+ output.replaceChildren();
+ for(const d of matches){
+  const item=document.createElement('div');
+  const identifiers=(d.identifiers||[]).map(pair=>Array.isArray(pair)?pair.join(' : '):String(pair)).join(' | ');
+  item.textContent=(d.name_by_user||d.name||d.model||'Device')+' — '+(identifiers||'No identifiers exposed');
+  item.style.overflowWrap='anywhere';item.style.marginTop='5px';output.append(item);
+ }
+}
+function showPetDetails(){document.getElementById('petOverlay').classList.remove('hidden');renderPetDetails();petLoadHistory()}
+function closePetDetails(){document.getElementById('petOverlay').classList.add('hidden')}
+setInterval(()=>{if(typeof haStates!=='undefined')renderPets()},30000);
+function salusRender(){
+ const e=haStates['climate.brereton_ds'];if(!e)return;
+ const temp=e.attributes.current_temperature,target=salusDraftTarget??e.attributes.temperature,mode=e.state;
+ salusText('salusCurrent',target==null?'— °C':target+' °C');const reading=document.getElementById('salusCurrent');if(reading&&Number.isFinite(Number(target)))reading.style.color=salusTemperatureColour(Number(target));
+ const fraction=Number.isFinite(Number(target))?Math.max(0,Math.min(1,(Number(target)-5)/30)):0;
+ const fill=document.getElementById('salusGaugeFill'),dot=document.getElementById('salusGaugeDot'),marker=document.getElementById('salusGaugeTarget');if(fill&&dot){
+ const ns='http://www.w3.org/2000/svg';
+ // Uniform arc-distance sampling avoids the uneven colour stripes of an x-axis gradient.
+ const count=Math.max(0,Math.ceil(fraction*180));
+ const fragments=document.createDocumentFragment();
+ for(let i=0;i<count;i++){
+  const t0=i/180,t1=Math.min(fraction,(i+1)/180+0.0008);
+  const a0=Math.PI*(1-t0),a1=Math.PI*(1-t1);
+  const x0=120+92*Math.cos(a0),y0=125-92*Math.sin(a0);
+  const x1=120+92*Math.cos(a1),y1=125-92*Math.sin(a1);
+  const seg=document.createElementNS(ns,'path');
+  seg.setAttribute('d','M'+x0+' '+y0+' L'+x1+' '+y1);
+  seg.setAttribute('stroke',salusTemperatureColour(5+30*(i+0.5)/180));
+  seg.setAttribute('stroke-width','13');seg.setAttribute('stroke-linecap','butt');
+  fragments.append(seg);
+ }
+ if(count){const cap=document.createElementNS(ns,'circle');cap.setAttribute('cx','28');cap.setAttribute('cy','125');cap.setAttribute('r','6.5');cap.setAttribute('fill',salusTemperatureColour(5));fragments.prepend(cap)}
+ fill.replaceChildren(fragments);
+ const angle=Math.PI*(1-fraction);
+ dot.setAttribute('cx',String(120+92*Math.cos(angle)));dot.setAttribute('cy',String(125-92*Math.sin(angle)));
+}if(marker&&Number.isFinite(Number(temp))){const f=Math.max(0,Math.min(1,(Number(temp)-5)/30)),angle=Math.PI*(1-f);marker.setAttribute('cx',String(120+92*Math.cos(angle)));marker.setAttribute('cy',String(125-92*Math.sin(angle)));marker.style.display=''}else if(marker)marker.style.display='none';
+ const heating=haStates['binary_sensor.brereton_ds_heating']?.state==='on'||e.attributes.hvac_action==='heating';const gauge=document.querySelector('.salus-gauge');gauge?.classList.toggle('salus-heating',heating);const foot=document.querySelector('.salus-v28-foot');if(foot&&!salusNoticeActive)foot.textContent=haVerified?(heating?'♨ Heating':'Idle'):'Offline';
+ salusText('salusTargetDetail','');
+ salusText('salusSetpoint',temp==null?'— °C':temp+' °C');const targetReading=document.getElementById('salusSetpoint');if(targetReading)targetReading.style.color=temp!=null&&Number.isFinite(Number(temp))?salusTemperatureColour(Number(temp)):'';
+ const min=e.attributes.min_temp??5,max=e.attributes.max_temp??35,ready=haVerified&&haSocket?.readyState===WebSocket.OPEN&&Number.isFinite(Number(target));
+ for(const [id,allow] of [['salusMinus',Number(target)>min],['salusPlus',Number(target)<max]])document.getElementById(id).disabled=!(ready&&allow);
+ const boost=haStates['binary_sensor.brereton_ds_boost']?.state==='on';const boostButton=document.getElementById('salusBoost');if(boostButton){boostButton.disabled=!haVerified||Array.from(haServiceTimers.keys()).some(id=>id===haBoostRequestId);boostButton.innerHTML=boost?'♨<sup>×</sup>':'♨<sup>+</sup>';boostButton.title=boost?'Cancel Boost':'Start 1-hour Boost';boostButton.setAttribute('aria-label',boost?'Cancel Boost':'Start one-hour Boost');boostButton.classList.toggle('active',boost);boostButton.setAttribute('aria-pressed',String(boost))}
+ const modes=e.attributes.hvac_modes||[];
+ for(const [id,m] of [['salusOff','off'],['salusManual','heat'],['salusAuto','auto']]){const b=document.getElementById(id);b.disabled=!haVerified||!modes.includes(m);b.setAttribute('aria-pressed',String(mode===m));b.classList.toggle('active',mode===m)}
+ const names=['binary_sensor.brereton_ds_heating','binary_sensor.brereton_ds_boost','sensor.brereton_ds_boost_remaining','binary_sensor.brereton_ds_frost_protection','binary_sensor.brereton_ds_gateway_online','sensor.brereton_ds_last_report'];
+ document.querySelectorAll('.salus-status-grid span b').forEach((b,i)=>{let v=salusStateValue(names[i]);if(v==='on')v='On';if(v==='off')v='Off';
+ if(i===2&&v!=='—'){
+  const hours=Number(v);
+  if(Number.isFinite(hours)&&hours>=0)v=Math.round(hours*60)+' mins';
+  if(haStates['binary_sensor.brereton_ds_boost']?.state==='on'&&boostEnd>0){syncBoostEnd();v=Math.max(0,Math.ceil((boostEnd-Date.now())/60000))+' mins'}
+ }
+ if(i===1){const active=v==='On';const cell=b.parentElement;cell?.classList.toggle('salus-boost-on',active)}
+ if(i===5&&v!=='—'){
+  const parsed=new Date(v);
+  if(!Number.isNaN(parsed.getTime())){
+   v=new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(parsed);
+   b.title=new Intl.DateTimeFormat('en-GB',{dateStyle:'full',timeStyle:'medium'}).format(parsed);
+  }else{b.title=v}
+ }
+ b.textContent=v});
+ const small=document.querySelector('.salus-strip small');if(small){
+  const heating=haStates['binary_sensor.brereton_ds_heating']?.state==='on';
+  const current=Number.isFinite(Number(temp))?Number(temp)+'°C':'—';
+  const set=Number.isFinite(Number(target))?Number(target)+'°C':'—';
+  small.replaceChildren(document.createTextNode('Heating · '+current+' · '));
+  if(heating){const on=document.createElement('span');on.className='salus-inline-on';on.textContent='On';small.append(on,document.createTextNode(' · '+set))}
+  else small.append(document.createTextNode('Idle'));
+ }
+ if(haPendingTarget!=null&&Number(target)===haPendingTarget){haPendingTarget=null;salusText('salusSetpoint',target+' °C');salusNotice('Target confirmed ✓',3000);salusRender()}
+}
+let salusDraftTarget=null,salusDebounceTimer=null,salusTargetSequence=0,salusDragPointer=null;
+function salusStageTarget(value){
+ const e=haStates['climate.brereton_ds'];
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!e)return;
+ const min=Number(e.attributes.min_temp??5),max=Number(e.attributes.max_temp??35);
+ if(!Number.isFinite(value))return;
+ salusDraftTarget=Math.max(min,Math.min(max,Math.round(value*2)/2));
+ salusTargetSequence++;
+ clearTimeout(salusDebounceTimer);
+ salusRender();
+ salusDebounceTimer=setTimeout(()=>salusCommitTarget(salusTargetSequence),2000);
+}
+function salusAdjust(delta){
+ const e=haStates['climate.brereton_ds'];
+ if(!e)return;
+ salusStageTarget(Number(salusDraftTarget??e.attributes.temperature)+delta);
+}
+function salusCommitTarget(sequence){
+ if(sequence!==salusTargetSequence||salusDraftTarget==null)return;
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN){salusNotice('Offline · target not sent',4500);return}
+ const next=salusDraftTarget,e=haStates['climate.brereton_ds'];
+ if(Number(e?.attributes?.temperature)===next){salusDraftTarget=null;salusRender();return}
+ const id=haRequestId++;
+ haSocket.send(JSON.stringify({id,type:'call_service',domain:'climate',service:'set_temperature',service_data:{entity_id:'climate.brereton_ds',temperature:next}}));
+ salusNotice('Sending '+next+'°C…',6000);
+ setTimeout(()=>{if(sequence===salusTargetSequence&&salusDraftTarget===next){salusNotice('Awaiting Salus update · target may take longer',4500);salusRender()}},15000);
+}
+function salusGaugeDragValue(ev){
+ const svg=document.querySelector('.salus-gauge svg');if(!svg)return null;
+ const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;
+ const m=svg.getScreenCTM();if(!m)return null;
+ const v=p.matrixTransform(m.inverse()),angle=Math.atan2(125-v.y,v.x-120);
+ const f=1-Math.max(0,Math.min(Math.PI,angle))/Math.PI;
+ return 5+f*30;
+}
+function salusGaugePointerDown(ev){
+ if(!haVerified||!haStates['climate.brereton_ds'])return;
+ const svg=document.querySelector('.salus-gauge svg');
+ const v=salusGaugeDragValue(ev);if(v==null)return;
+ // Only start a drag near the arc, not over the temperature text.
+ const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const m=svg.getScreenCTM();if(!m)return;
+ const pos=p.matrixTransform(m.inverse()),radius=Math.hypot(pos.x-120,pos.y-125);
+ if(radius<75||radius>111||pos.y>132)return;
+ salusDragPointer=ev.pointerId;svg.setPointerCapture(ev.pointerId);
+ salusStageTarget(v);ev.preventDefault();
+}
+function salusGaugePointerMove(ev){
+ if(salusDragPointer!==ev.pointerId)return;
+ const v=salusGaugeDragValue(ev);if(v!=null)salusStageTarget(v);
+}
+function salusGaugePointerUp(ev){
+ if(salusDragPointer!==ev.pointerId)return;
+ salusDragPointer=null;
+ const svg=document.querySelector('.salus-gauge svg');if(svg?.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
+}
+function salusBoostToggle(){
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||haBoostRequestId!=null)return;
+ const active=haStates['binary_sensor.brereton_ds_boost']?.state==='on';
+ const id=haRequestId++;haBoostRequestId=id;
+ const button=document.getElementById('salusBoost');button.disabled=true;
+ salusNotice(active?'Cancelling Boost…':'Starting one-hour Boost…',12000);
+ if(!active){boostEnd=Date.now()+3600000;localStorage.setItem(BOOST_END_KEY,String(boostEnd))}
+ const message={id,type:'call_service',domain:'salus_it500',service:active?'cancel_boost':'boost',target:{entity_id:'climate.brereton_ds'}};
+ if(!active)message.service_data={hours:1};
+ haServiceTimers.set(id,setTimeout(()=>{haServiceTimers.delete(id);haBoostRequestId=null;salusRender();salusNotice('Boost response timed out. Check Home Assistant.',6000)},15000));
+ haSocket.send(JSON.stringify(message));
+}
+let salusNoticeTimer=null,salusNoticeActive=false;
+function salusNotice(message,duration=5000){
+ const el=document.querySelector('.salus-v28-foot');if(!el)return;
+ clearTimeout(salusNoticeTimer);salusNoticeActive=true;el.textContent=message;
+ salusNoticeTimer=setTimeout(()=>{salusNoticeActive=false;salusRender()},duration);
+}
+function salusMode(mode){
+ const e=haStates['climate.brereton_ds'];if(!haVerified||!e?.attributes?.hvac_modes?.includes(mode))return;
+ if(e.state===mode){salusNotice('Already in '+(mode==='auto'?'schedule':mode)+' mode ✓',2500);return}
+ document.querySelector('.salus-v28-foot').textContent='Sending '+mode+' mode to Home Assistant…';
+ const id=haRequestId++;haServiceTimers.set(id,setTimeout(()=>{haServiceTimers.delete(id);document.querySelector('.salus-v28-foot').textContent='No response to mode command. Check Home Assistant before retrying.'},15000));
+ haSocket.send(JSON.stringify({id,type:'call_service',domain:'climate',service:'set_hvac_mode',service_data:{entity_id:'climate.brereton_ds',hvac_mode:mode}}));
+}
+function salusTogglePeriodMenu(){
+ const menu=document.getElementById('salusPeriodMenu'),btn=document.getElementById('salusPeriodButton');
+ menu.hidden=!menu.hidden;btn.setAttribute('aria-expanded',String(!menu.hidden));
+}
+function salusChoosePeriod(value){
+ const select=document.getElementById('salusHistoryPeriod');
+ select.value=value;
+ const menu=document.getElementById('salusPeriodMenu'),btn=document.getElementById('salusPeriodButton');
+ menu.hidden=true;btn.setAttribute('aria-expanded','false');
+ btn.textContent=value==='7d'?'7 days':'24 hours';
+ setSalusHistoryPeriod(value);
+}
+document.addEventListener('pointerdown',event=>{
+ const picker=document.querySelector('.salus-period-picker');
+ if(picker&&!picker.contains(event.target)){
+  const menu=document.getElementById('salusPeriodMenu'),btn=document.getElementById('salusPeriodButton');
+  if(menu)menu.hidden=true;if(btn)btn.setAttribute('aria-expanded','false');
+ }
+});
+function salusHistory(period){
+ const el=document.querySelector('.salus-history-preview span');
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN){el.textContent='Connect Home Assistant to load history';return}
+ const end=new Date(),start=new Date(end.getTime()-(period==='7d'?7:1)*86400000);
+ haHistoryWsId=haRequestId++;el.textContent='Loading '+(period==='7d'?'7-day':'24-hour')+' history…';
+ haSocket.send(JSON.stringify({id:haHistoryWsId,type:'history/history_during_period',start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:['sensor.brereton_ds_room_temperature','climate.brereton_ds'],minimal_response:false,no_attributes:false}));
+}
+function salusHistoryResult(data){
+ const el=document.querySelector('.salus-history-preview span');
+ if(!data.success){el.textContent='History unavailable: '+(data.error?.message||'Home Assistant rejected the request');return}
+ const raw=data.result;
+ const groups=Array.isArray(raw)?raw:(raw&&typeof raw==='object'?Object.values(raw):[]);
+ const points=[];
+ const timestamp=v=>{
+  if(v==null)return NaN;
+  if(typeof v==='number')return v<1e11?v*1000:v;
+  if(typeof v==='string'&&/^\\d+(\\.\\d+)?$/.test(v)){const n=Number(v);return n<1e11?n*1000:n}
+  return Date.parse(v);
+ };
+ for(const group of groups){
+  if(!Array.isArray(group))continue;
+  let entity='',attributes={};
+  for(const p of group){
+   if(!p||typeof p!=='object')continue;
+   entity=p.entity_id||entity;
+   if(p.attributes||p.a)attributes={...attributes,...(p.attributes||p.a)};
+   const state=p.state??p.s;
+   const climate=entity==='climate.brereton_ds';
+   const n=climate?Number(attributes.current_temperature):Number(state);
+   const t=timestamp(p.last_updated??p.last_changed??p.lu??p.lc);
+   if(Number.isFinite(n)&&Number.isFinite(t))points.push({n,t,entity});
+  }
+ }
+ points.sort((a,b)=>a.t-b.t);
+ if(!points.length){el.textContent='No usable temperature samples returned · check Recorder entity history';return}
+
+ // Prefer the dedicated sensor: avoid mixing climate updates with sensor samples.
+ const sensorPoints=points.filter(p=>p.entity==='sensor.brereton_ds_room_temperature');
+ const series=(sensorPoints.length? sensorPoints:points).sort((a,b)=>a.t-b.t);
+ const values=series.map(p=>p.n),rawMin=Math.min(...values),rawMax=Math.max(...values);
+ const min=Math.floor((rawMin-0.25)*2)/2,max=Math.ceil((rawMax+0.25)*2)/2;
+ const first=series[0].t,last=series[series.length-1].t;
+ const svg=document.querySelector('.salus-history-preview svg'),ns='http://www.w3.org/2000/svg';
+ svg.innerHTML='';
+ const add=(tag,attrs,parent=svg)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));parent.append(e);return e};
+ const x=t=>42+(last===first?0.5:(t-first)/(last-first))*268;
+ const y=n=>104-(n-min)/(max-min||1)*86;
+ for(let i=0;i<3;i++){
+  const val=min+(max-min)*i/2,yy=y(val);
+  add('path',{d:'M42 '+yy+' H310',stroke:'#3d5872','stroke-dasharray':'3 5'});
+  const label=add('text',{x:37,y:yy+3,'text-anchor':'end',fill:'#b7c8dc','font-size':10,'font-family':'system-ui, sans-serif'});label.textContent=val.toFixed(1)+'°';
+ }
+ const axis=add('text',{x:7,y:11,fill:'#b7c8dc','font-size':10,'font-family':'system-ui, sans-serif'});axis.textContent='°C';
+ const isWeek=document.getElementById('salusHistoryPeriod').value==='7d';
+ const step=isWeek?2*86400000:6*3600000;
+ const anchor=new Date(first);
+ if(isWeek){anchor.setHours(0,0,0,0)}else{anchor.setHours(Math.ceil(anchor.getHours()/6)*6,0,0,0)}
+ let tick=anchor.getTime();
+ if(tick<first)tick+=step;
+ for(;tick<=last;tick+=step){
+  const xx=x(tick),d=new Date(tick);
+  const label=add('text',{x:xx,y:117,'text-anchor':'middle',fill:'#c3d2e5','font-size':10,'font-family':'system-ui, sans-serif'});
+  label.textContent=isWeek
+   ?d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+   :d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+ }
+ add('path',{d:series.map((p,i)=>(i?'L':'M')+x(p.t).toFixed(1)+' '+y(p.n).toFixed(1)).join(' '),stroke:'#85c7a5','stroke-width':2.5,fill:'none'});
+ const tip=document.getElementById('salusHistoryTooltip');tip.hidden=true;
+ for(const p of series){
+  const cx=x(p.t),cy=y(p.n);
+  add('circle',{cx,cy,r:2.8,fill:'#c4f3d8',stroke:'#2d7760','stroke-width':1,'pointer-events':'none'});
+  const hit=add('circle',{cx,cy,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':new Date(p.t).toLocaleString('en-GB')+' '+p.n.toFixed(1)+' degrees Celsius'});
+  const show=()=>{tip.hidden=false;tip.textContent=new Date(p.t).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' · '+p.n.toFixed(1)+'°C';};
+  hit.addEventListener('click',show);hit.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show()}});
+ }
+ el.textContent='';el.style.pointerEvents='none';
+
+}
+function connectHaSocket(base){
+ clearInterval(haHeartbeatTimer);haHeartbeatTimer=null;haHeartbeatPending=null;petHistoryRequestId=null;haHistoryWsId=null;haGetStatesRequestId=null;
+ if(haReconnectTimer){clearTimeout(haReconnectTimer);haReconnectTimer=null}if(haSocket)haSocket.close();
+ const ws=new WebSocket(base.replace(/^https:/,'wss:')+'/api/websocket');haSocket=ws;
+ const timeout=setTimeout(()=>{if(haSocket===ws&&!haVerified)ws.close()},20000);
+ ws.onmessage=e=>{if(haSocket!==ws)return;haLastMessageAt=Date.now();const data=JSON.parse(e.data);
+ 
+ if(data.type==='auth_required')ws.send(JSON.stringify({type:'auth',access_token:haAccessToken}));
+ if(data.type==='auth_ok'){clearTimeout(timeout);haConnectionStatus(true);haSetStage('haStepLive','③ Home Assistant authenticated ✓ · loading live data');haRetryCount=0;haLastPong=Date.now();haHeartbeatPending=null;
+ clearInterval(haHeartbeatTimer);haHeartbeatTimer=setInterval(()=>{
+  if(haSocket!==ws||ws.readyState!==WebSocket.OPEN||!haVerified||document.hidden)return;
+  if(haHeartbeatPending!==null){if(Date.now()-haHeartbeatSent>45000&&Date.now()-haLastMessageAt>45000){haLastDisconnect='Heartbeat timed out';ws.close()}return}
+  haHeartbeatPending=haRequestId++;haHeartbeatSent=Date.now();ws.send(JSON.stringify({id:haHeartbeatPending,type:'ping'}));
+ },30000);ws.send(JSON.stringify({id:haRequestId++,type:'subscribe_events',event_type:'state_changed'}));haGetStatesRequestId=haRequestId++;ws.send(JSON.stringify({id:haGetStatesRequestId,type:'get_states'}));haProgress('Authenticated ✓ · Reading thermostat…')}
+ if(data.type==='pong'&&data.id===haHeartbeatPending){haLastPong=Date.now();haHeartbeatPending=null}
+ if(data.type==='auth_invalid'){haAccessToken=null;haConnectionStatus(false,'Home Assistant rejected this session. Sign in again.');haSetStage('haStepLive','③ Verify live thermostat — failed')}
+ if(data.type==='event'&&eufyJpegSubscription!==null&&data.id===eufyJpegSubscription){eufyJpegEvent(data)}
+ if(data.type==='result'&&eufyWsPending.has(data.id)){const cb=eufyWsPending.get(data.id);eufyWsPending.delete(data.id);cb(data)}
+ if(data.type==='result'&&data.id===haHistoryWsId){salusHistoryResult(data)}
+ if(data.type==='result'&&data.id===petHistoryRequestId){petHistoryResult(data)}
+ if(data.type==='result'&&data.id===petRegistryRequestId){petRegistryResult(data)}
+ if(data.type==='result'&&data.id===petLockRequestId){petLockResult(data)}
+ if(data.type==='result'&&data.id===haBoostRequestId){if(!data.success){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}haBoostRequestId=null;document.getElementById('salusBoost').disabled=false}
+ if(data.type==='result'&&haServiceTimers.has(data.id)){clearTimeout(haServiceTimers.get(data.id));haServiceTimers.delete(data.id);salusNotice(data.success?'Command accepted ✓ · checking thermostat state':'Home Assistant rejected command: '+(data.error?.message||'unknown error'),6500)}
+ if(data.type==='event'&&data.event?.event_type==='state_changed'){const change=data.event.data;if(change?.new_state){if(change.entity_id==='binary_sensor.brereton_ds_boost'&&change.new_state.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}haStates[change.entity_id]=change.new_state;if(typeof eufyTileUpdate==='function'&&(/^(camera\.|sensor\.)/.test(change.entity_id)))eufyTileUpdate();if(change.entity_id.startsWith('sensor.'))refreshRoomClimate();if(change.entity_id.startsWith('light.'))refreshRoomLights();petObserveChange(change);renderPets();if(change.entity_id.startsWith("lock.conservatory_"))petLockStateChanged();if(change.entity_id==='climate.brereton_ds'&&salusDraftTarget!=null&&Number(change.new_state.attributes?.temperature)===salusDraftTarget){clearTimeout(salusDebounceTimer);salusDraftTarget=null;salusNotice('Target confirmed ✓',2500)}salusRender()}}
+ if(data.type==='result'&&data.id===haGetStatesRequestId){
+ haGetStatesRequestId=null;
+ if(!data.success||!Array.isArray(data.result)){haProgress('Connected, but device states could not be loaded. Retrying…');haSetStage('haStepLive','③ Connected ✓ · retrying device states');setTimeout(()=>{if(haSocket===ws&&ws.readyState===WebSocket.OPEN){haGetStatesRequestId=haRequestId++;ws.send(JSON.stringify({id:haGetStatesRequestId,type:'get_states'}))}},5000);return}
+
+ haStates=Object.fromEntries(data.result.map(x=>[x.entity_id,x]));if(typeof eufyTileUpdate==='function')eufyTileUpdate();refreshRoomClimate();refreshRoomLights();renderPets();if(Date.now()-petHistoryLastFetch>300000)setTimeout(petLoadHistory,1500);if(haStates['binary_sensor.brereton_ds_boost']?.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}
+ const entity=data.result.find(x=>x.entity_id==='climate.brereton_ds');
+ if(!entity||['unknown','unavailable'].includes(entity.state)){haProgress('Home Assistant connected ✓ · thermostat currently unavailable');haSetStage('haStepLive','③ Connected ✓ · thermostat unavailable');closeHaSetup();salusRender();return}
+ const temp=entity.attributes.current_temperature;const target=entity.attributes.temperature;
+ haProgress('Live connection verified ✓ · Brereton DS '+(temp??'—')+'°C · target '+(target??'—')+'°C');
+ haSetStage('haStepLive','③ Verify live thermostat — connected ✓');haConnectionStatus(true);haRetryCount=0;closeHaSetup();salusRender();if(!document.getElementById('salusOverlay').classList.contains('hidden'))salusHistory(document.getElementById('salusHistoryPeriod').value);
+ const pills=document.querySelectorAll('.offline-pill');if(pills[0])pills[0].textContent='Connected';if(pills[1])pills[1].textContent='Not configured';
+ const small=document.querySelector('.salus-strip small');
+ }
+ };
+ ws.onerror=()=>{if(haSocket===ws)haLastDisconnect='WebSocket network error'};
+ ws.onclose=event=>{clearTimeout(timeout);clearInterval(haHeartbeatTimer);haHeartbeatTimer=null;haHeartbeatPending=null;if(haSocket!==ws)return;haDisconnectCount++;haLastDisconnect=haLastDisconnect||('WebSocket closed ('+event.code+')');haConnectionStatus(false,'Home Assistant connection lost. Reconnecting automatically…');if(haAccessToken){const delay=Math.min(30000,1500*Math.pow(2,Math.min(haRetryCount++,4)));haReconnectTimer=setTimeout(()=>connectHaSocket(base),delay)}};
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&haAccessToken&&haStoredUrl()&&(!haSocket||haSocket.readyState!==WebSocket.OPEN))connectHaSocket(haStoredUrl())});
+window.addEventListener('online',()=>{if(haAccessToken&&haStoredUrl()&&(!haSocket||haSocket.readyState!==WebSocket.OPEN))connectHaSocket(haStoredUrl())});
+window.addEventListener('load',()=>{const gaugeSvg=document.querySelector('.salus-gauge svg');if(gaugeSvg){gaugeSvg.addEventListener('pointerdown',salusGaugePointerDown);gaugeSvg.addEventListener('pointermove',salusGaugePointerMove);gaugeSvg.addEventListener('pointerup',salusGaugePointerUp);gaugeSvg.addEventListener('pointercancel',salusGaugePointerUp)}if(new URLSearchParams(location.search).has('code')||new URLSearchParams(location.search).has('error'))finishHaOAuth();else resumeHaSession()});
+function setSalusHistoryPeriod(period){salusHistory(period)}
+function openSalusModal(){salusRender();if(haVerified)salusHistory(document.getElementById('salusHistoryPeriod').value);document.getElementById('salusOverlay').classList.remove('hidden');document.querySelector('.salus-close').focus()}
+function closeSalusModal(){document.getElementById('salusOverlay').classList.add('hidden');document.querySelector('.salus-strip')?.focus()}
+function hideDetailPages(){$('roomsPage').classList.add('hidden');$('historyPage').classList.add('hidden');$('cameraPage').classList.add('hidden')}
+function showDashboard(open){hideDetailPages();document.querySelector('main.shell').classList.toggle('hidden',open);$('dashboardPage').classList.toggle('hidden',!open);document.body.classList.toggle('dashboard-open',open);(open?$('dashboardPage').querySelector('button'):$('dashboardButton')).focus()}
+function showHistory(open=true){hideDetailPages();$('dashboardPage').classList.toggle('hidden',open);$('historyPage').classList.toggle('hidden',!open);if(open){$('historyRooms').replaceChildren(...houseRooms.slice(0,7).map((name,i)=>{const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=i<2;label.append(input,document.createTextNode(' '+name));return label}));$('historyPage').querySelector('button').focus()}else $('dashboardPage').querySelector('button').focus()}
+function showCamera(open=true){hideDetailPages();$('dashboardPage').classList.toggle('hidden',open);$('cameraPage').classList.toggle('hidden',!open);(open?$('cameraPage'):$('dashboardPage')).querySelector('button').focus()}
+// v3.59: live room climate readings, mapped to verified Home Assistant entities.
+const roomClimateEntities={
+ 'Kitchen':['sensor.kitchen_temperature','sensor.kitchen_humidity'],
+ 'Living Room':['sensor.lounge_temperature','sensor.lounge_humidity'],
+ 'Garage':['sensor.meter_453e_temperature','sensor.meter_453e_humidity'],
+ 'Master Bedroom':['sensor.meter_1142_temperature','sensor.meter_1142_humidity'],
+ 'Office':['sensor.meter_3963_temperature','sensor.meter_3963_humidity']
+};
+function roomClimateText(name){
+ const ids=roomClimateEntities[name];if(!ids)return '🌡 —  ·  💧 —';
+ const value=(id,unit)=>{const raw=haStates[id]?.state;const n=Number(raw);return raw!=null&&raw!==''&&!['unknown','unavailable'].includes(raw)&&Number.isFinite(n)?(unit==='°C'?n.toFixed(1):String(Math.round(n)))+unit:'—'};
+ return '🌡 '+value(ids[0],'°C')+'  ·  💧 '+value(ids[1],'%');
+}
+function refreshRoomClimate(){
+ const grid=document.getElementById('homeRoomGrid');if(!grid)return;
+ grid.querySelectorAll('.home-room').forEach(b=>{const name=b.querySelector('strong')?.textContent;const readings=b.querySelector('.room-readings');if(readings&&roomClimateEntities[name])readings.textContent=roomClimateText(name)});
+}
+
+const lightRoomAliases={'Living Room':['living room','lounge'],'Master Bedroom':['master bedroom','master room'],'Kitchen':['kitchen'],'Office':['office'],'Garage':['garage'],'Outhouse':['outhouse'],'Spare Bedroom':['spare bedroom','box room']};
+function roomLights(name){const aliases=lightRoomAliases[name]||[name.toLowerCase()];return Object.values(haStates).filter(e=>e.entity_id?.startsWith('light.')&&aliases.some(a=>{const label=String(e.attributes?.friendly_name||e.entity_id.slice(6)).toLowerCase();return label===a||label.startsWith(a+' ')||label.startsWith(a+' -')||label.startsWith(a+'_')}))}
+function refreshRoomLights(){document.querySelectorAll('#homeRoomGrid .home-room').forEach(b=>{const name=b.querySelector('strong')?.textContent,info=b.querySelector('.room-info');if(!info||b.disabled)return;const lights=roomLights(name),available=lights.filter(e=>['on','off'].includes(e.state));info.textContent=lights.length?'💡 '+available.filter(e=>e.state==='on').length+' / '+available.length+' on':'💡 View lights'})}
+function openRoomLights(name){
+ showRooms('lighting');document.getElementById('roomsTitle').textContent=name+' · Lights';
+ const grid=document.getElementById('roomCards');grid.replaceChildren();
+ const back=document.createElement('button');back.textContent='← All rooms';back.onclick=()=>showRooms('lighting');grid.append(back);
+ const lights=roomLights(name);
+ if(!haVerified||!lights.length){const p=document.createElement('p');p.textContent=!haVerified?'Connect Home Assistant to see live lights.':'No matching lights yet. We can map them precisely later.';grid.append(p);return}
+ lights.forEach(e=>{const b=document.createElement('button');b.innerHTML='<span>💡</span><strong></strong><small></small>';b.querySelector('strong').textContent=e.attributes?.friendly_name||e.entity_id;b.querySelector('small').textContent=e.state==='on'?'On · tap to switch off':e.state==='off'?'Off · tap to switch on':'Unavailable';b.disabled=!['on','off'].includes(e.state);b.onclick=()=>{if(!haSocket||haSocket.readyState!==WebSocket.OPEN){notify('Home Assistant disconnected');return}haSocket.send(JSON.stringify({id:haRequestId++,type:'call_service',domain:'light',service:e.state==='on'?'turn_off':'turn_on',service_data:{entity_id:e.entity_id}}));b.querySelector('small').textContent='Sending command…'};grid.append(b)})
+}
+function renderHomeOverview(){const grid=$('homeRoomGrid');if(!grid)return;grid.replaceChildren(...houseRooms.map((name,i)=>{const b=document.createElement('button');b.className='home-room'+(i>=7?' disabled':'');b.disabled=i>=7;b.innerHTML='<strong></strong><span class="room-readings">🌡 --°C &nbsp; 💧 --%</span><span class="room-info">💡 --</span>';b.querySelector('strong').textContent=name;if(roomClimateEntities[name])b.querySelector('.room-readings').textContent=roomClimateText(name);if(i>=7){b.querySelector('.room-readings').textContent='Not configured';b.querySelector('.room-info').textContent='';}else {b.onclick=()=>showRooms('climate');const bulb=b.querySelector('.room-info');bulb.onclick=e=>{e.stopPropagation();openRoomLights(name)}}return b}));const history=document.createElement('button');history.className='home-history-link';history.textContent='📈 Sensor history & comparisons →';history.onclick=()=>showHistory();grid.append(history);refreshRoomLights();$('dashDate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});if($('dashTopTime'))$('dashTopTime').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});if($('dashTopDate'))$('dashTopDate').textContent=$('dashDate').textContent;}
+const houseRooms=['Kitchen','Living Room','Outhouse','Garage','Master Bedroom','Spare Bedroom','Office',"Cameron’s Bedroom",'Ensuite','Bathroom'];function showRooms(mode){const active=mode!==null;$('dashboardPage').classList.toggle('hidden',active);$('roomsPage').classList.toggle('hidden',!active);if(!active){$('dashboardPage').querySelector('button').focus();return;}$('roomsTitle').textContent=mode==='lighting'?'Lighting by room':'Climate by room';$('roomCards').replaceChildren(...houseRooms.map((name,i)=>{const b=document.createElement('button');const disabled=i>=7;b.className=disabled?'room-card-off':'';b.disabled=disabled;b.innerHTML='<span></span><strong></strong><small></small>';b.querySelector('span').textContent=mode==='lighting'?'💡':'🌡️';b.querySelector('strong').textContent=name;b.querySelector('small').textContent=disabled?'Not configured yet':mode==='lighting'?'Lights and scenes · connection pending':'Temperature · humidity · history · connection pending';if(mode==='lighting')b.onclick=()=>openRoomLights(name);else if(!disabled)b.onclick=()=>notify(name+' — Home Assistant integration is next.');return b}));$('roomsPage').querySelector('button').focus()}const apps=['NOW','Netflix','Disney+','YouTube','BBC iPlayer','ITVX','Prime Video','Apple TV','Spotify','JustWatch'];const configs={living:{label:'LIVING ROOM',subtitle:'Your films, shows and living-room scenes.',extra:{icon:'💡',name:'Living room lights',detail:'Hue · light.living_room'}},zwift:{label:'ZWIFT TV',subtitle:'Entertainment, training and a quick route to Zwift.',extra:{icon:'🚴',name:'Zwift · Apple TV',detail:'HDMI switching · planned'}},office:{label:'OFFICE',subtitle:'Work when you need it. Entertainment when you don’t.',extra:{icon:'💻',name:'Work laptop',detail:'HDMI input · planned'}}};let room='living',toastTimer;const $=id=>document.getElementById(id);function notify(msg){$('notice').textContent=msg;$('notice').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('notice').classList.add('hidden'),3000)}const brandDomains={"NOW":"nowtv.com","Netflix":"netflix.com","Disney+":"disneyplus.com","YouTube":"youtube.com","BBC iPlayer":"bbc.co.uk","ITVX":"itv.com","Prime Video":"primevideo.com","Apple TV":"tv.apple.com","Spotify":"spotify.com","JustWatch":"justwatch.com"};function tile(label,cls,handler){const b=document.createElement('button');b.className='tile '+cls;b.setAttribute('aria-label',label);b.title=label;if(Object.prototype.hasOwnProperty.call(brandDomains,label)){const img=document.createElement('img');img.className='brand-logo';img.alt=label+' logo';img.loading='eager';img.referrerPolicy='no-referrer';img.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(brandDomains[label])+'&sz=128';img.onerror=()=>img.classList.add('logo-error');const fallback=document.createElement('span');fallback.className='brand-fallback';fallback.textContent=label;b.append(img,fallback)}else{b.textContent=label}b.onclick=handler;if(label==='Disney+'||label==='Apple TV'){b.disabled=true;b.classList.add('app-disabled');b.setAttribute('aria-label',label+' unavailable for now')}return b}function widget(icon,name,detail){const b=document.createElement('button');b.className='widget tile';b.innerHTML='<span class="symbol"></span><strong></strong><small></small>';b.querySelector('.symbol').textContent=icon;b.querySelector('strong').textContent=name;b.querySelector('small').textContent=detail;b.onclick=()=>notify(name+' — demo only. Home Assistant connection comes next.');return b}/* v0.6: Android browser app-link trial. Native Android TV uses package launches instead. */
+const appTargets={
+'JustWatch':{url:'https://www.justwatch.com/uk',package:'com.justwatch.justwatch'},
+'Netflix':{url:'https://www.netflix.com/browse',package:'com.netflix.mediaclient'},
+'YouTube':{url:'https://www.youtube.com/',package:'com.google.android.youtube'},
+'Disney+':{url:'https://www.disneyplus.com/'},
+'Prime Video':{url:'https://www.primevideo.com/',package:'com.amazon.avod.thirdpartyclient'},
+'BBC iPlayer':{url:'https://www.bbc.co.uk/iplayer',package:'bbc.iplayer.android'},
+'ITVX':{url:'https://www.itv.com/',package:'air.ITVMobilePlayer'},
+'Apple TV':{url:'https://tv.apple.com/'},
+'Spotify':{url:'https://open.spotify.com/'},
+'NOW':{url:'https://www.nowtv.com/',package:'com.bskyb.nowtv.beta'}
+};
+/* v0.8: use HTTPS Android App Links; Brave does not handle intent:// reliably. */
+function openEntertainment(name){
+ if(name==='Disney+'||name==='Apple TV')return;
+ if(window.AndroidLauncher&&typeof window.AndroidLauncher.openApp==='function'){window.AndroidLauncher.openApp(name);return;}
+ const target=appTargets[name];if(!target)return notify(name+' is not configured yet.');
+ // Keep known working Android App Links unchanged.
+ if(['Netflix','Spotify','JustWatch'].includes(name)){window.location.assign(target.url);return}
+ // Chrome/Brave Android intent URI asks the OS to open the installed app by package.
+ // If absent or disallowed, the encoded browser_fallback_url opens its website.
+ if(target.package&&/Android/i.test(navigator.userAgent)){
+  const fallback=encodeURIComponent(target.url);
+  const intent='intent://open/#Intent;scheme=app;package='+target.package+';S.browser_fallback_url='+fallback+';end';
+  window.location.assign(intent);return;
+ }
+ window.location.assign(target.url);
+}
+function render(){const cfg=configs[room];$('roomLabel').textContent=cfg.label;$('subtitle').textContent=cfg.subtitle;document.querySelectorAll('.room').forEach(b=>{b.classList.toggle('active',b.dataset.room===room);b.setAttribute('aria-pressed',String(b.dataset.room===room))});$('apps').replaceChildren(...apps.map(a=>tile(a,'app '+(a==='NOW'?'now':a==='Netflix'?'netflix':a==='Disney+'?'disney':a==='YouTube'?'youtube':a==='Prime Video'?'prime':''),()=>openEntertainment(a))))}document.querySelectorAll('.room').forEach(b=>b.onclick=()=>{room=b.dataset.room;render()});function clock(){const d=new Date();$('clock').firstChild.textContent=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});$('date').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});$('greeting').textContent=d.getHours()<12?'Good morning.':d.getHours()<17?'Good afternoon.':'Good evening.'}clock();setInterval(clock,30000);render();renderHomeOverview();renderCalendar();/* v0.5: geometry-aware D-pad and keyboard navigation */
+const arrowKeys={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+function visibleControls(){const root=['roomsPage','historyPage','cameraPage','dashboardPage'].map(id=>$(id)).find(el=>!el.classList.contains('hidden'))||document.querySelector('main.shell');return [...root.querySelectorAll('button:not([disabled])')].filter(b=>{const r=b.getBoundingClientRect(),s=getComputedStyle(b);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'})}
+function defaultControl(controls){return controls.find(b=>b.classList.contains('app'))||controls[0]}
+function navigate(direction){const controls=visibleControls();if(!controls.length)return;const current=controls.includes(document.activeElement)?document.activeElement:defaultControl(controls);if(!controls.includes(document.activeElement)){current.focus({preventScroll:true});return}
+const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;const [dx,dy]=direction;let best=null,bestScore=Infinity;
+for(const b of controls){if(b===current)continue;const r=b.getBoundingClientRect(),x=r.left+r.width/2-ax,y=r.top+r.height/2-ay;const forward=x*dx+y*dy,side=Math.abs(x*dy-y*dx);if(forward<=3)continue;const score=forward+side*2.8+(side>Math.max(a.width,a.height)*1.5?side:0);if(score<bestScore){bestScore=score;best=b}}
+if(best)best.focus({preventScroll:true})}
+document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey)return;if(e.key in arrowKeys){e.preventDefault();navigate(arrowKeys[e.key]);return}if(e.key==='Escape'||e.key==='Backspace'||e.key==='BrowserBack'){if(!document.getElementById('salusOverlay').classList.contains('hidden')){e.preventDefault();closeSalusModal();return}if(!document.getElementById('calendarOverlay').classList.contains('hidden')){e.preventDefault();closeCalendar();return}if(!$('historyPage').classList.contains('hidden')){e.preventDefault();showHistory(false)}else if(!$('cameraPage').classList.contains('hidden')){e.preventDefault();showCamera(false)}else if(!$('roomsPage').classList.contains('hidden')){e.preventDefault();showRooms(null)}else if(!$('dashboardPage').classList.contains('hidden')){e.preventDefault();showDashboard(false)}return}if(e.key==='Enter'||e.key===' '){const controls=visibleControls();if(controls.includes(document.activeElement)){e.preventDefault();document.activeElement.click()}else if(e.key==='Enter'){e.preventDefault();defaultControl(controls)?.focus({preventScroll:true})}}});
+document.addEventListener('pointerdown',()=>document.body.classList.add('using-pointer'),{passive:true});document.addEventListener('keydown',e=>{if(e.key in arrowKeys)document.body.classList.remove('using-pointer')});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script><div class="eufy-overlay hidden" id="eufyOverlay" role="dialog" aria-modal="true" aria-label="Front Door camera">
+ <div class="eufy-dialog">
+  <div class="eufy-dialog-head"><strong>Front Door · Eufy</strong><button id="eufyClose" onclick="closeEufyOverlay()">✕ Close</button></div>
+  <div id="eufyStillPlaceholder" class="eufy-still-placeholder">Connecting to Home Assistant for the latest snapshot…</div>
+  <img id="eufyStill" class="eufy-still hidden" alt="Latest available Front Door doorbell snapshot">
+  <div class="eufy-meta" id="eufyMeta">Snapshot is not a live video feed.</div>
+  <div class="eufy-actions"><button onclick="refreshEufySnapshot()">↻ Refresh snapshot</button><button onclick="openEufyRecordings()">▤ Browse recordings</button></div>
+  <div class="eufy-recordings"><div class="eufy-recording-toolbar"><strong>Recordings</strong><input id="eufyDate" type="date" aria-label="Recording date"><button onclick="loadEufyRecordings()">Show recordings</button></div><p id="eufyRecordingNote">Choose a date to browse HomeBase recordings.</p><div id="eufyRecordingGrid" class="eufy-recording-grid"></div><div id="eufyPlayerWrap" class="hidden"><button onclick="closeEufyPlayer()">← Back to recordings</button><video id="eufyPlayer" controls playsinline preload="metadata"></video></div></div>
+ </div>
+</div><script>
+/* Front Door snapshot — authenticated Home Assistant camera_proxy, no stored image or credentials. */
+let eufyReturnFocus=null,eufyImageUrl=null;
+function eufyCameraEntity(){const ids=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&/doorbell|front.?door|eufy/i.test(id+' '+(haStates[id]?.attributes?.friendly_name||'')));return ids[0]||null}
+function eufyBattery(){const entry=Object.entries(haStates||{}).find(([id,v])=>id.startsWith('sensor.')&&/doorbell.*battery|battery.*doorbell/i.test(id+' '+(v?.attributes?.friendly_name||'')));return entry&&Number.isFinite(Number(entry[1].state))?Math.round(Number(entry[1].state))+'%':null}
+function eufyTileUpdate(){const tile=document.getElementById('eufyTileStatus');if(tile)tile.textContent=eufyCameraEntity()?'Snapshot available'+(eufyBattery()?' · 🔋 '+eufyBattery():''):(haVerified?'Camera not found':'Snapshot · waiting for HA data')}
+async function refreshEufySnapshot(){
+ const img=document.getElementById('eufyStill'),placeholder=document.getElementById('eufyStillPlaceholder'),meta=document.getElementById('eufyMeta');
+ const entity=eufyCameraEntity();
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){img.classList.add('hidden');placeholder.classList.remove('hidden');placeholder.textContent='Connect Home Assistant and make sure the doorbell camera entity is available.';return}
+ placeholder.classList.remove('hidden');placeholder.textContent='Loading latest snapshot…';img.classList.add('hidden');
+ try{const next=await eufyJpegFirstFrame(entity);eufyImageUrl=next;img.src=next;img.classList.remove('hidden');placeholder.classList.add('hidden');meta.textContent='Latest available snapshot · loaded '+new Date().toLocaleTimeString()+' · not live'+(eufyBattery()?' · Battery '+eufyBattery():'')}
+ catch(e){placeholder.textContent='Snapshot unavailable ('+e.message+').';meta.textContent='Home Assistant camera snapshot could not be retrieved.'}
+}
+function openEufyOverlay(){eufyReturnFocus=document.activeElement;const overlay=document.getElementById('eufyOverlay');if(overlay.parentElement!==document.documentElement)document.documentElement.appendChild(overlay);overlay.classList.remove('hidden');overlay.style.setProperty('display','flex','important');overlay.setAttribute('aria-hidden','false');document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=(()=>{const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();refreshEufySnapshot()}
+function closeEufyOverlay(){eufyStopJpeg();eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();const overlay=document.getElementById('eufyOverlay');overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','true');eufyReturnFocus?.focus?.()}
+let eufyJpegSubscription=null,eufyJpegResolve=null,eufyJpegReject=null,eufyJpegTimer=null;
+function eufyJpegEvent(data){const ev=data.event;if(ev?.type==='frame'&&typeof ev.jpeg==='string'&&eufyJpegResolve){const resolve=eufyJpegResolve;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);resolve('data:image/jpeg;base64,'+ev.jpeg);eufyStopJpeg()}else if(ev?.type==='ended'&&eufyJpegReject){const reject=eufyJpegReject;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);reject(Error('Viewer ended before receiving a frame'));eufyStopJpeg()}}
+function eufyStopJpeg(){const id=eufyJpegSubscription;eufyJpegSubscription=null;if(id===null)return;eufyWsPending.delete(id);clearTimeout(eufyJpegTimer);if(eufyJpegReject){const reject=eufyJpegReject;eufyJpegResolve=null;eufyJpegReject=null;reject(Error('JPEG request cancelled'))}if(haSocket?.readyState===WebSocket.OPEN)haSocket.send(JSON.stringify({id:haRequestId++,type:'unsubscribe_events',subscription:id}))}
+async function eufyJpegFirstFrame(entity){eufyStopJpeg();const id=haRequestId++;eufyJpegSubscription=id;return new Promise((resolve,reject)=>{eufyJpegResolve=resolve;eufyJpegReject=reject;eufyJpegTimer=setTimeout(()=>{eufyJpegResolve=null;eufyJpegReject=null;eufyStopJpeg();reject(Error('JPEG viewer timed out'))},16000);eufyWsPending.set(id,data=>{if(!data.success){clearTimeout(eufyJpegTimer);eufyJpegResolve=null;eufyJpegReject=null;eufyStopJpeg();reject(Error(data.error?.message||'Eufy viewer rejected request'))}});haSocket.send(JSON.stringify({id,type:'eufy_viewer/watch',entity_id:entity,transport:'jpeg'}))})}
+const eufyWsPending=new Map();function eufyWsCommand(command,timeoutMs=30000){return new Promise((resolve,reject)=>{if(haSocket?.readyState!==WebSocket.OPEN)return reject(Error('Home Assistant disconnected'));const id=haRequestId++;const timeout=setTimeout(()=>{eufyWsPending.delete(id);reject(Error('Eufy request timed out'))},timeoutMs);eufyWsPending.set(id,result=>{clearTimeout(timeout);resolve(result)});try{haSocket.send(JSON.stringify({id,...command}))}catch(err){clearTimeout(timeout);eufyWsPending.delete(id);reject(err)}})}
+let eufyAbort=null,eufyThumbUrls=[],eufyRecords=[],eufyPlaybackUrl=null;
+function eufyClearThumbs(){eufyThumbUrls.forEach(url=>URL.revokeObjectURL(url));eufyThumbUrls=[]}
+function eufyApi(path,options={}){const base=haStoredUrl();if(!haVerified||!haAccessToken||!base)throw Error('Connect Home Assistant first');return fetch(base+path,{...options,headers:{Authorization:'Bearer '+haAccessToken,...(options.headers||{})},cache:'no-store'})}
+function eufyRecordingCamera(){return Object.keys(haStates||{}).find(id=>id.startsWith('camera.')&&haStates[id]?.attributes?.viewer_card&&haStates[id]?.attributes?.capabilities?.recordings?.available!==false&&/doorbell|front.?door|eufy/i.test(id+' '+(haStates[id]?.attributes?.friendly_name||'')))||eufyCameraEntity()}
+function openEufyRecordings(){document.querySelector('.eufy-recordings').scrollIntoView({block:'nearest'});loadEufyRecordings()}
+async function loadEufyRecordings(){
+ eufyAbort?.abort();eufyAbort=new AbortController();const signal=eufyAbort.signal;
+ closeEufyPlayer();eufyClearThumbs();eufyRecords=[];const grid=document.getElementById('eufyRecordingGrid'),note=document.getElementById('eufyRecordingNote');grid.replaceChildren();
+ const camera=eufyRecordingCamera(),date=document.getElementById('eufyDate').value;
+ if(!camera||!date){note.textContent='Camera or date unavailable.';return}
+ note.textContent='Loading recording list via Home Assistant WebSocket…';
+ try{
+  const response=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date});
+  if(signal.aborted)return;
+  if(!response.success)throw Error(response.error?.message||'Recording WebSocket extension not installed');
+  const data=response.result;
+  if(data?.complete!==true||!Array.isArray(data.recordings))throw Error('Recording list incomplete');
+  eufyRecords=data.recordings.filter(r=>r.entity_id===camera&&/^[a-f0-9]{32}$/.test(r.id));
+  note.textContent=eufyRecords.length+' recordings · '+date+' · First 12 thumbnails · Playback in development';
+  for(const [i,record] of eufyRecords.entries()){
+   const button=document.createElement('button');button.className='eufy-recording';button.type='button';
+   const thumb=document.createElement('span');thumb.className='eufy-recording-thumb';thumb.textContent='◉';
+   const label=document.createElement('span');label.textContent=(record.start||'').slice(11,19)+' – '+(record.end||'').slice(11,19);
+   button.append(thumb,label);button.onclick=()=>{note.textContent='Recording playback is not yet available in this experimental build.'};grid.append(button);
+  }
+  for(let i=0;i<Math.min(eufyRecords.length,12);i++){
+   if(signal.aborted)break;const record=eufyRecords[i];if(!record.thumbnail)continue;
+   try{
+    const result=await eufyWsCommand({type:'eufy_viewer/launcher_thumbnail',entity_id:record.entity_id,recording_id:record.id});
+    if(signal.aborted)return;
+    if(!result.success||typeof result.result?.jpeg!=='string')continue;
+    const img=document.createElement('img');img.alt='Doorbell recording thumbnail';img.src='data:image/jpeg;base64,'+result.result.jpeg;
+    grid.children[i]?.querySelector('.eufy-recording-thumb')?.replaceChildren(img)
+   }catch(err){if(signal.aborted)return}
+  }
+ }catch(err){if(!signal.aborted)note.textContent='Recording list unavailable: '+err.message}
+}
+function closeEufyPlayer(){const video=document.getElementById('eufyPlayer');video.pause();video.removeAttribute('src');video.load();document.getElementById('eufyPlayerWrap').classList.add('hidden');document.getElementById('eufyRecordingGrid').classList.remove('hidden')}
+async function playEufyRecording(index){
+ const record=eufyRecords[index],note=document.getElementById('eufyRecordingNote');if(!record)return;
+ note.textContent='Preparing recording…';const signal=eufyAbort?.signal;
+ try{
+  const path='/api/eufy_viewer/recordings/'+encodeURIComponent(record.entity_id)+'/'+record.id+'/playback?format=h264&hevc_supported=false';
+  const response=await eufyApi(path,{method:'POST',signal});if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();if(signal?.aborted)return;
+  const relative=data.url||data.path||data.playback_url;
+  if(typeof relative!=='string'||!relative.startsWith('/api/eufy_viewer/playback/'))throw Error('Playback URL unavailable');
+  const video=document.getElementById('eufyPlayer');video.src=haStoredUrl()+relative;
+  document.getElementById('eufyRecordingGrid').classList.add('hidden');document.getElementById('eufyPlayerWrap').classList.remove('hidden');
+  note.textContent=(record.start||'').slice(11,19)+' · Stored recording';video.play().catch(()=>{note.textContent='Press Play to start the recording.'});
+ }catch(err){if(!signal?.aborted)note.textContent='Recording playback unavailable: '+err.message}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('eufyOverlay').classList.contains('hidden')){e.preventDefault();e.stopImmediatePropagation();closeEufyOverlay()}},true);
+document.getElementById('eufyOverlay').addEventListener('click',e=>{if(e.target.id==='eufyOverlay')closeEufyOverlay()});
+setInterval(eufyTileUpdate,10000);eufyTileUpdate();
+</script></body></html>
