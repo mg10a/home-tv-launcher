@@ -1453,27 +1453,32 @@ async function loadEufyRecordings(){
  closeEufyPlayer();eufyClearThumbs();eufyRecords=[];const grid=document.getElementById('eufyRecordingGrid'),note=document.getElementById('eufyRecordingNote');grid.replaceChildren();
  const camera=eufyRecordingCamera(),date=document.getElementById('eufyDate').value;
  if(!camera||!date){note.textContent='Camera or date unavailable.';return}
- note.textContent='Recordings require an authenticated HTTP endpoint. The browser currently blocks that connection from GitHub Pages; a Home Assistant-side proxy is needed.';return;
- note.textContent='Loading recordings…';
+ note.textContent='Loading recording list via Home Assistant WebSocket…';
  try{
-  const path='/api/eufy_viewer/events?entities='+encodeURIComponent(camera)+'&date='+encodeURIComponent(date);
-  const response=await eufyApi(path,{signal});if(!response.ok)throw Error('HTTP '+response.status);
-  const data=await response.json();if(signal.aborted)return;
-  if(data.complete!==true||!Array.isArray(data.recordings))throw Error('Recording list incomplete');
+  const response=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date});
+  if(signal.aborted)return;
+  if(!response.success)throw Error(response.error?.message||'Recording WebSocket extension not installed');
+  const data=response.result;
+  if(data?.complete!==true||!Array.isArray(data.recordings))throw Error('Recording list incomplete');
   eufyRecords=data.recordings.filter(r=>r.entity_id===camera&&/^[a-f0-9]{32}$/.test(r.id));
-  note.textContent=eufyRecords.length+' recordings · '+date+' · HomeBase time';
-  if(!eufyRecords.length)return;
+  note.textContent=eufyRecords.length+' recordings · '+date+' · Playback requires additional HA-side work';
   for(const [i,record] of eufyRecords.entries()){
    const button=document.createElement('button');button.className='eufy-recording';button.type='button';
    const thumb=document.createElement('span');thumb.className='eufy-recording-thumb';thumb.textContent='◉';
    const label=document.createElement('span');label.textContent=(record.start||'').slice(11,19)+' – '+(record.end||'').slice(11,19);
-   button.append(thumb,label);button.onclick=()=>playEufyRecording(i);grid.append(button);
+   button.append(thumb,label);button.onclick=()=>{note.textContent='Recording playback is not yet available in this experimental build.'};grid.append(button);
   }
   for(let i=0;i<eufyRecords.length;i++){
    if(signal.aborted)break;const record=eufyRecords[i];if(!record.thumbnail)continue;
-   try{const url='/api/eufy_viewer/recordings/'+encodeURIComponent(record.entity_id)+'/'+record.id+'/thumbnail';const res=await eufyApi(url,{signal});if(!res.ok||!res.headers.get('content-type')?.startsWith('image/'))continue;const blob=await res.blob();if(signal.aborted)return;if(blob.size>2*1024*1024)continue;const objectUrl=URL.createObjectURL(blob);eufyThumbUrls.push(objectUrl);const img=document.createElement('img');img.alt='Doorbell recording thumbnail';img.src=objectUrl;grid.children[i]?.querySelector('.eufy-recording-thumb')?.replaceChildren(img)}catch(err){if(signal.aborted)return}
+   try{
+    const result=await eufyWsCommand({type:'eufy_viewer/launcher_thumbnail',entity_id:record.entity_id,recording_id:record.id});
+    if(signal.aborted)return;
+    if(!result.success||typeof result.result?.jpeg!=='string')continue;
+    const img=document.createElement('img');img.alt='Doorbell recording thumbnail';img.src='data:image/jpeg;base64,'+result.result.jpeg;
+    grid.children[i]?.querySelector('.eufy-recording-thumb')?.replaceChildren(img)
+   }catch(err){if(signal.aborted)return}
   }
- }catch(err){if(!signal.aborted)note.textContent='Could not load recordings: '+err.message}
+ }catch(err){if(!signal.aborted)note.textContent='Recording list unavailable: '+err.message}
 }
 function closeEufyPlayer(){const video=document.getElementById('eufyPlayer');video.pause();video.removeAttribute('src');video.load();document.getElementById('eufyPlayerWrap').classList.add('hidden');document.getElementById('eufyRecordingGrid').classList.remove('hidden')}
 async function playEufyRecording(index){
