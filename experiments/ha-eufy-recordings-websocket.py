@@ -38,7 +38,7 @@ def _camera(hass, connection, entity_id: str) -> tuple[EufyCoordinator, str]:
         raise LookupError("Camera unavailable")
     coordinator = entry.runtime_data
     serial = entity.unique_id.removesuffix("_camera")
-    if (serial not in coordinator.data.cameras
+    if (not coordinator.data or serial not in coordinator.data.cameras
             or not coordinator.last_update_success
             or coordinator.data.auth != "connected"
             or not coordinator.data.cameras[serial].permits("recordings")):
@@ -69,7 +69,7 @@ async def launcher_events(hass, connection, msg):
                 "GET", f"/v1/recordings?cameras={serial}&date={msg['date']}"
             )
         values = data.get("recordings") if isinstance(data, dict) else None
-        if (data.get("complete") is not True or not isinstance(values, list)
+        if (not isinstance(data, dict) or data.get("complete") is not True or not isinstance(values, list)
                 or len(values) > _MAX_EVENTS):
             raise ValueError("Incomplete or excessive history")
         rows = []
