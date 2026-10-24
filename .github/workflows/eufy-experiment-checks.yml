@@ -1,0 +1,48 @@
+name: Eufy experiment checks
+on:
+  push:
+    branches: [dev/eufy-jpeg-and-bridge-diagnostics]
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'experiments/**'
+      - '.github/workflows/eufy-experiment-checks.yml'
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python extension
+        run: python -m py_compile experiments/ha-eufy-recordings-websocket.py
+      - name: Parse and check all inline JavaScript blocks
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.inside = False; self.scripts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'script':
+                      a = dict(attrs)
+                      self.inside = 'src' not in a and a.get('type', 'text/javascript') in ('text/javascript','module','')
+                      if self.inside: self.scripts.append('')
+              def handle_endtag(self, tag):
+                  if tag == 'script': self.inside = False
+              def handle_data(self, data):
+                  if self.inside: self.scripts[-1] += data
+          p = Scripts(); p.feed(Path('index.html').read_text())
+          for i, source in enumerate(p.scripts):
+              Path(f'/tmp/eufy-inline-{i}.js').write_text(source)
+          print(f'Extracted {len(p.scripts)} inline scripts')
+          PY
+          for f in /tmp/eufy-inline-*.js; do node --check "$f"; done
+      - name: Exercise offline analyser with synthetic input
+        run: |
+          printf '%s\n' '{"live_video":[{"state":"ended","duration_ms":10000,"input":{"bytes":1000,"last_data_age_ms":6000},"output":{"bytes":0},"jpeg":{"chunks":0},"encoder":{"frames":0}}]}' | node experiments/analyse-eufy-live.mjs | grep -q 'FFmpeg decode/encode/progress'
