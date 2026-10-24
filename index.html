@@ -1461,14 +1461,14 @@ async function loadEufyRecordings(){
   const data=response.result;
   if(data?.complete!==true||!Array.isArray(data.recordings))throw Error('Recording list incomplete');
   eufyRecords=data.recordings.filter(r=>r.entity_id===camera&&/^[a-f0-9]{32}$/.test(r.id));
-  note.textContent=eufyRecords.length+' recordings · '+date+' · Playback requires additional HA-side work';
+  note.textContent=eufyRecords.length+' recordings · '+date+' · First 12 thumbnails · Playback in development';
   for(const [i,record] of eufyRecords.entries()){
    const button=document.createElement('button');button.className='eufy-recording';button.type='button';
    const thumb=document.createElement('span');thumb.className='eufy-recording-thumb';thumb.textContent='◉';
    const label=document.createElement('span');label.textContent=(record.start||'').slice(11,19)+' – '+(record.end||'').slice(11,19);
    button.append(thumb,label);button.onclick=()=>{note.textContent='Recording playback is not yet available in this experimental build.'};grid.append(button);
   }
-  for(let i=0;i<eufyRecords.length;i++){
+  for(let i=0;i<Math.min(eufyRecords.length,12);i++){
    if(signal.aborted)break;const record=eufyRecords[i];if(!record.thumbnail)continue;
    try{
     const result=await eufyWsCommand({type:'eufy_viewer/launcher_thumbnail',entity_id:record.entity_id,recording_id:record.id});
