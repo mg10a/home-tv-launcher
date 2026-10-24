@@ -723,7 +723,7 @@ body.using-pointer button:focus:not(:focus-visible){outline:none;box-shadow:none
 }
 </style><style>
 /* Front Door overlay: independent of fixed-height launcher layout */
-.eufy-overlay{position:fixed;inset:0;z-index:130;background:#030915e8;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vh,24px)}
+.eufy-overlay{position:fixed;inset:0;z-index:10001;background:#030915e8;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vh,24px)}
 .eufy-overlay.hidden{display:none!important}
 .eufy-dialog{width:min(94vw,860px);max-height:94dvh;min-height:0;display:flex;flex-direction:column;gap:9px;padding:clamp(12px,2vh,20px);border:1px solid #486181;border-radius:17px;background:#142239;box-shadow:0 20px 80px #000b;color:#f5f7ff}
 .eufy-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -1434,8 +1434,8 @@ async function refreshEufySnapshot(){
  try{const response=await fetch(base+'/api/camera_proxy/'+encodeURIComponent(entity)+'?t='+Date.now(),{headers:{Authorization:'Bearer '+haAccessToken},cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const blob=await response.blob();if(!blob.type.startsWith('image/'))throw Error('Not an image');const next=URL.createObjectURL(blob);if(eufyImageUrl)URL.revokeObjectURL(eufyImageUrl);eufyImageUrl=next;img.src=next;img.classList.remove('hidden');placeholder.classList.add('hidden');meta.textContent='Latest available snapshot · loaded '+new Date().toLocaleTimeString()+' · not live'+(eufyBattery()?' · Battery '+eufyBattery():'')}
  catch(e){placeholder.textContent='Snapshot unavailable ('+e.message+').';meta.textContent='Home Assistant camera snapshot could not be retrieved.'}
 }
-function openEufyOverlay(){eufyReturnFocus=document.activeElement;document.getElementById('eufyOverlay').classList.remove('hidden');document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=(()=>{const d=new Date(Date.now()-86400000);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();refreshEufySnapshot()}
-function closeEufyOverlay(){eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();document.getElementById('eufyOverlay').classList.add('hidden');eufyReturnFocus?.focus?.()}
+function openEufyOverlay(){eufyReturnFocus=document.activeElement;const overlay=document.getElementById('eufyOverlay');overlay.classList.remove('hidden');overlay.style.display='flex';document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=(()=>{const d=new Date(Date.now()-86400000);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();refreshEufySnapshot()}
+function closeEufyOverlay(){eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();document.getElementById('eufyOverlay').classList.add('hidden');document.getElementById('eufyOverlay').style.display='none';eufyReturnFocus?.focus?.()}
 let eufyAbort=null,eufyThumbUrls=[],eufyRecords=[],eufyPlaybackUrl=null;
 function eufyClearThumbs(){eufyThumbUrls.forEach(url=>URL.revokeObjectURL(url));eufyThumbUrls=[]}
 function eufyApi(path,options={}){const base=haStoredUrl();if(!haVerified||!haAccessToken||!base)throw Error('Connect Home Assistant first');return fetch(base+path,{...options,headers:{Authorization:'Bearer '+haAccessToken,...(options.headers||{})},cache:'no-store'})}
@@ -1484,5 +1484,5 @@ async function playEufyRecording(index){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('eufyOverlay').classList.contains('hidden')){e.preventDefault();e.stopImmediatePropagation();closeEufyOverlay()}},true);
 document.getElementById('eufyOverlay').addEventListener('click',e=>{if(e.target.id==='eufyOverlay')closeEufyOverlay()});
-setInterval(eufyTileUpdate,10000);eufyTileUpdate();
+document.querySelector('.compact-eufy')?.addEventListener('click',openEufyOverlay);setInterval(eufyTileUpdate,10000);eufyTileUpdate();
 </script></body></html>
