@@ -1428,7 +1428,7 @@ let eufyReturnFocus=null,eufyImageUrl=null;
 function eufyCameraEntity(){const ids=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&/doorbell|front.?door|eufy/i.test(id+' '+(haStates[id]?.attributes?.friendly_name||'')));return ids[0]||null}
 function eufyBattery(){const entry=Object.entries(haStates||{}).find(([id,v])=>id.startsWith('sensor.')&&/doorbell.*battery|battery.*doorbell/i.test(id+' '+(v?.attributes?.friendly_name||'')));return entry&&Number.isFinite(Number(entry[1].state))?Math.round(Number(entry[1].state))+'%':null}
 function eufyTileUpdate(){const tile=document.getElementById('eufyTileStatus');if(tile)tile.textContent=eufyCameraEntity()?'Snapshot available'+(eufyBattery()?' · 🔋 '+eufyBattery():''):(haVerified?'Camera not found':'Snapshot · waiting for HA data')}
-async function refreshEufySnapshot(){
+async async function refreshEufySnapshot(){
  const img=document.getElementById('eufyStill'),placeholder=document.getElementById('eufyStillPlaceholder'),meta=document.getElementById('eufyMeta');
  const entity=eufyCameraEntity();
  if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){img.classList.add('hidden');placeholder.classList.remove('hidden');placeholder.textContent='Connect Home Assistant and make sure the doorbell camera entity is available.';return}
