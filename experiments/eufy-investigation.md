@@ -10,8 +10,11 @@ HEVC input begins around 3–4 seconds; FFmpeg software output and JPEG frame ap
 - Upstream `bridge/src/media.ts`: encoder outputs are observed; a 2-second/1MB startup cache is replayed; readers are destroyed if buffered writes exceed 1MB.
 - Upstream `custom_components/eufy_viewer/viewers.py`: `eufy_viewer/watch` with `transport: jpeg` delivers base64 JPEG `frame` events requiring `eufy_viewer/ack`.
 
-## Next diagnostic patch for bridge
-Record bounded counters each second per session, no media or credentials:
+## Existing bridge diagnostics — no instrumentation patch needed yet
+Upstream `bridge/src/live-video-diagnostics.ts` already records per-session `input`, `output`, `jpeg` stage chunk/byte totals, first/last timestamps, maximum gaps and last-data ages; FFmpeg `frames`, `dropped`, `out_time_ms`, progress age and stderr counts; video reader `backpressure`, `closed` and `revoked` counts. This is already enough to separate many source, transcoder and downstream stalls from existing diagnostic JSON. The next step is to inspect these fields in the user's previous diagnostics rather than patch blindly.
+
+## Optional additional diagnostic patch for bridge
+Only if existing stage reports cannot distinguish a failure, record additional bounded counters each second per session, no media or credentials:
 1. Incoming video bytes/s and time since last input chunk.
 2. FFmpeg frame count, output timestamp, stderr errors and last progress age.
 3. MPEG-TS output bytes/s, reader count and buffered write bytes.
