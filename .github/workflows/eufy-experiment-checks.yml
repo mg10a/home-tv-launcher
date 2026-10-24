@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python extension
-        run: python -m py_compile experiments/ha-eufy-recordings-websocket.py
+        run: python -m py_compile experiments/launcher_recordings.py
       - name: Parse and check all inline JavaScript blocks
         run: |
           python - <<'PY'
