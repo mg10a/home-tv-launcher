@@ -12,7 +12,7 @@ import asyncio
 import base64
 import re
 
-import probatio as vol
+import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.auth.permissions.const import POLICY_READ
 from homeassistant.helpers import entity_registry as er
