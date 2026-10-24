@@ -8,7 +8,7 @@
 - An isolated integration test installation or backup of `/config/custom_components/eufy_viewer`.
 
 ## Installation changes required in a disposable test installation
-1. Copy `experiments/ha-eufy-recordings-websocket.py` to `custom_components/eufy_viewer/launcher_recordings.py` (a hyphenated filename cannot be imported as a Python module).
+1. Copy `experiments/launcher_recordings.py` to `custom_components/eufy_viewer/launcher_recordings.py`.
 2. In `custom_components/eufy_viewer/__init__.py`, add `from .launcher_recordings import async_register_recording_commands` beside `from .viewers import async_register_commands`.
 3. In `async_setup`, immediately after `async_register_commands(hass)`, add `async_register_recording_commands(hass)`.
 4. Restart the **test** Home Assistant and verify no import, registration or schema errors. Do not alter bridge or transcoder.
