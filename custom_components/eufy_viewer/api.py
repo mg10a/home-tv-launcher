@@ -64,7 +64,7 @@ def recording_media_header(value: str | None) -> dict[str, str | bool] | None:
             "processing": processing,
             "fallback": fallback,
         }
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 
