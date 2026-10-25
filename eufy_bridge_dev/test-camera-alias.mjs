@@ -65,7 +65,7 @@ try{
  assert.equal(recordingSerial,realSerial,'recordings reach the real camera');
  assert.equal((await request('/v1/recordings?date=2026-10-25&cameras='+expectedPublic)).status,200);
  assert.equal(recordingSerial,realSerial,'recording timeline uses real ID');
- const websocket=new WebSocket(base.replace('http:','ws:')+'/v1/live/'+expectedPublic,
+ const websocket=new WebSocket(base.replace('http:','ws:')+'/v1/live/'+expectedPublic+'?transport=webrtc',
   {headers});
  try{
   await Promise.race([
