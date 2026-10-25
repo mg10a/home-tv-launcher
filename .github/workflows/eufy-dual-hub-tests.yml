@@ -1,0 +1,45 @@
+name: DEV Eufy two-hub entity isolation tests
+on:
+  push:
+    branches: [dev/eufy-dual-hub-entity-isolation]
+    paths:
+      - 'custom_components/eufy_viewer/**'
+      - 'tests/test_eufy_dual_hub_identity.py'
+      - '.github/workflows/eufy-dual-hub-tests.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile complete custom integration
+        run: python -m compileall -q custom_components/eufy_viewer
+      - name: Assert stable production entity IDs and separate DEV entity IDs
+        run: python -m unittest discover -s tests -p 'test_eufy_dual_hub_identity.py' -v
+      - name: Ensure viewer, recordings, camera and devices use the same namespace
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path('custom_components/eufy_viewer')
+          required = {
+            'camera.py': ['coordinator.entity_key(info.serial, "camera")', '"viewer_dev_bridge": self.coordinator.is_dev_bridge'],
+            'entity.py': ['coordinator.device_key(info.serial)'],
+            'station.py': ['coordinator.device_key(info.serial)'],
+            'sensor.py': ['coordinator.entity_key(info.serial, "battery")'],
+            'button.py': ['coordinator.entity_key(info.serial, "refresh_snapshot")'],
+            'event.py': ['coordinator.entity_key(info.serial, "event")'],
+            'select.py': ['coordinator.entity_key(info.serial, "guard_mode")'],
+            'alarm_control_panel.py': ['coordinator.entity_key(info.serial, "alarm")'],
+            'viewers.py': ['coordinator.camera_serial(entity.unique_id)'],
+            'recordings.py': ['coordinator.camera_serial(entity.unique_id)', 'coordinator.entity_key(serial, "camera")'],
+            'launcher_recordings.py': ['coordinator.camera_serial(entity.unique_id)'],
+          }
+          for file, patterns in required.items():
+            source = (root/file).read_text()
+            for pattern in patterns:
+              assert pattern in source, f'{file}: missing {pattern}'
+          print('PASS: original entity IDs preserved; DEV hub uses separate device/camera registry keys')
+          PY
