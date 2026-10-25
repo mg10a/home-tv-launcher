@@ -179,6 +179,11 @@ export class LiveTranscoder {
       this.stallReported = true;
       this.diagnostics.mark(this.serial, now - this.lastProgressAt <= 2000
         ? 'media_encoder_stall_progress_active' : 'media_encoder_stall_progress_silent');
+      // Recovery attempt: terminate this stalled camera session through the
+      // bridge's existing failure/cleanup path. A fresh camera session can
+      // provide the HEVC VPS/SPS/PPS and keyframe required by a new decoder.
+      // Do not restart FFmpeg against a partial raw HEVC stream.
+      this.fail();
     }, 1000);
     this.stallTimer.unref();
     this.diagnostics.encoder(this.serial, 'media', process);
