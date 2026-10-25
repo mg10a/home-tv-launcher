@@ -183,7 +183,7 @@ class PlaybackView(HomeAssistantView):
                 if observation is not None:
                     observation.mark("response_complete")
             return response
-        except ConnectionResetError, BrokenPipeError:
+        except (ConnectionResetError, BrokenPipeError):
             if observation is not None:
                 observation.mark("client_disconnect")
             # Closing or seeking can disconnect at any response write stage.
