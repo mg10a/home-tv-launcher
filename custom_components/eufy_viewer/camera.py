@@ -42,7 +42,7 @@ class EufyCamera(EufyEntity, Camera):
     def __init__(self, coordinator: EufyCoordinator, info: CameraInfo) -> None:
         Camera.__init__(self)
         EufyEntity.__init__(self, coordinator, info)
-        self._attr_unique_id = f"{info.serial}_camera"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "camera")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -53,6 +53,7 @@ class EufyCamera(EufyEntity, Camera):
             else None,
             "capabilities": self.info.capabilities if self.info else {},
             "viewer_card": True,
+            "viewer_dev_bridge": self.coordinator.is_dev_bridge,
             "viewer_webrtc": self.coordinator.data.webrtc,
             "viewer_late_audio": self.coordinator.data.webrtc,
         }
