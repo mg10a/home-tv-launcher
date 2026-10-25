@@ -23,6 +23,11 @@ jobs:
           docker run --rm --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
             eufy-bridge-dev:ci /app/test-stall-recovery.mjs
+      - name: Assert authenticated DEV HTTP bridge identity and restart stability
+        run: |
+          docker run --rm --entrypoint /bin/sh \
+            -v "$PWD/eufy_bridge_dev/test-bridge-identity.sh:/tmp/test-bridge-identity.sh:ro" \
+            eufy-bridge-dev:ci /tmp/test-bridge-identity.sh
   docker-build-aarch64:
     # Native ARM64 runner: Home Assistant Yellow uses this architecture.
     runs-on: ubuntu-24.04-arm
@@ -42,3 +47,8 @@ jobs:
           docker run --rm --platform linux/arm64 --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
             eufy-bridge-dev:arm64 /app/test-stall-recovery.mjs
+      - name: Assert ARM64 DEV bridge identity and restart stability
+        run: |
+          docker run --rm --platform linux/arm64 --entrypoint /bin/sh \
+            -v "$PWD/eufy_bridge_dev/test-bridge-identity.sh:/tmp/test-bridge-identity.sh:ro" \
+            eufy-bridge-dev:arm64 /tmp/test-bridge-identity.sh
