@@ -170,9 +170,6 @@ export class LiveTranscoder {
     this.lastFrameAt = performance.now();
     this.lastFrames = -1;
     this.stallReported = false;
-    // Attach to the already-piped Readable, without changing pipe or backpressure.
-    // Remove on every exit/fallback/stop; do not retain video buffers.
-    this.video.on('data', this.observeVideo);
     clearInterval(this.stallTimer);
     this.stallTimer = setInterval(() => {
       if (this.stopped || this.transitioning || this.process !== process || this.stallReported ||
@@ -196,6 +193,9 @@ export class LiveTranscoder {
     input.on('error', failure);
     for (const chunk of this.replay) input.write(chunk);
     this.video.pipe(input);
+    // Observe only after pipe() establishes FFmpeg as the stream consumer.
+    // Listener retains no video chunks and is removed during cleanup.
+    this.video.on('data', this.observeVideo);
     if (this.mode === 'software') this.clearReplay();
     process.stdout!.on('data', (chunk: Buffer) => {
       if (this.stopped || this.transitioning || this.process !== process) return;
