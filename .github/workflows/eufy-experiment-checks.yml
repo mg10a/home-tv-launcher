@@ -97,6 +97,8 @@ jobs:
 
   recording-integration-package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -136,3 +138,13 @@ jobs:
           name: eufy-viewer-recordings-dev-installable
           path: eufy-viewer-recordings-dev.zip
           retention-days: 14
+      - name: Publish complete integration for HACS custom repository
+        run: |
+          mkdir -p launcher/custom_components
+          cp -a package/custom_components/eufy_viewer launcher/custom_components/
+          cd launcher
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add custom_components/eufy_viewer
+          git commit -m 'Publish complete Eufy Viewer recordings DEV integration' || exit 0
+          git push origin HEAD:main
