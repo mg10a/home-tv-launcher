@@ -13,3 +13,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build deployable HA add-on image
         run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
+      - name: Assert FFmpeg 7.1 and real paced HEVC to H.264 compatibility
+        run: |
+          docker run --rm --entrypoint /bin/sh \
+            -v "$PWD/eufy_bridge_dev/test-hevc-decoder.sh:/tmp/test-hevc-decoder.sh:ro" \
+            eufy-bridge-dev:ci /tmp/test-hevc-decoder.sh
+      - name: Exercise decoder stall recovery against compiled bridge
+        run: |
+          docker run --rm --entrypoint node \
+            -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
+            eufy-bridge-dev:ci /app/test-stall-recovery.mjs
