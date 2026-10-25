@@ -55,6 +55,13 @@ jobs:
         with:
           repository: keesmod/ha-eufy-cam
           path: upstream
+      - name: Baseline upstream bridge tests
+        working-directory: upstream/bridge
+        run: |
+          npm ci
+          npm run build
+          npm test > /tmp/upstream-test.log 2>&1 || echo "UPSTREAM_TESTS_FAILED"
+          tail -n 12 /tmp/upstream-test.log
       - name: Apply bridge source patch
         run: |
           cp experiments/bridge-patch/live-transcoder.ts upstream/bridge/src/live-transcoder.ts
