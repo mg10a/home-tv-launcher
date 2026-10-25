@@ -48,7 +48,7 @@ class EufyBattery(EufyEntity, SensorEntity):
 
     def __init__(self, coordinator: EufyCoordinator, info: CameraInfo) -> None:
         super().__init__(coordinator, info)
-        self._attr_unique_id = f"{info.serial}_battery"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "battery")
 
     @property
     def native_value(self) -> float | None:
