@@ -85,3 +85,12 @@ jobs:
       - name: Test patched bridge
         working-directory: upstream/bridge
         run: npm test
+
+  dev-addon-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Build actual Home Assistant DEV add-on
+        run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
