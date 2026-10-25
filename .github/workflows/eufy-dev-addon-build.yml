@@ -28,6 +28,11 @@ jobs:
           docker run --rm --entrypoint /bin/sh \
             -v "$PWD/eufy_bridge_dev/test-bridge-identity.sh:/tmp/test-bridge-identity.sh:ro" \
             eufy-bridge-dev:ci /tmp/test-bridge-identity.sh
+      - name: Confirm DEV camera entity identities and all media routes on AMD64
+        run: |
+          docker run --rm --entrypoint node \
+            -v "$PWD/eufy_bridge_dev/test-camera-alias.mjs:/app/test-camera-alias.mjs:ro" \
+            eufy-bridge-dev:ci /app/test-camera-alias.mjs
   docker-build-aarch64:
     # Native ARM64 runner: Home Assistant Yellow uses this architecture.
     runs-on: ubuntu-24.04-arm
@@ -52,3 +57,8 @@ jobs:
           docker run --rm --platform linux/arm64 --entrypoint /bin/sh \
             -v "$PWD/eufy_bridge_dev/test-bridge-identity.sh:/tmp/test-bridge-identity.sh:ro" \
             eufy-bridge-dev:arm64 /tmp/test-bridge-identity.sh
+      - name: Confirm DEV camera identity and media routes on Home Assistant Yellow ARM64
+        run: |
+          docker run --rm --platform linux/arm64 --entrypoint node \
+            -v "$PWD/eufy_bridge_dev/test-camera-alias.mjs:/app/test-camera-alias.mjs:ro" \
+            eufy-bridge-dev:arm64 /app/test-camera-alias.mjs
