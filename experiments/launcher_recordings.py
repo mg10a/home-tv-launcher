@@ -23,7 +23,7 @@ from .coordinator import EufyCoordinator
 _ENTITY = re.compile(r"camera\.[a-z0-9_]+\Z")
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}\Z")
 _ID = re.compile(r"[a-f0-9]{32}\Z")
-_MAX_EVENTS = 1000
+_MAX_EVENTS = 10000
 _MAX_JPEG = 1_000_000
 
 
