@@ -23,3 +23,22 @@ jobs:
           docker run --rm --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
             eufy-bridge-dev:ci /app/test-stall-recovery.mjs
+  docker-build-aarch64:
+    # Native ARM64 runner: Home Assistant Yellow uses this architecture.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual ARM64 Home Assistant DEV add-on
+        run: |
+          docker build --platform linux/arm64 --progress=plain \
+            -t eufy-bridge-dev:arm64 eufy_bridge_dev
+      - name: HEVC decoder smoke test on ARM64
+        run: |
+          docker run --rm --platform linux/arm64 --entrypoint /bin/sh \
+            -v "$PWD/eufy_bridge_dev/test-hevc-decoder.sh:/tmp/test-hevc-decoder.sh:ro" \
+            eufy-bridge-dev:arm64 /tmp/test-hevc-decoder.sh
+      - name: Verify stalled encoder recovery on ARM64
+        run: |
+          docker run --rm --platform linux/arm64 --entrypoint node \
+            -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
+            eufy-bridge-dev:arm64 /app/test-stall-recovery.mjs
