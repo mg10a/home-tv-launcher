@@ -53,7 +53,7 @@ class EufySnapshotRefreshButton(EufyEntity, ButtonEntity):
 
     def __init__(self, coordinator: EufyCoordinator, info: CameraInfo) -> None:
         super().__init__(coordinator, info)
-        self._attr_unique_id = f"{info.serial}_refresh_snapshot"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "refresh_snapshot")
 
     @property
     def available(self) -> bool:
