@@ -110,7 +110,7 @@ class LateAudioTrack:
                     await self.signaling.send(WebRTCCandidate(candidate))
                 else:
                     return False
-        except (Go2RtcClientError, aiohttp.ClientError, TimeoutError):
+        except Go2RtcClientError, aiohttp.ClientError, TimeoutError:
             self.ended("signaling_failed")
             self.emit({"type": "audio_ended"})
             await self.close()
