@@ -50,7 +50,7 @@ async def async_register_card(hass: HomeAssistant) -> None:
             )
         for duplicate in duplicates:
             await resources.async_delete_item(duplicate["id"])
-    except HomeAssistantError, OSError:
+    except (HomeAssistantError, OSError):
         _LOGGER.exception(
             "Unable to register the dashboard cards automatically. Add %s as a "
             "JavaScript module in dashboard Resources, then reload the browser",
