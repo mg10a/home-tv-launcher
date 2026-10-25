@@ -753,7 +753,7 @@ async def async_get_config_entry_diagnostics(
         async with asyncio.timeout(10):
             raw = await api.request("GET", "/v1/diagnostics")
         result["support"] = support_report(raw, window * 1000)
-    except BridgeError, TimeoutError:
+    except (BridgeError, TimeoutError):
         result["support"] = {"status": "unavailable"}
     result["assessment"] = assess(result)
     return result
