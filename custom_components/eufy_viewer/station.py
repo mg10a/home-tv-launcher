@@ -32,9 +32,9 @@ class EufyStationEntity(CoordinatorEntity[EufyCoordinator]):
         super().__init__(coordinator)
         self.serial = info.serial
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, info.serial)},
+            identifiers={(DOMAIN, coordinator.device_key(info.serial))},
             manufacturer="Eufy",
-            name=info.name,
+            name=f"{info.name} DEV" if coordinator.is_dev_bridge else info.name,
             model=info.model,
             hw_version=info.hardware,
             sw_version=info.software,
