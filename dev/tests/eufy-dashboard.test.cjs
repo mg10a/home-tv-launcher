@@ -13,8 +13,9 @@ test('all inline scripts parse without JavaScript errors',()=>{
  for(const [i,s] of scripts.entries())assert.doesNotThrow(()=>new vm.Script(s[1],{filename:'inline-'+i+'.js'}));
 });
 test('visible DEV version and original snapshot path preserved',()=>{
- assert.match(html,/v3\.74-dev/);
+ assert.match(html,/v3\.75-dev/);
  assert.match(html,/id="eufyLiveVideo"/);
+ assert.match(html,/id="eufyCameraSelect"/);
  assert.match(html,/async function refreshEufySnapshot\(\)/);
  assert.match(html,/eufyJpegFirstFrame\(entity\)/);
  assert.match(html,/type:'eufy_viewer\/watch',entity_id:entity,transport:'jpeg'/);
@@ -129,4 +130,35 @@ test('JPEG fallback that delivers a frame does not prematurely restart camera se
  assert.equal(api.id(),id,'JPEG playback should retain a healthy existing lease');
  assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,1);
  api.stop();
+});
+
+test('DEV dashboard can choose a second HA Eufy camera without changing the original',()=>{
+ const start=html.indexOf('let eufySelectedCamera=null;');
+ const end=html.indexOf('function eufyBattery()',start);
+ assert.ok(start>=0&&end>start,'source selection script exists');
+ const source=html.slice(start,end);
+ const haStates={
+  'camera.front_door':{attributes:{viewer_card:true,friendly_name:'Front Door'}},
+  'camera.front_door_2':{attributes:{viewer_card:true,friendly_name:'Front Door DEV'}}
+ };
+ const selection={value:'',hidden:true,options:[],
+  replaceChildren(){this.options=[]},
+  appendChild(option){this.options.push(option)}};
+ const field={textContent:'',classList:{add(){},remove(){}},replaceChildren(){}};
+ const elements={eufyCameraSelect:selection,eufyRecordingGrid:field,eufyRecordingNote:field,
+  eufyStill:field,eufyStillPlaceholder:field};
+ const document={getElementById(id){return elements[id]},createElement(){return {value:'',textContent:''}}};
+ let restarted=0;
+ const deps={haStates,document,eufyStopLive(){},eufyStopJpeg(){},eufyAbort:null,
+  closeEufyPlayer(){},eufyClearThumbs(){},eufyStartLive(){restarted++}};
+ const fn=new Function(...Object.keys(deps),source+
+  ';return {selected:eufyCameraEntity,options:eufyCameraOptions,changed:eufyCameraChanged};');
+ const api=fn(...Object.values(deps));
+ assert.equal(api.selected(),'camera.front_door','original is preserved by default');
+ api.options();assert.equal(selection.hidden,false);
+ assert.deepEqual(selection.options.map(x=>x.value),['camera.front_door','camera.front_door_2']);
+ assert.ok(selection.options[1].textContent.includes('camera.front_door_2'));
+ selection.value='camera.front_door_2';api.changed();
+ assert.equal(api.selected(),'camera.front_door_2');
+ assert.equal(restarted,1,'switch initiates only the chosen camera session');
 });
