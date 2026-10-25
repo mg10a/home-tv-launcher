@@ -31,6 +31,8 @@ def camera_serial(bridge_id: str, unique_id: str) -> str | None:
     stem = unique_id[: -len(suffix)]
     if is_dev_bridge(bridge_id):
         prefix = f"{bridge_id}:"
-        return stem[len(prefix):] or None if stem.startswith(prefix) else None
+        if not stem.startswith(prefix):
+            return None
+        return stem[len(prefix):] or None
     # Production preserves its original raw-serial camera registry convention.
     return stem or None
