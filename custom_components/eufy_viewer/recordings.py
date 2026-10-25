@@ -41,7 +41,9 @@ def camera_access(
     ):
         raise web.HTTPNotFound
     coordinator: EufyCoordinator = entry.runtime_data
-    serial = entity.unique_id.removesuffix("_camera")
+    serial = coordinator.camera_serial(entity.unique_id)
+    if serial is None:
+        raise web.HTTPNotFound
     if (
         serial not in coordinator.data.cameras
         or not coordinator.last_update_success
@@ -183,7 +185,7 @@ class EventsView(HomeAssistantView):
             for coordinator in groups:
                 for serial in coordinator.data.cameras:
                     calendar_entity = registry.async_get_entity_id(
-                        "camera", DOMAIN, f"{serial}_camera"
+                        "camera", DOMAIN, coordinator.entity_key(serial, "camera")
                     )
                     if calendar_entity is None:
                         raise web.HTTPForbidden
