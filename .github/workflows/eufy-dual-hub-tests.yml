@@ -34,6 +34,36 @@ jobs:
         run: python -m compileall -q custom_components/eufy_viewer
       - name: Assert stable production entity IDs and separate DEV entity IDs
         run: python -m unittest discover -s tests -p 'test_eufy_dual_hub_identity.py' -v
+      - name: Package installable DEV integration and rollback copy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile, json, hashlib
+          root = Path('custom_components/eufy_viewer')
+          manifest = json.loads((root/'manifest.json').read_text())
+          assert manifest['domain'] == 'eufy_viewer'
+          assert manifest['version'] == '0.8.49-dev.1'
+          out = Path('dist')
+          out.mkdir(exist_ok=True)
+          archive = out/'eufy-viewer-dev-dual-hub-0.8.49-dev.1.zip'
+          with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              for file in sorted(root.rglob('*')):
+                  if file.is_file() and '__pycache__' not in file.parts and file.suffix != '.pyc':
+                      z.write(file, 'custom_components/eufy_viewer/' + str(file.relative_to(root)))
+          with zipfile.ZipFile(archive) as z:
+              bad = z.testzip()
+              assert bad is None, bad
+              assert 'custom_components/eufy_viewer/identity.py' in z.namelist()
+              assert 'custom_components/eufy_viewer/launcher_recordings.py' in z.namelist()
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          (out/'SHA256SUMS.txt').write_text(f'{digest}  {archive.name}\n')
+          print(f'Packaged {archive} SHA256 {digest}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eufy-viewer-dev-dual-hub-install
+          path: dist/
+          retention-days: 30
       - name: Ensure viewer, recordings, camera and devices use the same namespace
         run: |
           python - <<'PY'
