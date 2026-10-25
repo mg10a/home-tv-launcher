@@ -37,8 +37,8 @@ def _camera(hass, connection, entity_id: str) -> tuple[EufyCoordinator, str]:
             or entity.disabled or not entry or not hasattr(entry, "runtime_data")):
         raise LookupError("Camera unavailable")
     coordinator = entry.runtime_data
-    serial = entity.unique_id.removesuffix("_camera")
-    if (not coordinator.data or serial not in coordinator.data.cameras
+    serial = coordinator.camera_serial(entity.unique_id)
+    if (not coordinator.data or serial is None or serial not in coordinator.data.cameras
             or not coordinator.last_update_success
             or coordinator.data.auth != "connected"
             or not coordinator.data.cameras[serial].permits("recordings")):
