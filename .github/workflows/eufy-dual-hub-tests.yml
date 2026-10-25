@@ -6,6 +6,8 @@ on:
       - 'custom_components/eufy_viewer/**'
       - 'tests/test_eufy_dual_hub_identity.py'
       - 'tests/test_eufy_ha_runtime.py'
+      - 'scripts/install-eufy-dual-hub-dev.sh'
+      - 'scripts/rollback-eufy-dual-hub-dev.sh'
       - '.github/workflows/eufy-dual-hub-tests.yml'
   workflow_dispatch:
 jobs:
@@ -56,6 +58,27 @@ jobs:
               assert pattern in source, f'{file}: missing {pattern}'
           print('PASS: original entity IDs preserved; DEV hub uses separate device/camera registry keys')
           PY
+      - name: Test backup-first installation and exact rollback without touching /config
+        run: |
+          set -euo pipefail
+          sh -n scripts/install-eufy-dual-hub-dev.sh
+          sh -n scripts/rollback-eufy-dual-hub-dev.sh
+          scratch=$(mktemp -d)
+          trap 'rm -rf "$scratch"' EXIT
+          mkdir -p "$scratch/home/custom_components/eufy_viewer" "$scratch/repo/custom_components"
+          printf '{"version":"0.8.48"}\n' > "$scratch/home/custom_components/eufy_viewer/manifest.json"
+          printf 'original camera preserved\n' > "$scratch/home/custom_components/eufy_viewer/original.txt"
+          cp -a custom_components/eufy_viewer "$scratch/repo/custom_components/"
+          tar -czf "$scratch/test-archive.tar.gz" -C "$scratch/repo" .
+          EUFY_VIEWER_CONFIG_ROOT="$scratch/home" EUFY_INSTALL_TEST_ARCHIVE="$scratch/test-archive.tar.gz" \
+            sh scripts/install-eufy-dual-hub-dev.sh
+          grep -q '"version": "0.8.49-dev.2"' "$scratch/home/custom_components/eufy_viewer/manifest.json"
+          test -f "$scratch/home/custom_components/eufy_viewer/identity.py"
+          EUFY_VIEWER_CONFIG_ROOT="$scratch/home" sh scripts/rollback-eufy-dual-hub-dev.sh
+          grep -q '"version":"0.8.48"' "$scratch/home/custom_components/eufy_viewer/manifest.json"
+          test -f "$scratch/home/custom_components/eufy_viewer/original.txt"
+          test ! -f "$scratch/home/custom_components/eufy_viewer/identity.py"
+          echo 'PASS: installation created backup, patch installed, rollback restored original component'
       - name: Produce complete installable package and SHA-256 manifest
         run: |
           mkdir -p dist
