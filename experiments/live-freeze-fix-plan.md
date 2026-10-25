@@ -26,3 +26,9 @@ Status: investigation, **not a verified fix**. No production HA or bridge change
 - Repeated live viewing for at least 60 seconds on the user's HA Yellow.
 - No freeze after first frame, no unbounded buffering, and no regression in JPEG snapshot, recordings, or HA Events card.
 - Bundle the validated bridge change with the recording WebSocket extension into one backed-up HA installation.
+
+
+## Offline test results (2026-10-25)
+Ran local FFmpeg with synthetic portrait HEVC (320x568 at 10 fps), using decoder-only, H.264 encoder, and bridge-like wall-clock setpts/VFR/MPEG-TS paths: **all three exited successfully**. Also concatenated HEVC elementary streams with a 320x568 -> 480x640 resolution switch and processed them through the bridge-like pipeline; FFprobe reported **36 output video packets**, with successful FFmpeg exit. These tests are synthetic and file-fed, not live-paced Eufy captures. They do **not** reproduce the observed production stall or validate a repair.
+
+Next priority is testing a *live-paced, fragmented* HEVC feed, and if available an offline, privately held Eufy sample, before selecting any encoder or clock modification. Preserve the existing JPEG snapshot path and avoid modifying stable launcher v3.65.
