@@ -117,7 +117,7 @@ class WebRTCViewer(Viewer):
         try:
             async with asyncio.timeout(1):
                 row.update(await self._relay_stats(self.name))
-        except (aiohttp.ClientError, TimeoutError, ValueError):
+        except aiohttp.ClientError, TimeoutError, ValueError:
             return
         # AAC never travels in the video stream: late audio has its own
         # go2rtc stream, whose codec counters are added to the same row.
@@ -188,7 +188,7 @@ class WebRTCViewer(Viewer):
         self.pending = False
         try:
             await self.socket.send_str("fallback:" + reason)
-        except (aiohttp.ClientError, ConnectionError):
+        except aiohttp.ClientError, ConnectionError:
             self.cancel()
             return False
         return True
@@ -232,7 +232,7 @@ class WebRTCViewer(Viewer):
                     await self.signaling.send(WebRTCCandidate(candidate))
                 else:
                     return False
-        except (Go2RtcClientError, aiohttp.ClientError, TimeoutError):
+        except Go2RtcClientError, aiohttp.ClientError, TimeoutError:
             await self._failed("signaling_error")
             return self.fallback_requested and not self.closed
         return not self.closed
@@ -293,7 +293,7 @@ class WebRTCViewer(Viewer):
         except asyncio.CancelledError:
             await self.audio.close()
             raise
-        except (Go2RtcClientError, aiohttp.ClientError, TimeoutError):
+        except Go2RtcClientError, aiohttp.ClientError, TimeoutError:
             self.audio.ended("setup_failed")
             self._audio_event({"type": "audio_ended"})
             await self.audio.close()
@@ -419,7 +419,7 @@ class WebRTCViewer(Viewer):
                                         data.get("audio"),
                                         data.get("audio_attempt"),
                                     )
-                            except (Go2RtcClientError, aiohttp.ClientError, TimeoutError):
+                            except Go2RtcClientError, aiohttp.ClientError, TimeoutError:
                                 await self._failed("signaling_error")
                         elif data.get("type") == "audio_ready":
                             self._audio_announced(data)
