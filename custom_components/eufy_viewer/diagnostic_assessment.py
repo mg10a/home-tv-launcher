@@ -1,0 +1,758 @@
+"""Explain observations, keeping absent evidence separate from possible causes."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
+
+from .live_diagnostics import LATE_AUDIO_STAGES
+
+# FFmpeg reports its progress once a second, so a counter that rose within
+# two reports after the last output chunk can still date from before it.
+_PROGRESS_SLACK_MS = 2000
+
+
+def _encoder_stage(row: dict[str, Any]) -> str:
+    """Name the FFmpeg stage when its progress counters cover an output stop.
+
+    That needs an encoder output that stopped more than 6 s before the end, an
+    input that flowed more than 6 s past that stop and FFmpeg's progress blocks
+    over the same span. Otherwise the counters cannot name a stage.
+    """
+    encoder, output, source = (
+        row.get(key, {}) for key in ("encoder", "output", "input")
+    )
+    stopped, age = output.get("last_data_ms"), output.get("last_data_age_ms")
+    flowed, reported = source.get("last_data_ms"), encoder.get("last_progress_ms")
+    if not (
+        type(stopped) is int
+        and type(age) is int
+        and age > 6000
+        and type(flowed) is int
+        and flowed - stopped > 6000
+        and type(reported) is int
+        and reported - stopped > 6000
+    ):
+        return ""
+    frame, drop = encoder.get("last_frame_ms"), encoder.get("last_drop_ms")
+    if type(frame) is int and frame - stopped > _PROGRESS_SLACK_MS:
+        return (
+            f" FFmpeg's frame count kept rising for {frame - stopped} ms after the "
+            "last output chunk while the input flowed, so the encoder or the "
+            "muxer emitted nothing."
+        )
+    if type(drop) is int and drop - stopped > _PROGRESS_SLACK_MS:
+        return (
+            " FFmpeg's frame count stopped with the output while its drop count "
+            f"kept rising for {drop - stopped} ms after the last output chunk, "
+            "so the video sync dropped the frames."
+        )
+    return (
+        " Neither FFmpeg's frame count nor its drop count rose in the "
+        f"{reported - stopped} ms it kept reporting after the last output chunk "
+        "while the input flowed, so the decoder delivered no frames."
+    )
+
+
+def _start_observation(start: dict[str, Any], failed: bool) -> str:
+    """Say how far a live start without P2P video got, from its start stages."""
+    ready, issued, answered, code, ended, metadata = (
+        start.get(key)
+        for key in (
+            "session_ready_ms",
+            "issued_ms",
+            "result_ms",
+            "return_code",
+            "no_data_end_ms",
+            "metadata_ms",
+        )
+    )
+    given_up = (
+        f", and the P2P library ended the stream at {ended} ms"
+        if type(ended) is int
+        else ""
+    )
+    if type(metadata) is int:
+        return (
+            f"The stream's metadata arrived at {metadata} ms, but no P2P video "
+            "chunk reached the bridge."
+        )
+    if type(answered) is int and type(code) is int and code != 0:
+        return f"The station refused START with return code {code} at {answered} ms."
+    if type(answered) is int:
+        accepted = " with return code 0" if code == 0 else ""
+        return (
+            f"The station answered START{accepted} at {answered} ms and sent no "
+            f"stream{given_up}."
+        )
+    if type(issued) is int:
+        return (
+            f"START went out at {issued} ms and the station did not answer "
+            f"it{given_up}."
+        )
+    if type(ready) is int:
+        return (
+            f"The camera's P2P session was ready at {ready} ms, but no START followed."
+        )
+    if failed:
+        return "The start failed before the camera's P2P session was ready."
+    return (
+        "The camera's P2P session did not become ready before the session "
+        "ended, so no START went out."
+    )
+
+
+_CONNECTION_STAGES = {
+    "lookup": (
+        "Owner connection was not established. No HomeBase answered the local "
+        "lookup{target}. The bridge host did not reach the HomeBase on its LAN."
+    ),
+    "station_found": (
+        "Owner connection was not established. The HomeBase answered the local "
+        "lookup but did not complete the P2P handshake."
+    ),
+    "session_open": (
+        "Owner connection was not established. The HomeBase opened the P2P "
+        "session but the command key was not established."
+    ),
+}
+# A near reply is not the device's own reply by the exact ID comparison (#152).
+# It did reach the bridge, so the stage sentence says no reply was accepted.
+_NEAR = (
+    " A lookup reply carried this {device}'s ID in a different format, and the "
+    "lookup did not accept it."
+)
+_OWNER_NEAR = (
+    "Owner connection was not established. No HomeBase gave an accepted reply "
+    "to the local lookup{target}."
+)
+# Another device that answered, in this account or outside it, can be a
+# HomeBase, so the stage sentence speaks for this HomeBase only.
+_OWNER_ACCOUNT = (
+    "Owner connection was not established. This HomeBase did not answer the "
+    "local lookup{target}. The bridge host did not reach the HomeBase on its LAN."
+)
+_STANDALONE_NEAR = (
+    "The experimental standalone camera gave no accepted reply to the local "
+    "lookup{target}."
+)
+# An opted-in standalone camera is its own owner. Its connect says how far its
+# own session got, whatever the reason, so the next protocol step is visible.
+_STANDALONE_STAGES = {
+    "none": (
+        "The experimental standalone camera did not start its local lookup ({reason})."
+    ),
+    "lookup": (
+        "The experimental standalone camera did not answer the local lookup{target}."
+    ),
+    "station_found": (
+        "The experimental standalone camera answered the local lookup but did "
+        "not complete the P2P handshake."
+    ),
+    "session_open": (
+        "The experimental standalone camera opened the P2P session but the "
+        "command key was not established."
+    ),
+}
+
+
+def _experimental(row: dict[str, Any]) -> bool:
+    return row.get("relationship_transport") == "experimental"
+
+
+def _standalone_connections(
+    support: dict[str, Any], discovery: list[Any]
+) -> list[tuple[str, str]]:
+    """Explain each opted-in standalone camera that failed in the current report."""
+    reports = [r.get("report") for r in discovery if type(r.get("report")) is int]
+    if not reports:
+        return []
+    current = max(reports)
+    failing = {
+        r.get("ref")
+        for r in discovery
+        if r.get("report") == current
+        and _experimental(r)
+        and type(r.get("ref")) is int
+        and r.get("owner_status") in {"error", "disconnected"}
+    }
+    connected: set[Any] = set()
+    latest: dict[Any, dict[str, Any]] = {}
+    for r in support.get("recent_events", []):
+        if (
+            r.get("event") != "station_connection"
+            or r.get("report") != current
+            or r.get("device_ref") not in failing
+        ):
+            continue
+        if r.get("status") == "connected":
+            connected.add(r.get("device_ref"))
+            latest.pop(r.get("device_ref"), None)
+        elif r.get("phase") == "connect" and r.get("status") == "error":
+            latest[r.get("device_ref")] = r
+    findings = []
+    for ref in sorted(failing):
+        row = latest.get(ref)
+        if row and row.get("stage") in _STANDALONE_STAGES:
+            template = (
+                _STANDALONE_NEAR
+                if _near_reply(row)
+                else _STANDALONE_STAGES[row["stage"]]
+            )
+            findings.append(
+                (
+                    template.format(
+                        target=_lookup_target(row),
+                        reason=row.get("reason") or "unclassified_error",
+                    )
+                    + _lookup_observed(row, "camera"),
+                    "support.recent_events.station_connection",
+                )
+            )
+        elif ref in connected:
+            findings.append(
+                (
+                    "The experimental standalone camera connected on the local "
+                    "route, and its session later closed.",
+                    "support.recent_events.station_connection",
+                )
+            )
+        else:
+            findings.append(
+                (
+                    "The experimental standalone camera connection was not "
+                    "established. The report does not show how far it got.",
+                    "support.last_discovery",
+                )
+            )
+    return findings
+
+
+def _standalone_not_admitted(discovery: list[Any]) -> list[str]:
+    """Model codes of standalone rows the library kept off the opted-in route.
+
+    Only the current report counts, and only when its summary says the option
+    is on. Older bridges send no option state, so they get no finding.
+    """
+    reports = [r.get("report") for r in discovery if type(r.get("report")) is int]
+    if not reports:
+        return []
+    current = max(reports)
+    rows = [r for r in discovery if r.get("report") == current]
+    if not any(
+        r.get("event") == "summary" and r.get("experimental_standalone") is True
+        for r in rows
+    ):
+        return []
+    models: list[str] = []
+    for r in rows:
+        if (
+            r.get("event") == "device"
+            and r.get("relationship") == "standalone"
+            and r.get("relationship_reason") == "standalone_transport_unverified"
+            and not _experimental(r)
+        ):
+            model = r.get("model")
+            models.append(model if isinstance(model, str) else "unavailable")
+    return models
+
+
+# Only a connection that ran out of time says where the HomeBase stopped
+# answering. The latest such connect is used, and failures for other reasons,
+# such as a concurrent attempt, are skipped.
+_CONNECTION_TIMEOUTS = {"device_request_timeout", "device_disconnected"}
+
+
+def _lookup_target(row: dict[str, Any]) -> str:
+    address = row.get("inventory_address")
+    return (
+        " at its inventory LAN address or by broadcast"
+        if address is True
+        else ", and the inventory had no LAN address for it"
+        if address is False
+        else ""
+    )
+
+
+def _near_reply(row: dict[str, Any]) -> bool:
+    """Whether a reply with the device's ID in another format reached the lookup."""
+    near = row.get("lookup_near_replies")
+    return row.get("stage") == "lookup" and (
+        row.get("lookup_inventory_reply") == "near" or (type(near) is int and near > 0)
+    )
+
+
+def _account_reply(row: dict[str, Any]) -> bool:
+    """Whether another device, in this account or outside it, answered the lookup."""
+    account = row.get("lookup_account_replies")
+    foreign = row.get("lookup_foreign_replies")
+    return row.get("stage") == "lookup" and (
+        row.get("lookup_inventory_reply") in {"account", "foreign"}
+        or (type(account) is int and account > 0)
+        or (type(foreign) is int and foreign > 0)
+    )
+
+
+def _lookup_observed(row: dict[str, Any], device: str) -> str:
+    """One sentence on what an attempt that failed at lookup saw, or nothing.
+
+    Bridge 0.8.38 with client 0.30.0 adds the lookup fields. The first
+    observation that applies in this fixed order is named. Without the fields,
+    or with values the download replaced by None, the text stays unchanged.
+    """
+    if row.get("stage") != "lookup":
+        return ""
+
+    def count(key: str) -> int | None:
+        value = row.get(key)
+        return value if type(value) is int else None
+
+    rounds, errors, datagrams = (
+        count(key)
+        for key in ("lookup_rounds", "lookup_send_errors", "lookup_datagrams")
+    )
+    own, account, foreign, near = (
+        count(f"lookup_{key}_replies") for key in ("own", "account", "foreign", "near")
+    )
+    reply = row.get("lookup_inventory_reply")
+    if rounds == 0:
+        return " No lookup request left the bridge."
+    if row.get("lookup_broadcast_enabled") is False or (errors or 0) > 0:
+        return " Some lookup requests could not be sent from the bridge host."
+    if _near_reply(row):
+        return _NEAR.format(device=device)
+    if reply == "foreign":
+        return (
+            " The device at the inventory LAN address answered with an ID outside "
+            "this account."
+        )
+    if reply == "account":
+        return " The inventory LAN address belongs to another device in this account."
+    if row.get("inventory_address_shared") is True:
+        return (
+            " The inventory lists the same LAN address for another device in this "
+            "account."
+        )
+    if (account or 0) > 0:
+        return (
+            " Other devices in this account answered the broadcast, but this "
+            f"{device} did not."
+        )
+    if datagrams == 0:
+        during = (
+            "the lookup"
+            if rounds is None
+            else f"the {rounds} lookup round{'' if rounds == 1 else 's'}"
+        )
+        return f" No reply of any kind reached the bridge during {during}."
+    if (foreign or 0) > 0 and own == 0 and account == 0 and near == 0:
+        return " Only devices outside this account answered."
+    return ""
+
+
+def _connection_stage(row: dict[str, Any]) -> str:
+    template = (
+        _OWNER_NEAR
+        if _near_reply(row)
+        else _OWNER_ACCOUNT
+        if _account_reply(row)
+        else _CONNECTION_STAGES[row["stage"]]
+    )
+    return template.format(target=_lookup_target(row)) + _lookup_observed(
+        row, "HomeBase"
+    )
+
+
+def _failed_connection(support: dict[str, Any], discovery: list[Any]) -> Any:
+    """The latest named-stage timeout of a HomeBase that failed in the current report.
+
+    Per HomeBase only its latest timed-out connect after its last connection in
+    the report counts. None when no such attempt reached a named stage.
+    """
+    reports = [r.get("report") for r in discovery if type(r.get("report")) is int]
+    if not reports:
+        return None
+    current = max(reports)
+    failing = {
+        r.get("ref")
+        for r in discovery
+        if r.get("report") == current
+        and r.get("station_status") in {"error", "disconnected"}
+    } | {
+        r.get("owner_ref")
+        for r in discovery
+        if r.get("report") == current
+        and r.get("owner_status") in {"error", "disconnected"}
+    }
+    events = [
+        r
+        for r in support.get("recent_events", [])
+        if r.get("event") == "station_connection" and r.get("report") == current
+    ]
+    # Only failures after a HomeBase's last connection in the report still apply.
+    connected_at = {
+        r.get("device_ref"): index
+        for index, r in enumerate(events)
+        if r.get("status") == "connected"
+    }
+    latest: dict[Any, tuple[int, dict[str, Any]]] = {}
+    for index, r in enumerate(events):
+        if (
+            r.get("phase") == "connect"
+            and r.get("status") == "error"
+            and r.get("device_ref") in failing
+            and index > connected_at.get(r.get("device_ref"), -1)
+            and r.get("reason") in _CONNECTION_TIMEOUTS
+        ):
+            latest[r.get("device_ref")] = (index, r)
+    named = sorted(
+        (index, r)
+        for index, r in latest.values()
+        if r.get("stage") in _CONNECTION_STAGES
+    )
+    return named[-1][1] if named else None
+
+
+def _card_differs(row: dict[str, Any], report: dict[str, Any]) -> bool:
+    """Whether a sample's loaded card is not known to be the integration's build.
+
+    The versions compare exactly, so a 0.8.47-beta.1 card under integration
+    0.8.47-beta.2 differs. An unavailable integration version matches no card,
+    not even an unavailable card version.
+    """
+    integration = report.get("integration")
+    return integration == "unavailable" or row.get("card_version") != integration
+
+
+def assess(report: dict[str, Any]) -> dict[str, Any]:
+    """Only inspect the projected report. Findings never contain upstream text."""
+    findings: list[dict[str, Any]] = []
+    missing: set[str] = set()
+
+    def add(stage: str, observation: str, evidence: str, attempt: Any = None) -> None:
+        row: dict[str, Any] = {
+            "stage": stage,
+            "observation": observation,
+            "evidence": evidence,
+        }
+        if type(attempt) is int and 1 <= attempt < 2**48:
+            row["attempt"] = attempt
+        findings.append(row)
+
+    support = report.get("support", {})
+    if support.get("cache_age_ms", 0) > 0:
+        missing.add("bridge_report_cached_after_disconnect")
+    if "status" in support:
+        missing.add("bridge_report_unavailable")
+    discovery = support.get("last_discovery", [])
+    if not discovery:
+        missing.add("discovery_not_recorded")
+    else:
+        stamps = [r.get("timestamp") for r in discovery if r.get("timestamp")]
+        try:
+            age = (
+                datetime.now(UTC) - datetime.fromisoformat(max(stamps))
+            ).total_seconds()
+            if age > 900 or age < -60:
+                missing.add("discovery_stale_or_clock_mismatch")
+        except ValueError:
+            missing.add("discovery_time_unavailable")
+    # An opted-in standalone camera is no HomeBase and gets its own finding.
+    homebase = [r for r in discovery if not _experimental(r)]
+    if any(
+        r.get("owner_status") in {"error", "disconnected"}
+        or r.get("station_status") in {"error", "disconnected"}
+        for r in homebase
+    ):
+        failed = _failed_connection(support, homebase)
+        if failed:
+            add(
+                "owner_connection",
+                _connection_stage(failed),
+                "support.recent_events.station_connection",
+            )
+        else:
+            add(
+                "owner_connection",
+                "Owner connection was not established. The report does not "
+                "identify the network cause.",
+                "support.last_discovery",
+            )
+    for observation, evidence in _standalone_connections(support, discovery):
+        add("standalone_connection", observation, evidence)
+    for model in _standalone_not_admitted(discovery):
+        add(
+            "standalone_admission",
+            "The experimental_standalone option is on, but the bridge's library "
+            f"does not admit a standalone camera with model code {model} to the "
+            "experimental route. It keeps standalone_transport_unverified and "
+            "the bridge makes no connection attempt. This follows from the "
+            "library's admitted models, not from a failed connection.",
+            "support.last_discovery",
+        )
+    for row in support.get("live_audio", []):
+        attempt = row.get("attempt")
+        events = {e["event"] for e in row.get("pipeline", [])}
+        if "stream_failure" in events and not {"video_input", "audio_input"} & events:
+            add(
+                "media_input",
+                "The attempt failed before media input was observed.",
+                "support.live_audio.pipeline",
+                attempt,
+            )
+        if row.get("admission") == "excluded":
+            add(
+                "audio_admission",
+                "Audio was excluded at the observed admission point. "
+                "This does not prove the source is silent.",
+                "support.live_audio.admission",
+                attempt,
+            )
+        if "audio_late" in events:
+            times = {
+                e.get("event"): e.get("elapsed_ms") for e in row.get("pipeline", [])
+            }
+            first, video = times.get("audio_late"), times.get("video_input")
+            delay = (
+                f" {first - video} ms after the first video data"
+                if isinstance(first, int) and isinstance(video, int) and first >= video
+                else ""
+            )
+            add(
+                "audio_admission",
+                f"Complete AAC was offered on the late-audio route{delay}. "
+                "Since bridge 0.8.20 this is the only live audio route.",
+                "support.live_audio.pipeline",
+                attempt,
+            )
+        if row.get("stop_confirmed") is False:
+            add(
+                "live_cleanup",
+                "The device stop was not confirmed.",
+                "support.live_audio.stop_confirmed",
+                attempt,
+            )
+    for row in support.get("live_video", []):
+        if row.get("state") not in {"ended", "failed", "closed"}:
+            continue
+        stopped = [
+            f"{label} {age} ms"
+            for stage, label in (
+                ("input", "the P2P video input"),
+                ("output", "the encoder output"),
+                ("jpeg", "the JPEG frames"),
+            )
+            if type(age := row.get(stage, {}).get("last_data_age_ms")) is int
+            and age > 6000
+        ]
+        if stopped:
+            add(
+                "video_stall",
+                "Before the session's end " + ", ".join(stopped) + " had stopped. "
+                "The earliest point in the chain from the P2P input through the "
+                "encoder output to the JPEG frames locates the stall, and a later "
+                "point that kept flowing clears the points before it."
+                + _encoder_stage(row),
+                "support.live_video",
+                row.get("attempt"),
+            )
+        start = row.get("start")
+        if isinstance(start, dict) and not row.get("input", {}).get("chunks"):
+            add(
+                "live_start",
+                "No P2P video reached the bridge. "
+                + _start_observation(start, row.get("state") == "failed"),
+                "support.live_video.start",
+                row.get("attempt"),
+            )
+    lives = report.get("live_playback", [])
+    if not lives:
+        missing.add("recent_live_playback_not_recorded")
+    audio_attempts = {r.get("attempt") for r in support.get("live_audio", [])}
+    for live in lives:
+        attempt = live.get("audio_attempt")
+        if live.get("age_ms") is None:
+            missing.add("live_evidence_time_unavailable")
+        if attempt is None or attempt not in audio_attempts:
+            missing.add("live_bridge_correlation_unavailable")
+        # The bridge's initial classification is video-only whenever audio is
+        # delivered through the late audio route, so it alone proves nothing.
+        late = live.get("audio_late")
+        if live.get("audio_expected") is False and late is None:
+            add(
+                "audio_admission",
+                "Startup metadata excluded audio and no late audio had been "
+                "announced for this attempt when the report was made. "
+                "Audio may still arrive later or be absent at the source.",
+                "live_playback.audio_late",
+                attempt,
+            )
+        elif late in LATE_AUDIO_STAGES:
+            add(
+                "audio_admission",
+                f"Late audio reached the '{late}' stage for this attempt. "
+                "Browser audio counters describe its separate peer.",
+                "live_playback.audio_late",
+                attempt,
+            )
+        end = live.get("audio_late_end")
+        if end in {"setup_failed", "signaling_failed", "upstream_error"}:
+            add(
+                "late_audio",
+                "Late audio ended before its video session, at the recorded "
+                "fixed reason. Video playback was not interrupted by this.",
+                "live_playback.audio_late_end",
+                attempt,
+            )
+        elif end == "unavailable":
+            add(
+                "late_audio",
+                "The bridge announced late audio while this viewer could not "
+                "use it, for example during video setup failure or fallback.",
+                "live_playback.audio_late_end",
+                attempt,
+            )
+        browser = live.get("browser", [])
+        if not browser:
+            missing.add("live_browser_sample_unavailable")
+        for row in browser:
+            if _card_differs(row, report):
+                missing.add("loaded_card_version_missing_or_different")
+            if row.get("ice") == "failed":
+                add(
+                    "browser_connection",
+                    "The browser reported ICE connection failure. "
+                    "Candidate counters describe the attempted route, "
+                    "not its root cause.",
+                    "live_playback.browser.ice",
+                    attempt,
+                )
+            if row.get("video_packets", 0) > 0 and row.get("video_decoded") == 0:
+                add(
+                    "browser_decode",
+                    "Video packets arrived but the sample contains no decoded frames.",
+                    "live_playback.browser",
+                    attempt,
+                )
+            if row.get("video_decoded", 0) > 0 and row.get("painted") == 0:
+                add(
+                    "browser_presentation",
+                    "Frames decoded but no presented frame was "
+                    "acknowledged in this sample.",
+                    "live_playback.browser",
+                    attempt,
+                )
+            if row.get("audio_samples", 0) > 0:
+                add(
+                    "browser_audio",
+                    "The browser reported decoded audio samples. "
+                    "Physical audibility remains unverified.",
+                    "live_playback.browser.audio_samples",
+                    attempt,
+                )
+    bridge_recording = support.get("recording", {})
+    if bridge_recording.get("status"):
+        missing.add("bridge_recording_schema_unavailable")
+    if (
+        bridge_recording.get("expired")
+        or bridge_recording.get("omitted")
+        or report.get("recording_playback", {}).get("expired")
+    ):
+        missing.add("recording_evidence_expired_or_omitted")
+    recordings = bridge_recording.get("attempts", [])
+    if not recordings:
+        missing.add("recent_bridge_recording_not_recorded")
+    for row in recordings:
+        attempt = row.get("attempt")
+        if row.get("progress", {}).get("process_closed") is False:
+            missing.add("recording_process_cleanup_unconfirmed")
+        if row.get("outcome") == "failed":
+            add(
+                "recording_" + row.get("stage", "unknown"),
+                "Recording preparation failed at the last observed "
+                "stage. Inspect the fixed failure categories and "
+                "limits.",
+                "support.recording.attempts",
+                attempt,
+            )
+        for event in row.get("events", []):
+            failure = event.get("failure", {})
+            if failure.get("reason") in {
+                "output_limit",
+                "output_io",
+            } or "storage" in failure.get("ffmpeg", []):
+                add(
+                    "recording_storage",
+                    "The converter reported an output storage failure "
+                    "or size limit. This does not establish a GPU "
+                    "fault.",
+                    "support.recording.attempts.events.failure",
+                    attempt,
+                )
+        if (
+            row.get("outcome") != "active"
+            and row.get("stage") != "admission"
+            and (
+                row.get("source_cancel_confirmed") is not True
+                or row.get("files_removed") is not True
+            )
+        ):
+            missing.add("recording_source_or_file_cleanup_unconfirmed")
+    playback = report.get("recording_playback", {}).get("attempts", [])
+    if playback:
+        missing.add("recording_browser_playback_not_observed")
+    bridge_attempts = {r.get("attempt") for r in recordings}
+    if not playback:
+        missing.add("recent_ha_recording_not_recorded")
+    for row in playback:
+        attempt = row.get("attempt")
+        if row.get("bridge_attempt") not in bridge_attempts:
+            missing.add("recording_bridge_correlation_unavailable")
+        if _card_differs(row, report):
+            missing.add("loaded_card_version_missing_or_different")
+        events = {e["event"] for e in row.get("events", [])}
+        if "client_disconnect" in events:
+            add(
+                "viewer_connection",
+                "A recording HTTP reader disconnected. Closing or "
+                "seeking can cause this during normal playback.",
+                "recording_playback.attempts.events",
+                attempt,
+            )
+        if "released" in events:
+            add(
+                "viewer_closure",
+                "The viewer explicitly released the prepared recording.",
+                "recording_playback.attempts.events",
+                attempt,
+            )
+        if row.get("error") == "recording_storage_unavailable":
+            add(
+                "ha_recording_storage",
+                "Home Assistant reported recording storage unavailable. "
+                "This may be its shared budget or the bridge storage "
+                "result.",
+                "recording_playback.attempts.error",
+                attempt,
+            )
+        if {
+            "released",
+            "expired",
+            "unloaded",
+            "failed",
+            "cancelled",
+        } & events and row.get("file_closed") is not True:
+            missing.add("ha_recording_file_cleanup_unconfirmed")
+    # The same fixed observation can occur at multiple sampled triggers.
+    unique = list(
+        {(r["stage"], r["observation"], r.get("attempt")): r for r in findings}.values()
+    )
+    return {
+        "schema": 1,
+        "findings": unique[:64],
+        "missing_evidence": sorted(missing),
+        "scope": (
+            "Observed software stages only. Missing samples are not "
+            "proof of absent media or a hardware failure."
+        ),
+    }

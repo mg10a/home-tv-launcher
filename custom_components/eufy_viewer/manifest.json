@@ -1,0 +1,26 @@
+{
+  "domain": "eufy_viewer",
+  "name": "Eufy Security Viewer",
+  "after_dependencies": [
+    "go2rtc"
+  ],
+  "codeowners": [
+    "@keesmod"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "camera",
+    "http",
+    "lovelace",
+    "web_rtc",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/keesmod/ha-eufy-cam",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/keesmod/ha-eufy-cam/issues",
+  "requirements": [
+    "go2rtc-client>=0.4.0"
+  ],
+  "version": "0.8.49-dev.1"
+}

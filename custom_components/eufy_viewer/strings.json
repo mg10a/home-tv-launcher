@@ -1,0 +1,131 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Eufy Viewer bridge",
+        "description": "Enter the address and access token of your dedicated Eufy Viewer bridge. The bridge must already be running. No cameras will be started.",
+        "data": {
+          "url": "Bridge URL",
+          "token": "Bridge access token"
+        }
+      },
+      "account": {
+        "title": "Sign in to Eufy",
+        "description": "Use a dedicated Eufy account with shared access to your cameras. Credentials are stored on your local bridge, not in this Home Assistant entry.",
+        "data": {
+          "username": "Email address",
+          "password": "Password",
+          "country": "Country code (for example NL)"
+        }
+      },
+      "verify": {
+        "title": "Verification code",
+        "description": "Enter the verification code sent by Eufy.",
+        "data": {
+          "code": "Verification code"
+        }
+      },
+      "captcha": {
+        "title": "Complete the captcha",
+        "description": "![Captcha]({captcha_image})\n\nEnter the characters shown in the image.",
+        "data": {
+          "captcha": "Characters"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot communicate with the bridge. Check its address and connection.",
+      "invalid_auth": "Authentication failed. Check the credentials or verification code."
+    },
+    "abort": {
+      "already_configured": "This bridge is already configured.",
+      "wrong_bridge": "This endpoint belongs to a different bridge. Add it as a separate integration.",
+      "invalid_bridge_auth": "The bridge rejected its access token. Start setup again with the correct token.",
+      "reauth_successful": "Authentication updated.",
+      "reconfigure_successful": "Bridge connection updated."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      }
+    },
+    "select": {
+      "guard_mode": {
+        "name": "Guard Mode"
+      }
+    },
+    "event": {
+      "camera_event": {
+        "name": "Event",
+        "state_attributes": {
+          "event_type": {
+            "name": "Event type",
+            "state": {
+              "motion": "Motion detected",
+              "person": "Person detected",
+              "ring": "Doorbell pressed",
+              "vehicle": "Vehicle detected",
+              "pet": "Pet detected",
+              "crying": "Crying detected",
+              "sound": "Sound detected",
+              "package_delivered": "Package delivered",
+              "package_taken": "Package taken",
+              "package_stranded": "Package left behind",
+              "loitering": "Loitering detected",
+              "radar_motion": "Radar motion detected",
+              "dog": "Dog detected",
+              "dog_lick": "Dog licking detected",
+              "dog_poop": "Dog defecating detected",
+              "notification": "Other device notification",
+              "stranger": "Unknown person detected"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "push_connection": {
+        "name": "Eufy push connection"
+      }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "Refresh snapshot"
+      }
+    }
+  },
+  "exceptions": {
+    "snapshot_refresh_capability_unavailable": {
+      "message": "This camera cannot refresh its snapshot on its current connection."
+    },
+    "snapshot_refresh_not_connected": {
+      "message": "The bridge is not connected to Eufy. Wait until it reconnects and try again."
+    },
+    "snapshot_refresh_recording_busy": {
+      "message": "A recording is being prepared. Try again when it has finished."
+    },
+    "snapshot_refresh_live_stopping": {
+      "message": "The previous live session is still stopping. Try again in a few seconds."
+    },
+    "snapshot_refresh_station_limit": {
+      "message": "Another camera on this HomeBase is live. Close that live view first."
+    },
+    "snapshot_refresh_camera_busy": {
+      "message": "The camera cannot start another live session now. Close a live view and try again."
+    },
+    "snapshot_refresh_refresh_timeout": {
+      "message": "The camera sent no picture in time. Check its connection and battery, then try again."
+    },
+    "snapshot_refresh_refresh_failed": {
+      "message": "The camera stopped before it sent a picture. Try again."
+    },
+    "snapshot_refresh_not_found": {
+      "message": "The bridge does not know this camera. Check that it is still shared with the bridge's Eufy account."
+    },
+    "snapshot_refresh_failed": {
+      "message": "Could not refresh the snapshot. Check the bridge connection and try again."
+    }
+  }
+}
