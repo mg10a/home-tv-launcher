@@ -1465,31 +1465,36 @@ function eufyRecordingCamera(){return Object.keys(haStates||{}).find(id=>id.star
 function openEufyRecordings(){document.querySelector('.eufy-recordings').scrollIntoView({block:'nearest'});loadEufyRecordings()}
 async function loadEufyRecordings(){
  eufyAbort?.abort();eufyAbort=new AbortController();const signal=eufyAbort.signal;
- closeEufyPlayer();eufyClearThumbs();eufyRecords=[];const grid=document.getElementById('eufyRecordingGrid'),note=document.getElementById('eufyRecordingNote');grid.replaceChildren();
+ closeEufyPlayer();eufyClearThumbs();eufyRecords=[];
+ const grid=document.getElementById('eufyRecordingGrid'),note=document.getElementById('eufyRecordingNote');grid.replaceChildren();
  const camera=eufyRecordingCamera(),date=document.getElementById('eufyDate').value;
  if(!camera||!date){note.textContent='Camera or date unavailable.';return}
- note.textContent='Loading recording list via Home Assistant WebSocket…';
+ note.textContent='Loading recordings from Home Assistant…';
  try{
-  const response=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date});
-  if(signal.aborted)return;
-  if(!response.success)throw Error(response.error?.message||'Recording WebSocket extension not installed');
-  const data=response.result;
+  // This endpoint already ships with Eufy Security Viewer 0.8.48.
+  // No experimental WebSocket extension or second bridge is needed.
+  const path='/api/eufy_viewer/recordings/'+encodeURIComponent(camera)+'?date='+encodeURIComponent(date);
+  const response=await eufyApi(path,{signal});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();if(signal.aborted)return;
   if(data?.complete!==true||!Array.isArray(data.recordings))throw Error('Recording list incomplete');
-  eufyRecords=data.recordings.filter(r=>r.entity_id===camera&&/^[a-f0-9]{32}$/.test(r.id));
-  note.textContent=eufyRecords.length+' recordings · '+date+' · First 12 thumbnails · Playback in development';
+  eufyRecords=data.recordings.filter(r=>r&&/^[a-f0-9]{32}$/.test(r.id)&&(!r.entity_id||r.entity_id===camera)).map(r=>({...r,entity_id:camera}));
+  note.textContent=eufyRecords.length+' recordings · '+date+(eufyRecords.length?' · Select one to play':'');
   for(const [i,record] of eufyRecords.entries()){
    const button=document.createElement('button');button.className='eufy-recording';button.type='button';
    const thumb=document.createElement('span');thumb.className='eufy-recording-thumb';thumb.textContent='◉';
    const label=document.createElement('span');label.textContent=(record.start||'').slice(11,19)+' – '+(record.end||'').slice(11,19);
-   button.append(thumb,label);button.onclick=()=>{note.textContent='Recording playback is not yet available in this experimental build.'};grid.append(button);
+   button.append(thumb,label);button.onclick=()=>playEufyRecording(i);grid.append(button);
   }
   for(let i=0;i<Math.min(eufyRecords.length,12);i++){
    if(signal.aborted)break;const record=eufyRecords[i];if(!record.thumbnail)continue;
    try{
-    const result=await eufyWsCommand({type:'eufy_viewer/launcher_thumbnail',entity_id:record.entity_id,recording_id:record.id});
-    if(signal.aborted)return;
-    if(!result.success||typeof result.result?.jpeg!=='string')continue;
-    const img=document.createElement('img');img.alt='Doorbell recording thumbnail';img.src='data:image/jpeg;base64,'+result.result.jpeg;
+    const url='/api/eufy_viewer/recordings/'+encodeURIComponent(camera)+'/'+record.id+'/thumbnail';
+    const response=await eufyApi(url,{signal});if(!response.ok)continue;
+    const blob=await response.blob();if(signal.aborted)return;
+    if(!blob.type.startsWith('image/')||blob.size>1000000)continue;
+    const objectUrl=URL.createObjectURL(blob);eufyThumbUrls.push(objectUrl);
+    const img=document.createElement('img');img.alt='Doorbell recording thumbnail';img.src=objectUrl;
     grid.children[i]?.querySelector('.eufy-recording-thumb')?.replaceChildren(img)
    }catch(err){if(signal.aborted)return}
   }
