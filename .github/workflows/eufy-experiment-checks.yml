@@ -94,3 +94,45 @@ jobs:
           ref: main
       - name: Build actual Home Assistant DEV add-on
         run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
+
+  recording-integration-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: keesmod/ha-eufy-cam
+          ref: cb52d1347a8a69df10260a798b6d9fd969ba680d
+          path: upstream
+      - name: Assemble and validate complete integration
+        run: |
+          mkdir -p package/custom_components
+          cp -a upstream/custom_components/eufy_viewer package/custom_components/
+          cp launcher/integration_patch/launcher_recordings.py package/custom_components/eufy_viewer/launcher_recordings.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('package/custom_components/eufy_viewer/__init__.py')
+          s=p.read_text()
+          needle='    async_register_commands(hass)\n'
+          assert s.count(needle)==1
+          s=s.replace(needle,needle+'    from .launcher_recordings import async_register_recording_commands\n    async_register_recording_commands(hass)\n')
+          p.write_text(s)
+          m=Path('package/custom_components/eufy_viewer/manifest.json')
+          manifest=json.loads(m.read_text())
+          manifest['version']='0.8.49-dev.1'
+          m.write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+          python3 -m compileall -q package/custom_components/eufy_viewer
+          test -f package/custom_components/eufy_viewer/recordings.py
+          test -f package/custom_components/eufy_viewer/playback.py
+          grep -q 'async_register_recording_commands(hass)' package/custom_components/eufy_viewer/__init__.py
+          cd package && zip -qr ../eufy-viewer-recordings-dev.zip custom_components
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eufy-viewer-recordings-dev-installable
+          path: eufy-viewer-recordings-dev.zip
+          retention-days: 14
