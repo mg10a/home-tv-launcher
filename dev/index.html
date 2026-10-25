@@ -1556,12 +1556,14 @@ async function eufyRtcReady(ev,id){
   pc.ontrack=event=>{
    if(eufyRtc!==pc||eufyLiveSubscription!==id)return;
    stream.addTrack(event.track);
+   // A display:none video may never deliver painted-frame callbacks.
+   video.classList.remove('hidden');document.getElementById('eufyStill').classList.add('hidden');
    video.play().catch(()=>{if(eufyRtc===pc)eufyRtcFallback('playback_error',id)});
   };
   pc.onconnectionstatechange=()=>{
    if(eufyRtc===pc&&['failed','disconnected','closed'].includes(pc.connectionState))eufyRtcFallback('connection_failed',id);
   };
-  let offered=false;
+  let offered=false,candidateCount=0;
   const pending=[];
   const send=candidate=>{
    if(eufyRtc!==pc||eufyLiveSubscription!==id)return;
@@ -1572,7 +1574,7 @@ async function eufyRtcReady(ev,id){
   pc.onicecandidate=event=>{
    if(!event.candidate||eufyRtc!==pc)return;
    const candidate=event.candidate.candidate;
-   if(typeof candidate!=='string'||candidate.length>2048||++eufyRtcCandidates.length>64){eufyRtcFallback('signaling_error',id);return}
+   if(typeof candidate!=='string'||candidate.length>2048||++candidateCount>64){eufyRtcFallback('signaling_error',id);return}
    if(offered)send(candidate);else pending.push(candidate);
   };
   const offer=await pc.createOffer();
@@ -1672,11 +1674,28 @@ function eufyApi(path,options={}){
  if(!haVerified||!haAccessToken||!base)throw Error('Connect Home Assistant first');
  return fetch(base+path,{...options,headers:{Authorization:'Bearer '+haAccessToken,...(options.headers||{})},cache:'no-store'});
 }
-function eufyRecordingError(err){
- if(err instanceof TypeError||/Failed to fetch|NetworkError|Load failed/i.test(err.message||'')){
-  return 'Home Assistant HTTP could not be reached from this browser (often CORS). In Home Assistant: Settings → System → Network → HTTP server → CORS allowed origins → add https://mg10a.github.io, save and confirm the restart. Then retry. If already allowed, check Home Assistant connectivity.';
+async function eufyRecordingError(err){
+ const message=err?.message||String(err);
+ if(!(err instanceof TypeError||/Failed to fetch|NetworkError|Load failed/i.test(message)))return message;
+ if(navigator.onLine===false)return 'This device is offline. Reconnect the network and retry.';
+ const base=haStoredUrl();
+ if(!base||!haAccessToken)return 'Home Assistant authentication has expired. Connect it again in the dashboard.';
+ // No HA data is read. The unauthenticated probe shows whether any HTTP
+ // response reaches this origin, the authorized probe checks CORS preflight.
+ async function probe(auth){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
+  try{
+   return await fetch(base+'/api/',{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',
+    ...(auth?{headers:{Authorization:'Bearer '+haAccessToken}}:{}),signal:controller.signal});
+  }finally{clearTimeout(timer)}
  }
- return err.message||'Unknown request failure';
+ try{await probe(false)}
+ catch(e){return 'Even a basic Home Assistant HTTP request is blocked or unreachable from this page. The CORS origin has already been configured: confirm HA saved it after restarting, or temporarily disable Brave Shields for this launcher tab.'}
+ try{
+  const response=await probe(true);
+  if(response.status===401||response.status===403)return 'Home Assistant HTTP is reachable, but it rejected the login session (HTTP '+response.status+'). Reconnect Home Assistant in this dashboard.';
+ }catch(e){return 'Home Assistant HTTP responds without a token, but authenticated requests are blocked. The browser may be rejecting the Authorization-header CORS preflight; try Brave Shields off for this tab.'}
+ return 'Home Assistant HTTP responds to authenticated API requests, but the recordings endpoint did not return an HTTP response. The Eufy API route or security filtering needs checking; do not reinstall the Eufy integration.';
 }
 function eufyRecordingCamera(){return Object.keys(haStates||{}).find(id=>id.startsWith('camera.')&&haStates[id]?.attributes?.viewer_card&&haStates[id]?.attributes?.capabilities?.recordings?.available!==false&&/doorbell|front.?door|eufy/i.test(id+' '+(haStates[id]?.attributes?.friendly_name||'')))||eufyCameraEntity()}
 function openEufyRecordings(){eufyStopLive();document.querySelector('.eufy-recordings').scrollIntoView({block:'nearest'});loadEufyRecordings()}
@@ -1715,7 +1734,7 @@ async function loadEufyRecordings(){
     grid.children[i]?.querySelector('.eufy-recording-thumb')?.replaceChildren(img);
    }catch(err){if(signal.aborted)return}
   }
- }catch(err){if(!signal.aborted)note.textContent='Recording list unavailable: '+eufyRecordingError(err)}
+ }catch(err){if(!signal.aborted)note.textContent='Recording list unavailable: '+await eufyRecordingError(err)}
 }
 function closeEufyPlayer(){const video=document.getElementById('eufyPlayer');video.pause();video.removeAttribute('src');video.load();document.getElementById('eufyPlayerWrap').classList.add('hidden');document.getElementById('eufyRecordingGrid').classList.remove('hidden')}
 async function playEufyRecording(index){
@@ -1731,7 +1750,7 @@ async function playEufyRecording(index){
   const video=document.getElementById('eufyPlayer');video.src=haStoredUrl()+relative;
   document.getElementById('eufyRecordingGrid').classList.add('hidden');document.getElementById('eufyPlayerWrap').classList.remove('hidden');
   note.textContent=(record.start||'').slice(11,19)+' · Stored recording';video.play().catch(()=>{note.textContent='Press Play to start the recording.'});
- }catch(err){if(!signal?.aborted)note.textContent='Recording playback unavailable: '+eufyRecordingError(err)}
+ }catch(err){if(!signal?.aborted)note.textContent='Recording playback unavailable: '+await eufyRecordingError(err)}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('eufyOverlay').classList.contains('hidden')){e.preventDefault();e.stopImmediatePropagation();closeEufyOverlay()}},true);
 document.getElementById('eufyOverlay').addEventListener('click',e=>{if(e.target.id==='eufyOverlay')closeEufyOverlay()});
