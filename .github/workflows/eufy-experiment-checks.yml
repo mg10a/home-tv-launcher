@@ -55,6 +55,11 @@ jobs:
         with:
           repository: keesmod/ha-eufy-cam
           path: upstream
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install FFmpeg test dependency
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Baseline upstream bridge tests
         working-directory: upstream/bridge
         run: |
