@@ -153,3 +153,22 @@ jobs:
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
+
+  android-dev-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build Android DEV APK
+        working-directory: android-dev-app
+        run: gradle --no-daemon :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Home-TV-DEV-Android-APK
+          path: android-dev-app/app/build/outputs/apk/debug/app-debug.apk
