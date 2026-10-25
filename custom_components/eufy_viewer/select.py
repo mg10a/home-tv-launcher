@@ -35,7 +35,7 @@ class EufyGuardMode(EufyStationEntity, SelectEntity):
 
     def __init__(self, coordinator: EufyCoordinator, info: StationInfo) -> None:
         super().__init__(coordinator, info)
-        self._attr_unique_id = f"{info.serial}_guard_mode"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "guard_mode")
 
     @property
     def options(self) -> list[str]:
