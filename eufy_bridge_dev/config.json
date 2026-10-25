@@ -1,8 +1,8 @@
 {
   "name": "Eufy Bridge DEV - HEVC Recovery",
-  "version": "0.8.39-dev.4",
+  "version": "0.8.39-dev.5",
   "slug": "eufy_bridge_dev",
-  "description": "DEV bridge with isolated Home Assistant identity on 8064, FFmpeg 7.1 HEVC decoding and bounded encoder stall recovery; original port 8063 untouched.",
+  "description": "DEV bridge with isolated HA hub and doorbell camera identities, FFmpeg 7.1 HEVC decoding, and bounded encoder stall recovery. Original Eufy bridge unchanged.",
   "url": "https://github.com/mg10a/home-tv-launcher",
   "arch": [
     "amd64",
