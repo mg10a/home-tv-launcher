@@ -1462,7 +1462,7 @@ function eufyCameraOptions(){
  const ids=eufyCameraChoices();select.replaceChildren();
  for(const [index,id] of ids.entries()){
   const option=document.createElement('option');option.value=id;
-  option.textContent=(index===0?'Original':'DEV '+(index+1))+' · '+(haStates[id]?.attributes?.friendly_name||id)+' ('+id+')';
+  option.textContent='Camera '+(index+1)+' · '+(haStates[id]?.attributes?.friendly_name||id)+' ('+id+')';
   select.appendChild(option);
  }
  select.hidden=ids.length<2;
