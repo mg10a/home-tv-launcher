@@ -59,7 +59,7 @@ class EufyAlarm(EufyStationEntity, AlarmControlPanelEntity):
 
     def __init__(self, coordinator: EufyCoordinator, info: StationInfo) -> None:
         super().__init__(coordinator, info)
-        self._attr_unique_id = f"{info.serial}_alarm"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "alarm")
 
     @property
     def supported_features(self) -> AlarmControlPanelEntityFeature:
