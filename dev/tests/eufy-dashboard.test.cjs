@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 
 const html=readFileSync('dev/index.html','utf8');
-const liveSource=html.slice(html.indexOf('/* DEV live view:'),html.indexOf("document.addEventListener('visibilitychange'"));
+const liveSource=html.slice(html.indexOf('/* DEV live view:'),html.indexOf("document.addEventListener('visibilitychange'",html.indexOf('/* DEV live view:')));
 assert.ok(liveSource.includes('eufyRtcReady'), 'DEV WebRTC implementation must exist');
 
 test('all inline scripts parse without JavaScript errors',()=>{
