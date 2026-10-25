@@ -1453,7 +1453,7 @@ async function refreshEufySnapshot(){
  try{const next=await eufyJpegFirstFrame(entity);eufyImageUrl=next;img.src=next;img.classList.remove('hidden');placeholder.classList.add('hidden');meta.textContent='Latest available snapshot · loaded '+new Date().toLocaleTimeString()+' · not live'+(eufyBattery()?' · Battery '+eufyBattery():'')}
  catch(e){placeholder.textContent='Snapshot unavailable ('+e.message+').';meta.textContent='Home Assistant camera snapshot could not be retrieved.'}
 }
-function openEufyOverlay(){eufyReturnFocus=document.activeElement;const overlay=document.getElementById('eufyOverlay');if(overlay.parentElement!==document.documentElement)document.documentElement.appendChild(overlay);overlay.classList.remove('hidden');overlay.style.setProperty('display','flex','important');overlay.setAttribute('aria-hidden','false');document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=(()=>{const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();eufyStartLive()}
+function openEufyOverlay(){eufyReturnFocus=document.activeElement;const overlay=document.getElementById('eufyOverlay');if(overlay.parentElement!==document.documentElement)document.documentElement.appendChild(overlay);overlay.classList.remove('hidden');overlay.style.setProperty('display','flex','important');overlay.setAttribute('aria-hidden','false');document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();eufyStartLive()}
 function closeEufyOverlay(){eufyStopLive();eufyStopJpeg();eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();const overlay=document.getElementById('eufyOverlay');overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','true');eufyReturnFocus?.focus?.()}
 let eufyJpegSubscription=null,eufyJpegResolve=null,eufyJpegReject=null,eufyJpegTimer=null;
 function eufyJpegEvent(data){const ev=data.event;if(ev?.type==='frame'&&typeof ev.jpeg==='string'&&eufyJpegResolve){const resolve=eufyJpegResolve;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);resolve('data:image/jpeg;base64,'+ev.jpeg);eufyStopJpeg()}else if(ev?.type==='ended'&&eufyJpegReject){const reject=eufyJpegReject;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);reject(Error('Viewer ended before receiving a frame'));eufyStopJpeg()}}
@@ -1558,7 +1558,7 @@ function eufyApi(path,options={}){
 }
 function eufyRecordingError(err){
  if(err instanceof TypeError||/Failed to fetch|NetworkError|Load failed/i.test(err.message||'')){
-  return 'Browser blocked Home Assistant HTTP. In Home Assistant: Settings → System → Network → HTTP server → CORS allowed origins → add https://mg10a.github.io, save and confirm its restart. Then retry here.';
+  return 'Home Assistant HTTP could not be reached from this browser (often CORS). In Home Assistant: Settings → System → Network → HTTP server → CORS allowed origins → add https://mg10a.github.io, save and confirm the restart. Then retry. If already allowed, check Home Assistant connectivity.';
  }
  return err.message||'Unknown request failure';
 }
