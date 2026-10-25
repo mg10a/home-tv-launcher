@@ -1,0 +1,19 @@
+name: DEV dashboard Eufy regressions
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dev/index.html'
+      - 'dev/tests/**'
+      - '.github/workflows/dev-dashboard-checks.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate DEV HTML, recordings API and WebRTC/JPEG protocol
+        run: node --test dev/tests/eufy-dashboard.test.cjs
