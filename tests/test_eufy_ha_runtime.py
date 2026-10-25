@@ -17,6 +17,7 @@ class CameraRegistrySmokeTests(unittest.TestCase):
         info = SimpleNamespace(
             serial="T8213_TEST_CAMERA", name="Doorbell", model="T8213",
             hardware="1.0", software="0.2.1.8",
+            snapshot_received_at=None, capabilities={}, battery=None,
         )
         coordinator = SimpleNamespace(
             data=SimpleNamespace(cameras={info.serial: info}, webrtc=True),
