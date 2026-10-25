@@ -184,9 +184,10 @@ async def websocket_watch(
         connection.send_error(msg["id"], "not_found", "Viewer camera unavailable")
         return
     coordinator: EufyCoordinator = entry.runtime_data
-    serial = entity.unique_id.removesuffix("_camera")
+    serial = coordinator.camera_serial(entity.unique_id)
     if (
-        serial not in coordinator.data.cameras
+        serial is None
+        or serial not in coordinator.data.cameras
         or not coordinator.last_update_success
         or coordinator.data.auth != "connected"
     ):
