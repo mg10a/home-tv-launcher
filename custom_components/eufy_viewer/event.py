@@ -39,7 +39,7 @@ class EufyCameraEvent(EufyEntity, EventEntity):
 
     def __init__(self, coordinator: EufyCoordinator, info: CameraInfo) -> None:
         super().__init__(coordinator, info)
-        self._attr_unique_id = f"{info.serial}_event"
+        self._attr_unique_id = coordinator.entity_key(info.serial, "event")
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
