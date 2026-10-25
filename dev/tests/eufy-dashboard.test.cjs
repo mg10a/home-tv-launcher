@@ -13,7 +13,7 @@ test('all inline scripts parse without JavaScript errors',()=>{
  for(const [i,s] of scripts.entries())assert.doesNotThrow(()=>new vm.Script(s[1],{filename:'inline-'+i+'.js'}));
 });
 test('visible DEV version and original snapshot path preserved',()=>{
- assert.match(html,/v3\.73-dev/);
+ assert.match(html,/v3\.74-dev/);
  assert.match(html,/id="eufyLiveVideo"/);
  assert.match(html,/async function refreshEufySnapshot\(\)/);
  assert.match(html,/eufyJpegFirstFrame\(entity\)/);
@@ -28,6 +28,10 @@ test('recording API uses installed 0.8.48 integration (not experimental WS exten
 
 function harness(){
  const sent=[],elements={};
+ let now=100000,heartbeat=null,retryTimer=null;
+ class Clock extends Date{static now(){return now}}
+ const advance=(ms)=>{now+=ms;heartbeat?.()};
+ const fireRetry=()=>{const action=retryTimer;retryTimer=null;action?.()};
  const classes=hidden=>({hidden,add(x){if(x==='hidden')this.hidden=true},remove(x){if(x==='hidden')this.hidden=false},contains(x){return x==='hidden'&&this.hidden}});
  for(const id of ['eufyLiveButton','eufyLiveVideo','eufyStill','eufyStillPlaceholder','eufyMeta','eufyOverlay']){
   elements[id]={textContent:'',classList:classes(id!=='eufyOverlay'),
@@ -50,11 +54,12 @@ function harness(){
   RTCPeerConnection:Peer,MediaStream,eufyCameraEntity:()=> 'camera.front_door',
   eufyBattery:()=> '46%',eufyStopJpeg:()=>{},
   eufyWsCommand:async x=>{sent.push(x);return {success:true,result:{accepted:true}}},
-  setInterval:()=>1,clearInterval:()=>{},setTimeout:()=>1,clearTimeout:()=>{},Date};
+  setInterval:fn=>{heartbeat=fn;return 1},clearInterval:()=>{heartbeat=null},
+  setTimeout:fn=>{retryTimer=fn;return 2},clearTimeout:()=>{retryTimer=null},Date:Clock};
  const fn=new Function(...Object.keys(deps),
   "let haRequestId=900;"+liveSource+
   ';return {start:eufyStartLive,event:eufyLiveEvent,stop:eufyStopLive,id:()=>eufyLiveSubscription};');
- return {api:fn(...Object.values(deps)),sent,elements,Peer};
+ return {api:fn(...Object.values(deps)),sent,elements,Peer,advance,fireRetry};
 }
 test('WebRTC offers, accepts a displayed frame, and unsubscribes on stop',async()=>{
  const {api,sent,elements,Peer}=harness();
@@ -87,5 +92,41 @@ test('bridge fallback moves from WebRTC to authenticated JPEG on same lease',asy
  elements.eufyStill.onload();
  for(let i=0;i<4;i++)await Promise.resolve();
  assert.ok(sent.some(x=>x.type==='eufy_viewer/ack'&&x.subscription===id&&x.sequence===1));
+ api.stop();
+});
+
+test('stalled JPEG fallback retries a fresh owner after seven seconds, maximum twice',()=>{
+ const {api,sent,elements,advance,fireRetry}=harness();
+ api.start();
+ let id=api.id();
+ api.event({event:{type:'fallback'}});
+ assert.equal(api.id(),id,'must initially retain existing viewer on JPEG fallback');
+ advance(7001);
+ assert.match(elements.eufyMeta.textContent,/Retry 1\/2/);
+ assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,1);
+ fireRetry();
+ assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,2,'retry must create a fresh viewer');
+ id=api.id();
+ api.event({event:{type:'fallback'}});
+ advance(7001);
+ assert.match(elements.eufyMeta.textContent,/Retry 2\/2/);
+ fireRetry();
+ assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,3);
+ api.event({event:{type:'fallback'}});
+ advance(7001);
+ assert.match(elements.eufyMeta.textContent,/stopped/);
+ fireRetry();
+ assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,3,'must never retry indefinitely');
+ api.stop();
+});
+test('JPEG fallback that delivers a frame does not prematurely restart camera session',async()=>{
+ const {api,sent,elements,advance}=harness();
+ api.start();const id=api.id();api.event({event:{type:'fallback'}});
+ api.event({event:{type:'frame',jpeg:'/9j/',sequence:1}});
+ elements.eufyStill.onload();
+ await Promise.resolve();await Promise.resolve();
+ advance(7001);
+ assert.equal(api.id(),id,'JPEG playback should retain a healthy existing lease');
+ assert.equal(sent.filter(x=>x.type==='eufy_viewer/watch').length,1);
  api.stop();
 });
