@@ -1,8 +1,8 @@
 {
   "name": "Eufy Bridge DEV - Encoder Stall Probe",
-  "version": "0.8.39-dev.1",
+  "version": "0.8.39-dev.2",
   "slug": "eufy_bridge_dev",
-  "description": "Experimental Eufy Bridge based on 0.8.39. Stop original bridge before starting this one.",
+  "description": "Parallel DEV bridge on port 8064. Original remains on 8063. Requires separate test client and bridge token.",
   "url": "https://github.com/mg10a/home-tv-launcher",
   "arch": [
     "amd64",
