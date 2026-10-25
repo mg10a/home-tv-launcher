@@ -109,6 +109,9 @@ jobs:
           repository: keesmod/ha-eufy-cam
           ref: cb52d1347a8a69df10260a798b6d9fd969ba680d
           path: upstream
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
       - name: Assemble and validate complete integration
         run: |
           mkdir -p package/custom_components
