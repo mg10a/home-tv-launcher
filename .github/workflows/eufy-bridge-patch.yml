@@ -1,0 +1,35 @@
+name: Eufy bridge patch compile
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev/eufy-jpeg-and-bridge-diagnostics]
+    paths:
+      - 'experiments/bridge-patch/**'
+      - '.github/workflows/eufy-bridge-patch.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: keesmod/ha-eufy-cam
+          path: upstream
+      - name: Apply experimental patch
+        run: |
+          cp experiments/bridge-patch/live-transcoder.ts upstream/bridge/src/live-transcoder.ts
+          cp experiments/bridge-patch/diagnostics.ts upstream/bridge/src/diagnostics.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: upstream/bridge/package-lock.json
+      - name: Install dependencies
+        working-directory: upstream/bridge
+        run: npm ci
+      - name: Compile TypeScript
+        working-directory: upstream/bridge
+        run: npm run build
+      - name: Run bridge tests
+        working-directory: upstream/bridge
+        run: npm test
