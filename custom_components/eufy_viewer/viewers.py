@@ -118,7 +118,7 @@ class Viewer:
                         )
                 # A bridge close ends the iteration; its code may name the reason.
                 ended = ended_event(socket.close_code)
-        except BridgeError, aiohttp.ClientError, TimeoutError:
+        except (BridgeError, aiohttp.ClientError, TimeoutError):
             pass
         finally:
             self.socket = None
@@ -144,7 +144,7 @@ class Viewer:
         self.pending = False
         try:
             await self.socket.send_str(self.ack_command)
-        except aiohttp.ClientError, ConnectionError:
+        except (aiohttp.ClientError, ConnectionError):
             self.cancel()
             return False
         return True
