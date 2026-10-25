@@ -5,8 +5,10 @@ WORKDIR /upstream/ha_app
 COPY live-transcoder.ts ./src/live-transcoder.ts
 COPY diagnostics.ts ./src/diagnostics.ts
 RUN npm ci --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts
-FROM node:24-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg tini && rm -rf /var/lib/apt/lists/*
+# Try a newer HEVC decoder in the isolated DEV bridge only. Debian Trixie
+# ships FFmpeg 7.1; the existing production bridge stays on Bookworm/5.1.
+FROM node:24-trixie-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg tini && rm -rf /var/lib/apt/lists/* && ffmpeg -version | head -n 1 | grep -E '^ffmpeg version 7\.'
 WORKDIR /app
 COPY --from=build /upstream/ha_app/package*.json ./
 COPY --from=build /upstream/ha_app/node_modules ./node_modules
