@@ -1,0 +1,15 @@
+name: Build Eufy DEV Home Assistant add-on
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'eufy_bridge_dev/**'
+      - '.github/workflows/eufy-dev-addon-build.yml'
+  workflow_dispatch:
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build deployable HA add-on image
+        run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
