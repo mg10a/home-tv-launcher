@@ -1,0 +1,42 @@
+name: Package Eufy recording WebSocket integration
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'integration_patch/**'
+      - '.github/workflows/package-eufy-recordings.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Assemble complete HA custom integration from pinned upstream
+        run: |
+          git clone --depth 1 https://github.com/keesmod/ha-eufy-cam.git /tmp/eufy-upstream
+          test "$(git -C /tmp/eufy-upstream rev-parse HEAD)" = "cb52d1347a8a69df10260a798b6d9fd969ba680d"
+          mkdir -p custom_components
+          cp -a /tmp/eufy-upstream/custom_components/eufy_viewer custom_components/
+          cp integration_patch/launcher_recordings.py custom_components/eufy_viewer/launcher_recordings.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('custom_components/eufy_viewer/__init__.py')
+          s=p.read_text()
+          needle='    async_register_commands(hass)\n'
+          assert s.count(needle)==1
+          s=s.replace(needle,needle+'    from .launcher_recordings import async_register_recording_commands\n    async_register_recording_commands(hass)\n')
+          p.write_text(s)
+          m=Path('custom_components/eufy_viewer/manifest.json')
+          manifest=json.loads(m.read_text())
+          manifest['version']='0.8.49-dev.1'
+          m.write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+          python3 -m compileall -q custom_components/eufy_viewer
+          git add custom_components/eufy_viewer
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Package complete Eufy Viewer integration with launcher recordings' || true
+          git push
