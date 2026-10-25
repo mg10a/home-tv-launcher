@@ -18,7 +18,7 @@ jobs:
           python-version: '3.14'
       - name: Install matching Home Assistant Python runtime
         run: |
-          python -m pip install --prefer-binary 'homeassistant==2026.10.3' 'go2rtc-client>=0.4.0'
+          python -m pip install --prefer-binary 'homeassistant==2026.10.3' 'go2rtc-client>=0.4.0' 'PyTurboJPEG==1.8.3' 'av==19.0.0' 'numpy==2.3.2'
       - name: Import custom integration in actual Home Assistant runtime
         run: |
           python - <<'PY'
