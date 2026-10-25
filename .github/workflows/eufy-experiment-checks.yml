@@ -46,3 +46,30 @@ jobs:
       - name: Exercise offline analyser with synthetic input
         run: |
           printf '%s\n' '{"live_video":[{"state":"ended","duration_ms":10000,"input":{"bytes":1000,"last_data_age_ms":6000},"output":{"bytes":0},"jpeg":{"chunks":0},"encoder":{"frames":0}}]}' | node experiments/analyse-eufy-live.mjs | grep -q 'FFmpeg decode/encode/progress'
+
+  bridge-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: keesmod/ha-eufy-cam
+          path: upstream
+      - name: Apply bridge source patch
+        run: |
+          cp experiments/bridge-patch/live-transcoder.ts upstream/bridge/src/live-transcoder.ts
+          cp experiments/bridge-patch/diagnostics.ts upstream/bridge/src/diagnostics.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: upstream/bridge/package-lock.json
+      - name: Install bridge dependencies
+        working-directory: upstream/bridge
+        run: npm ci
+      - name: Compile patched bridge
+        working-directory: upstream/bridge
+        run: npm run build
+      - name: Test patched bridge
+        working-directory: upstream/bridge
+        run: npm test
