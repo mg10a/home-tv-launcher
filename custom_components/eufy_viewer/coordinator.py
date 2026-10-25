@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import BridgeAuthError, BridgeClient, BridgeError, BridgeState
 from .const import DOMAIN
+from .identity import device_key as dev_device_key, entity_key as dev_entity_key, camera_serial as dev_camera_serial, is_dev_bridge
 from .migration import prepare_migration
 from .notifications import EVENT_TYPES, notification_signal
 
@@ -44,6 +45,19 @@ class EufyCoordinator(DataUpdateCoordinator[BridgeState]):
         self._listener: asyncio.Task[None] | None = None
         self._closed = False
         self._seen_events: OrderedDict[str, None] = OrderedDict()
+
+    @property
+    def is_dev_bridge(self) -> bool:
+        return is_dev_bridge(self.entry.unique_id)
+
+    def device_key(self, serial: str) -> str:
+        return dev_device_key(self.entry.unique_id, serial)
+
+    def entity_key(self, serial: str, kind: str) -> str:
+        return dev_entity_key(self.entry.unique_id, serial, kind)
+
+    def camera_serial(self, unique_id: str) -> str | None:
+        return dev_camera_serial(self.entry.unique_id, unique_id)
 
     def start(self) -> None:
         """Subscribe after entity platforms have been set up."""
