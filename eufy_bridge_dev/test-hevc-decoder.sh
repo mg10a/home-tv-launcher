@@ -16,7 +16,7 @@ ffmpeg -hide_banner -loglevel error -y -threads 1 -probesize 32768 -analyzedurat
   -threads 1 -g 30 -fps_mode vfr -enc_time_base 1:90000 \
   -mpegts_flags +resend_headers -muxdelay 0 -muxpreload 0 -f mpegts "$tmp/output.ts"
 frames="$(ffprobe -v error -select_streams v:0 -count_packets \
- -show_entries stream=nb_read_packets -of default=noprint_wrappers=1:nokey=1 "$tmp/output.ts")"
+ -show_entries stream=nb_read_packets -of default=noprint_wrappers=1:nokey=1 "$tmp/output.ts" | grep -E "^[0-9]+$" | head -n 1)"
 if [ -z "$frames" ] || [ "$frames" -lt 20 ]; then
  echo "FAIL: insufficient H264 packets from paced HEVC: $frames"
  exit 1
