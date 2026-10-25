@@ -1,8 +1,8 @@
 {
-  "name": "Eufy Bridge DEV - Encoder Stall Probe",
-  "version": "0.8.39-dev.2",
+  "name": "Eufy Bridge DEV - HEVC Recovery",
+  "version": "0.8.39-dev.3",
   "slug": "eufy_bridge_dev",
-  "description": "Parallel DEV bridge on port 8064. Original remains on 8063. Requires separate test client and bridge token.",
+  "description": "Isolated test bridge on 8064 using FFmpeg 7.1 HEVC decoding with bounded encoder stall recovery. Original 8063 bridge unchanged. Separate HA integration required.",
   "url": "https://github.com/mg10a/home-tv-launcher",
   "arch": [
     "amd64",
