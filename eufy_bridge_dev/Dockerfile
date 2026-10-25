@@ -11,7 +11,7 @@ WORKDIR /app
 COPY --from=build /upstream/ha_app/package*.json ./
 COPY --from=build /upstream/ha_app/node_modules ./node_modules
 COPY --from=build /upstream/ha_app/dist ./dist
-COPY --from=build /upstream/ha_app/bootstrap.mjs ./
-EXPOSE 8063
+COPY bootstrap.mjs ./
+EXPOSE 8064
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "bootstrap.mjs"]
