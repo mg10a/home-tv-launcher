@@ -1,0 +1,31 @@
+{
+  "name": "Eufy Bridge DEV - Encoder Stall Probe",
+  "version": "0.8.39-dev.1",
+  "slug": "eufy_bridge_dev",
+  "description": "Experimental Eufy Bridge based on 0.8.39. Stop original bridge before starting this one.",
+  "url": "https://github.com/mg10a/home-tv-launcher",
+  "arch": [
+    "amd64",
+    "aarch64"
+  ],
+  "startup": "application",
+  "boot": "manual",
+  "init": false,
+  "host_network": true,
+  "timeout": 20,
+  "options": {
+    "token": "",
+    "diagnostics": true
+  },
+  "schema": {
+    "token": "password",
+    "backend": "str?",
+    "diagnostics": "bool?",
+    "live_max_bitrate": "str?",
+    "live_max_streams_per_station": "int(1,4)?",
+    "live_max_seconds_mains": "int(120,3600)?",
+    "experimental_standalone": "bool?",
+    "standalone_recording_probe": "bool?"
+  },
+  "stage": "experimental"
+}
