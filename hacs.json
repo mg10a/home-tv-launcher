@@ -1,5 +1,4 @@
 {
   "name": "Eufy Security Viewer DEV Recordings",
-  "render_readme": false,
-  "homeassistant": "2026.10.0"
+  "render_readme": false
 }
