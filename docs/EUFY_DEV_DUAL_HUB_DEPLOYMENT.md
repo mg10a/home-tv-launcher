@@ -26,6 +26,60 @@ separate GitHub Pages HTTP/CORS constraint.
   executed backup/install/rollback using a fake `/config`. Neither real HA
   configuration nor the real doorbell was part of the tests.
 
+## Additional compatibility validation — 27 October 2026
+
+CI passed on both Home Assistant 2026.10.3 and the installed 2026.10.4,
+using Python 3.14:
+https://github.com/mg10a/home-tv-launcher/actions/runs/40599133737
+
+Validation commit: `d895da1f3afbf7d78e9945312a30b96e4cc035aa`.
+The integration source is unchanged from the immutable revision above.
+The run checks imports, camera identity separation, compilation and simulated
+installation/rollback, and publishes ZIPs with SHA-256 manifests named by HA
+version. These are CI checks, not a running Yellow or real-camera media test.
+The component remains v0.8.49-dev.2 because only validation and documentation
+changed.
+
+## Live inspection and next deployment gate — 27 October 2026
+
+Read-only inspection confirmed Home Assistant OS with Core 2026.10.4,
+Supervisor 2026.10.4 and OS 18.3. Eufy Security Viewer reported 0.8.48,
+two hub entries, two devices and eight entities. Only one camera was
+registered: `camera.doorbell`. Both push-connection entities showed Connected.
+The second hub listed only one entity. No live updates or restarts were made.
+
+The installed bridge versions, each entry's port/bridge identity, backup
+availability and Terminal & SSH access still require verification. Do not infer
+installed versions from the update suggestions. In particular, verify the DEV
+entry's bridge ID starts with `home-tv-dev-`; port 8064 alone does not trigger
+namespacing in this patch.
+
+The offered upstream v0.8.49 release describes experimental T8424 standalone
+camera support and requires bridge 0.8.40 first. It is a separate update, not
+evidence that this duplicate-camera problem is fixed:
+https://github.com/keesmod/ha-eufy-cam/releases/tag/v0.8.49
+
+Before authorizing installation:
+1. Confirm a completed full HA backup and its recovery credentials, if applicable.
+2. Confirm an existing Terminal & SSH app can open its web UI. If absent, stop
+   and obtain approval before installing an app.
+3. Record the existing camera ID and the original/DEV entry ownership.
+4. Check installed integration version again. If already patched or changed
+   from the reviewed 0.8.48 baseline, stop and reassess.
+5. Obtain approval to replace the shared integration and restart Core.
+   Both bridge entries use this shared code.
+
+Run the installer only once. Retain the printed backup directory independently:
+rerunning the installer replaces the "latest backup" pointer with a newer
+backup, which might itself contain the experimental integration. The rollback
+script restores component files, not entity/device registry state; the full HA
+backup is the recovery route for those records.
+
+After installation, first verify that `camera.doorbell` keeps its identity,
+the original bridge is connected, and a distinct DEV camera belongs to the
+8064 entry with `viewer_dev_bridge: true`. Do not treat two camera names alone
+as proof of correct routing. Test media separately after ownership is confirmed.
+
 ## Before installation
 
 In Home Assistant **Settings > System > Backups**, create a backup. The installer
