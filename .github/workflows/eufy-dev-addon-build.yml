@@ -1,7 +1,7 @@
 name: Build Eufy DEV Home Assistant add-on
 on:
   push:
-    branches: [main, dev/eufy-portrait-encoder, dev/eufy-stream-frame-diagnostics, dev/eufy-packet-boundary-diagnostics]
+    branches: [main, dev/eufy-portrait-encoder, dev/eufy-stream-frame-diagnostics, dev/eufy-packet-boundary-diagnostics, dev/eufy-live-codec-transition]
     paths:
       - 'eufy_bridge_dev/**'
       - '.github/workflows/eufy-dev-addon-build.yml'
