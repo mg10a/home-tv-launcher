@@ -120,7 +120,19 @@ export class LiveTranscoder {
   private lastFrameAt = 0;
   private lastFrames = -1;
   private stallReported = false;
-  private readonly observeVideo = (_chunk: Buffer) => { this.lastInputAt = performance.now(); };
+  private readonly hevcHeaders = new HevcHeaderCounter();
+  private readonly headerSamples: object[] = [];
+  private lastHeaderSampleAt = 0;
+  private readonly observeVideo = (chunk: Buffer) => {
+    this.lastInputAt = performance.now();
+    if (this.codec !== 'hevc' || process.env.EUFY_DIAGNOSTICS !== 'true') return;
+    this.hevcHeaders.consume(chunk);
+    if (this.lastInputAt - this.lastHeaderSampleAt >= 1000) {
+      this.lastHeaderSampleAt = this.lastInputAt;
+      this.headerSamples.push({ ...this.hevcHeaders.counts, encoded: this.lastFrames });
+      if (this.headerSamples.length > 20) this.headerSamples.shift();
+    }
+  };
   private readonly captureVideo = (chunk: Buffer) => this.capture(chunk);
   constructor(
     private readonly serial: string,
@@ -267,9 +279,44 @@ export class LiveTranscoder {
   stop(): void {
     if (this.stopped) return;
     this.stopped = true;
+    if (this.codec === 'hevc' && process.env.EUFY_DIAGNOSTICS === 'true') {
+      console.info(JSON.stringify({ diagnostic: 'dev_hevc_headers', counts: this.hevcHeaders.counts, samples: this.headerSamples }));
+    }
     clearTimeout(this.cleanupTimer); this.clearReplay(); this.clearStallProbe();
     if (this.process) { this.unpipe(this.process); this.process.kill('SIGKILL'); }
     // Other owned consumers such as JPEG and late audio may share these Readables.
     if (this.transitioning) this.video.resume();
+  }
+}
+
+/** Counts HEVC Annex-B headers only; never retains camera payloads. */
+export class HevcHeaderCounter {
+  private zeros = 0;
+  private header: number[] = [];
+  private pending = false;
+  readonly counts = { nals: 0, slices: 0, pictures: 0, random_access: 0, parameter_sets: 0, invalid_headers: 0 };
+  consume(chunk: Uint8Array): void {
+    for (const byte of chunk) {
+      if (byte === 1 && this.zeros >= 2) {
+        this.pending = true; this.header = []; this.zeros = 0; continue;
+      }
+      this.zeros = byte === 0 ? Math.min(3, this.zeros + 1) : 0;
+      if (!this.pending) continue;
+      this.header.push(byte);
+      if (this.header.length < 3) continue;
+      const [first, second, third] = this.header as [number, number, number];
+      this.header = []; this.pending = false;
+      if ((first & 128) || !(second & 7)) { this.counts.invalid_headers++; continue; }
+      const type = (first >> 1) & 63;
+      this.counts.nals++;
+      if (type <= 31) {
+        this.counts.slices++;
+        if (third & 128) {
+          this.counts.pictures++;
+          if (type >= 16 && type <= 23) this.counts.random_access++;
+        }
+      }
+      if (type >= 32 && type <= 34) this.counts.parameter_sets++;
+    }
   }
 }
