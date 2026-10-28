@@ -9,7 +9,7 @@ for(const [i,source] of scripts.entries())new vm.Script(source,{filename:'inline
 assert.match(html,/v3\.\d+-dev/,'Visible version label updated');
 assert.ok(html.includes('/api/eufy_viewer/recordings/'),'Uses existing HA recording API');
 assert.ok(html.includes("type:'eufy_viewer/ack'"),'Live JPEG acknowledges frames');
-assert.ok(!html.includes('eufy_viewer/launcher_events'),'No unavailable experimental API');
+assert.ok(html.includes('eufy_viewer/launcher_events'),'Uses installed authenticated recording commands');
 assert.ok(!html.includes('HomeTVNative'),'No dependency on broken Android wrapper');
 
 const script=scripts.at(-1);
@@ -75,12 +75,24 @@ const rec={document:recDocument,eufyAbort:null,eufyRecords:[],eufyStopLive(){},c
  eufyClearThumbs(){},eufyRecordingCamera:()=> 'camera.front_door',eufyThumbUrls:[],
  AbortController,Error,Array,encodeURIComponent,
  eufyRecordingError:e=>e.message,
- eufyApi:async path=>{paths.push(path);return {ok:true,json:async()=>({complete:true,recordings:[{id:recordId,start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10',thumbnail:false}]})}},
+ eufyWsCommand:async command=>{paths.push(command);return {success:true,result:{complete:true,recordings:[{id:recordId,start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10',thumbnail:false}]}}},
  playEufyRecording(){}};
 vm.createContext(rec);vm.runInContext(loader,rec);
 await vm.runInContext('loadEufyRecordings()',rec);
-assert.equal(paths[0],'/api/eufy_viewer/recordings/camera.front_door?date=2026-10-25');
+assert.equal(paths[0].type,'eufy_viewer/launcher_events');
+assert.equal(paths[0].entity_id,'camera.front_door');
+assert.equal(paths[0].date,'2026-10-25');
 assert.equal(rec.eufyRecords.length,1);
 assert.equal(grid.children.length,1);
 assert.match(note.textContent,/1 recordings/);
-console.log('PASS: inline JS syntax, version, real REST recording route, live JPEG frame ACK, unsubscribe, stall recovery, recording list fixture');
+console.log('PASS: inline JS syntax, version, authenticated recording WebSocket route, live JPEG frame ACK, unsubscribe, stall recovery, recording list fixture');
+
+
+assert.match(grid.children[0].children[1].textContent,/0m 10s/);
+rec.eufyWsCommand=async()=>({success:false,error:{message:'Camera access denied'}});
+await vm.runInContext('loadEufyRecordings()',rec);
+assert.equal(grid.children.length,0);
+assert.match(note.textContent,/Camera access denied/);
+rec.eufyWsCommand=async()=>({success:true,result:{complete:true,recordings:[{id:recordId,entity_id:'camera.other',start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10'}]}});
+await vm.runInContext('loadEufyRecordings()',rec);
+assert.equal(grid.children.length,0,'Never show another camera recording');
