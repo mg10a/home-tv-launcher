@@ -34,3 +34,23 @@ export function observeVideoPacket(owner, m, v, bytes, start, encrypted, first, 
     emit(JSON.stringify({diagnostic:'dev_video_packets',counts}));
   }
 }
+
+// T8030/T8213 observed startup: HEVC pre-roll (marker 1), then H264 live
+// (marker 0). Let the SDK initialize its codec/readers from the live SPS.
+// Scoped by the caller to DEV live VIDEO on T8030; recordings are unchanged.
+const waitingForLive = new WeakSet();
+export function skipHevcPreroll(owner, first, scoped, streamType, bytes, emit = console.info) {
+  if (!scoped || !first) { waitingForLive.delete(owner); return false; }
+  const n = bytes[0]===0 && bytes[1]===0 ? (bytes[2]===1?3:bytes[2]===0&&bytes[3]===1?4:0):0;
+  if (!waitingForLive.has(owner)) {
+    if (!(streamType===1 && n && bytes.length>=n+2 && bytes[n]===64 && (bytes[n+1]&7))) return false;
+    waitingForLive.add(owner);
+    emit('{"diagnostic":"dev_preroll","waiting_for_h264":1}');
+  }
+  if (streamType===0 && n && bytes.length>n && !(bytes[n]&128) && (bytes[n]&31)===7) {
+    waitingForLive.delete(owner);
+    emit('{"diagnostic":"dev_preroll","live_h264_started":1}');
+    return false;
+  }
+  return true;
+}
