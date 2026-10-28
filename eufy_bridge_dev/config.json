@@ -1,6 +1,6 @@
 {
   "name": "Eufy Bridge DEV - HEVC Recovery",
-  "version": "0.8.39-dev.7",
+  "version": "0.8.39-dev.8",
   "slug": "eufy_bridge_dev",
   "description": "DEV portrait encoder capped at 1280 pixels on both axes; preserves dev.4 physical camera serials for HA integration identity isolation. FFmpeg 7.1 and bounded stall recovery.",
   "url": "https://github.com/mg10a/home-tv-launcher",
