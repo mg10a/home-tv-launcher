@@ -19,3 +19,9 @@ The build workflow validates AMD64 and native ARM64, bridge identity, decoder op
 ## Recovery
 
 A fresh DEV-only backup was taken before the packet diagnostics update. Restore that DEV app backup through Home Assistant if this experiment regresses startup. Do not restore the complete Home Assistant system or modify the original bridge. The prior code revision 20423a2d03dc18384418984a875161c2011b6611 is the dev.9 diagnostic baseline. Restoring code alone is preferable to overwriting newer authentication state when an appropriate supported update path is available.
+
+## Actual hardware result after dev.10 installation
+
+The cloud DEV dashboard completed a 91,608 ms session on the real doorbell. Bridge diagnostics selected H264 and reported 1,229 encoded frames, zero dropped/duplicated frames, zero encoder exits and zero stderr chunks. Input continued to within 34 ms of session end; encoded output to within 9 ms. The browser displayed over 240 live JPEG frames with an advancing camera-embedded timestamp. After closing the modal, active viewers was zero and the live state was ended. Reopening delivered another 80 live JPEG frames before the test was deliberately closed.
+
+Cloud WebRTC reported connection_failed and used the existing JPEG fallback. These results establish sustained real-camera decoding and JPEG playback, not successful WebRTC rendering in this cloud environment. Brave/phone WebRTC verification remains outstanding. Production bridge remains 0.8.39; shared HA integration remains 0.8.49-dev.2. Automated validation: https://github.com/mg10a/home-tv-launcher/actions/runs/40785230719 .
