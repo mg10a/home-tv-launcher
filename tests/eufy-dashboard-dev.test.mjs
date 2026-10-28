@@ -76,7 +76,7 @@ const rec={document:recDocument,eufyAbort:null,eufyRecords:[],eufyStopLive(){},c
  AbortController,Error,Array,encodeURIComponent,
  eufyRecordingError:e=>e.message,
  eufyWsCommand:async command=>{paths.push(command);return {success:true,result:{complete:true,recordings:[{id:recordId,start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10',thumbnail:false}]}}},
- playEufyRecording(){}};
+ playEufyRecording(){},eufySelectRecording(){}};
 vm.createContext(rec);vm.runInContext(loader,rec);
 await vm.runInContext('loadEufyRecordings()',rec);
 assert.equal(paths[0].type,'eufy_viewer/launcher_events');
@@ -88,7 +88,7 @@ assert.match(note.textContent,/1 recordings/);
 console.log('PASS: inline JS syntax, version, authenticated recording WebSocket route, live JPEG frame ACK, unsubscribe, stall recovery, recording list fixture');
 
 
-assert.match(grid.children[0].children[1].textContent,/0m 10s/);
+assert.match(grid.children[0].textContent,/0m 10s/);
 rec.eufyWsCommand=async()=>({success:false,error:{message:'Camera access denied'}});
 await vm.runInContext('loadEufyRecordings()',rec);
 assert.equal(grid.children.length,0);
