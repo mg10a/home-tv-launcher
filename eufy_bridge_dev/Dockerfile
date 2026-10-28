@@ -5,7 +5,8 @@ WORKDIR /upstream/ha_app
 COPY live-transcoder.ts ./src/live-transcoder.ts
 COPY diagnostics.ts ./src/diagnostics.ts
 COPY main.ts ./src/main.ts
-RUN npm ci --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts
+COPY patch-packet-diagnostics.mjs ./
+RUN npm ci --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts && node patch-packet-diagnostics.mjs && node --check node_modules/@keesmod/eufy-mega-client/dist/vendor/p2p/session.js
 # Try a newer HEVC decoder in the isolated DEV bridge only. Debian Trixie
 # ships FFmpeg 7.1; the existing production bridge stays on Bookworm/5.1.
 FROM node:24-trixie-slim
@@ -14,7 +15,7 @@ WORKDIR /app
 COPY --from=build /upstream/ha_app/package*.json ./
 COPY --from=build /upstream/ha_app/node_modules ./node_modules
 COPY --from=build /upstream/ha_app/dist ./dist
-COPY bootstrap.mjs ./
+COPY bootstrap.mjs packet-diagnostics.mjs ./
 EXPOSE 8064
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "bootstrap.mjs"]
