@@ -150,7 +150,7 @@ test('DEV dashboard can choose a second HA Eufy camera without changing the orig
  const document={getElementById(id){return elements[id]},createElement(){return {value:'',textContent:''}}};
  let restarted=0;
  const deps={haStates,document,eufyStopLive(){},eufyStopJpeg(){},eufyAbort:null,
-  closeEufyPlayer(){},eufyClearThumbs(){},eufyStartLive(){restarted++}};
+  closeEufyPlayer(){},eufyClearThumbs(){},eufyMode:'live',eufySetMode(mode){assert.equal(mode,'live');restarted++}};
  const fn=new Function(...Object.keys(deps),source+
   ';return {selected:eufyCameraEntity,options:eufyCameraOptions,changed:eufyCameraChanged};');
  const api=fn(...Object.values(deps));
