@@ -13,7 +13,7 @@ test('all inline scripts parse without JavaScript errors',()=>{
  for(const [i,s] of scripts.entries())assert.doesNotThrow(()=>new vm.Script(s[1],{filename:'inline-'+i+'.js'}));
 });
 test('visible DEV version and original snapshot path preserved',()=>{
- assert.match(html,/v3\.75-dev/);
+ assert.match(html,/v3\.\d+-dev/);
  assert.match(html,/id="eufyLiveVideo"/);
  assert.match(html,/id="eufyCameraSelect"/);
  assert.match(html,/async function refreshEufySnapshot\(\)/);
@@ -27,7 +27,7 @@ test('recording API uses installed 0.8.48 integration (not experimental WS exten
  assert.doesNotMatch(html,/eufy_viewer\/launcher_events/);
 });
 
-function harness(){
+function harness(dev=false){
  const sent=[],elements={};
  let now=100000,heartbeat=null,retryTimer=null;
  class Clock extends Date{static now(){return now}}
@@ -43,7 +43,7 @@ function harness(){
  const document={getElementById(id){assert.ok(elements[id],id);return elements[id]},hidden:false};
  const haSocket={readyState:1,send(s){sent.push(JSON.parse(s))}};
  const WebSocket={OPEN:1};
- const haStates={'camera.front_door':{attributes:{viewer_webrtc:true}}};
+ const haStates={'camera.front_door':{attributes:{viewer_webrtc:true,viewer_dev_bridge:dev}}};
  class Peer{constructor(){this.connectionState='new';Peer.last=this}addTransceiver(){}
   async createOffer(){return {sdp:'offer-test'}}
   async setLocalDescription(x){this.localDescription=x}
@@ -162,3 +162,5 @@ test('DEV dashboard can choose a second HA Eufy camera without changing the orig
  assert.equal(api.selected(),'camera.front_door_2');
  assert.equal(restarted,1,'switch initiates only the chosen camera session');
 });
+
+test('DEV camera starts authenticated live JPEG and releases its lease',()=>{const {api,sent,elements}=harness(true);api.start();assert.equal(sent[0].transport,'jpeg');api.event({event:{type:'frame',jpeg:'/9j/',sequence:1}});elements.eufyStill.onload();assert.match(elements.eufyMeta.textContent,/Live JPEG/);api.stop();assert.ok(sent.some(x=>x.type==='unsubscribe_events'));});
