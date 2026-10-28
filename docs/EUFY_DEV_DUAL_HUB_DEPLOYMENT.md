@@ -133,3 +133,20 @@ if that becomes necessary. The rollback does not modify bridge add-ons.
 This fixes the **duplicate HA camera identity**, not the bridge's HEVC encoder
 stall and not the launcher's HTTPS-to-HA recording CORS path. Actual doorbell
 livestream acceptance still needs a run against the DEV camera after installation.
+
+## Deployment checkpoint — 28 October 2026
+
+With user approval, the pinned installer completed on the Yellow and reported
+Eufy Security Viewer 0.8.49-dev.2 installed. A new full Home Assistant backup
+was completed and verified before installation, and the installer retained the
+previous component directory. Home Assistant Core restart was then requested.
+
+Immediately before installation, the original bridge was running 0.8.39 on
+8063 and DEV was running 0.8.39-dev.4 on 8064. The DEV config-entry unique ID
+had the required home-tv-dev- prefix. The only registered camera was
+camera.doorbell, owned by the original entry; the installed component was 0.8.48.
+Neither bridge installation nor the stable dashboard was changed.
+
+Post-restart remote access and camera validation are still pending at this
+checkpoint. Installation success does not establish a working livestream.
+Do not rerun the installer: retain the first component backup for rollback.
