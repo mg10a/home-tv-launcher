@@ -1,0 +1,179 @@
+name: Eufy experiment checks
+on:
+  push:
+    branches: [dev/eufy-jpeg-and-bridge-diagnostics]
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'experiments/**'
+      - '.github/workflows/eufy-experiment-checks.yml'
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python extension
+        run: python -m py_compile experiments/launcher_recordings.py
+      - name: Parse and check all inline JavaScript blocks
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.inside = False; self.scripts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'script':
+                      a = dict(attrs)
+                      self.inside = 'src' not in a and a.get('type', 'text/javascript') in ('text/javascript','module','')
+                      if self.inside: self.scripts.append('')
+              def handle_endtag(self, tag):
+                  if tag == 'script': self.inside = False
+              def handle_data(self, data):
+                  if self.inside: self.scripts[-1] += data
+          p = Scripts(); p.feed(Path('index.html').read_text())
+          for i, source in enumerate(p.scripts):
+              Path(f'/tmp/eufy-inline-{i}.js').write_text(source)
+          print(f'Extracted {len(p.scripts)} inline scripts')
+          PY
+          for f in /tmp/eufy-inline-*.js; do node --check "$f"; done
+      - name: Exercise offline analyser with synthetic input
+        run: |
+          printf '%s\n' '{"live_video":[{"state":"ended","duration_ms":10000,"input":{"bytes":1000,"last_data_age_ms":6000},"output":{"bytes":0},"jpeg":{"chunks":0},"encoder":{"frames":0}}]}' | node experiments/analyse-eufy-live.mjs | grep -q 'FFmpeg decode/encode/progress'
+
+  bridge-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: keesmod/ha-eufy-cam
+          path: upstream
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install FFmpeg test dependency
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Baseline upstream bridge tests
+        working-directory: upstream/bridge
+        run: |
+          npm ci
+          npm run build
+          npm test > /tmp/upstream-test.log 2>&1 || echo "UPSTREAM_TESTS_FAILED"
+          tail -n 12 /tmp/upstream-test.log
+      - name: Apply bridge source patch
+        run: |
+          cp experiments/bridge-patch/live-transcoder.ts upstream/bridge/src/live-transcoder.ts
+          cp experiments/bridge-patch/diagnostics.ts upstream/bridge/src/diagnostics.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: upstream/bridge/package-lock.json
+      - name: Install bridge dependencies
+        working-directory: upstream/bridge
+        run: npm ci
+      - name: Compile patched bridge
+        working-directory: upstream/bridge
+        run: npm run build
+      - name: Test patched bridge
+        working-directory: upstream/bridge
+        run: npm test
+
+  dev-addon-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Build actual Home Assistant DEV add-on
+        run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
+
+  recording-integration-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: keesmod/ha-eufy-cam
+          ref: cb52d1347a8a69df10260a798b6d9fd969ba680d
+          path: upstream
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Assemble and validate complete integration
+        run: |
+          mkdir -p package/custom_components
+          cp -a upstream/custom_components/eufy_viewer package/custom_components/
+          cp launcher/integration_patch/launcher_recordings.py package/custom_components/eufy_viewer/launcher_recordings.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('package/custom_components/eufy_viewer/__init__.py')
+          s=p.read_text()
+          needle='    async_register_commands(hass)\n'
+          assert s.count(needle)==1
+          s=s.replace(needle,needle+'    from .launcher_recordings import async_register_recording_commands\n    async_register_recording_commands(hass)\n')
+          p.write_text(s)
+          m=Path('package/custom_components/eufy_viewer/manifest.json')
+          manifest=json.loads(m.read_text())
+          manifest['version']='0.8.49-dev.1'
+          m.write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+          python3 -m compileall -q package/custom_components/eufy_viewer
+          test -f package/custom_components/eufy_viewer/recordings.py
+          test -f package/custom_components/eufy_viewer/playback.py
+          grep -q 'async_register_recording_commands(hass)' package/custom_components/eufy_viewer/__init__.py
+          cd package && zip -qr ../eufy-viewer-recordings-dev.zip custom_components
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eufy-viewer-recordings-dev-installable
+          path: eufy-viewer-recordings-dev.zip
+          retention-days: 14
+      - name: Publish complete integration for HACS custom repository
+        run: |
+          mkdir -p launcher/custom_components
+          cp -a package/custom_components/eufy_viewer launcher/custom_components/
+          cd launcher
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add custom_components/eufy_viewer
+          git commit -m 'Publish complete Eufy Viewer recordings DEV integration' || exit 0
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+  android-dev-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build Android DEV APK
+        working-directory: android-dev-app
+        run: gradle --no-daemon :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Home-TV-DEV-Android-APK
+          path: android-dev-app/app/build/outputs/apk/debug/app-debug.apk
