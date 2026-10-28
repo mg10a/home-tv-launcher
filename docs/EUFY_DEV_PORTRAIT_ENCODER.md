@@ -9,3 +9,9 @@ Only update the existing DEV add-on on port 8064. Do not update the original bri
 Validation: ARM64 and AMD64 builds, HEVC decoding, stall recovery, bridge identity, and portrait/landscape output passed on experiment commit 08b2d244ac500bd235c6075310629f26b883af5b (Actions run 40776223866). Repeat CI on release commit before installation.
 
 Hardware verification: use /dev/ dashboard, select camera.doorbell_dev, open modal for at least 60 seconds, verify decoded frame counter advances, close and confirm sessions stop. Repeat open/close and inspect DEV-only diagnostics. Keep stable dashboard unchanged.
+
+## Deployment checkpoint — 28 October 2026
+
+Release commit 37234a8d439744e0ef9178c404dd2a7c9b335cf8 passed ARM64 and AMD64 CI (run 40776794710). DEV add-on updated from dev.4 to dev.6 and reports running. Original bridge remains 0.8.39; shared integration remains 0.8.49-dev.2. Both registered doorbell devices remain present; no extra devices were created.
+
+Hardware playback remains unverified. On restart the DEV bridge restored its cached account session but Eufy inventory rejected it (HTTP 463/code 4404, then HTTP 401/code 26084). Diagnostics show bridge reachable, account disconnected, empty current inventory. Secure reauthentication is required before playback testing. The initial bridge-token submission was rejected; do not repeat blind login attempts or change production credentials. A DEV-only backup was verified before installation and is available locally for rollback.
