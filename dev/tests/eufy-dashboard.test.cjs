@@ -20,12 +20,12 @@ test('visible DEV version and original snapshot path preserved',()=>{
  assert.match(html,/eufyJpegFirstFrame\(entity\)/);
  assert.match(html,/type:'eufy_viewer\/watch',entity_id:entity,transport:'jpeg'/);
 });
-test('recording API uses installed 0.8.48 integration (not experimental WS extension)',()=>{
- assert.match(html,/\/api\/eufy_viewer\/recordings\/'\+encodeURIComponent\(camera\)/);
- assert.match(html,/eufyApi\(path,\{signal\}\)/);
- assert.match(html,/eufyApi\(path,\{method:'POST',signal\}\)/);
- assert.doesNotMatch(html,/eufy_viewer\/launcher_events/);
+test('recordings use installed authenticated WebSocket metadata and HTTP signed playback',()=>{
+ assert.ok(html.includes("type:'eufy_viewer/launcher_events'"));
+ assert.ok(html.includes("type:'eufy_viewer/launcher_thumbnail'"));
+ assert.ok(html.includes("eufyApi(path,{method:'POST',signal})"));
 });
+
 
 function harness(dev=false){
  const sent=[],elements={};
@@ -164,3 +164,4 @@ test('DEV dashboard can choose a second HA Eufy camera without changing the orig
 });
 
 test('DEV camera starts authenticated live JPEG and releases its lease',()=>{const {api,sent,elements}=harness(true);api.start();assert.equal(sent[0].transport,'jpeg');api.event({event:{type:'frame',jpeg:'/9j/',sequence:1}});elements.eufyStill.onload();assert.match(elements.eufyMeta.textContent,/Live JPEG/);api.stop();assert.ok(sent.some(x=>x.type==='unsubscribe_events'));});
+
