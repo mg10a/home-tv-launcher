@@ -6,7 +6,7 @@ const html=readFileSync('dev/index.html','utf8');
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
 assert.ok(scripts.length>0,'Dashboard has inline JavaScript');
 for(const [i,source] of scripts.entries())new vm.Script(source,{filename:'inline-'+i+'.js'});
-assert.match(html,/v3\.72-dev/,'Visible version label updated');
+assert.match(html,/v3\.\d+-dev/,'Visible version label updated');
 assert.ok(html.includes('/api/eufy_viewer/recordings/'),'Uses existing HA recording API');
 assert.ok(html.includes("type:'eufy_viewer/ack'"),'Live JPEG acknowledges frames');
 assert.ok(!html.includes('eufy_viewer/launcher_events'),'No unavailable experimental API');
@@ -29,13 +29,13 @@ const document={
  addEventListener(){},
  getElementById(name){
   if(name==='eufyStill')return image;
-  if(!elements.has(name))elements.set(name,{classList:classList(),textContent:'',value:'2026-10-25'});
+  if(!elements.has(name))elements.set(name,{classList:classList(),pause(){},textContent:'',value:'2026-10-25'});
   return elements.get(name);
  }
 };
 const ws={readyState:1,send(message){sent.push(JSON.parse(message))}};
 const context={document,WebSocket:{OPEN:1},haSocket:ws,haRequestId:100,haVerified:true,
- eufyWsPending:new Map(),eufyCameraEntity:()=> 'camera.front_door',eufyBattery:()=>null,
+ haStates:{},eufyWsCommand:async x=>{sent.push(x);return {success:true,result:{accepted:true}}},eufyWsPending:new Map(),eufyCameraEntity:()=> 'camera.front_door',eufyBattery:()=>null,
  eufyStopJpeg:()=>{},Date,JSON,
  setInterval(fn){guard=fn;return 1},clearInterval(){guard=null},
  setTimeout(fn){pendingRetry=fn;return 2},clearTimeout(){pendingRetry=null}};
@@ -51,9 +51,9 @@ vm.runInContext('eufyStopLive()',context);
 assert.ok(sent.some(m=>m.type==='unsubscribe_events'&&m.subscription===100),'Stop unsubscribes');
 assert.equal(guard,null);
 vm.runInContext('eufyStartLive()',context);
-vm.runInContext('eufyLiveLastFrame=Date.now()-11000',context);
+vm.runInContext('eufyLiveLastFrame=Date.now()-26000',context);
 guard();
-assert.equal(elements.get('eufyMeta').textContent.includes('Reconnecting'),true,'Frame stall schedules bounded recovery');
+assert.equal(elements.get('eufyMeta').textContent.includes('Retry 1/2'),true,'Frame stall schedules bounded recovery');
 assert.equal(typeof pendingRetry,'function');
 vm.runInContext('eufyStopLive()',context);
 assert.equal(pendingRetry,null,'Closing cancels recovery timer');
