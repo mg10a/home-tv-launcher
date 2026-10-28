@@ -1,7 +1,7 @@
 name: Build Eufy DEV Home Assistant add-on
 on:
   push:
-    branches: [main, dev/eufy-portrait-encoder, dev/eufy-stream-frame-diagnostics]
+    branches: [main, dev/eufy-portrait-encoder, dev/eufy-stream-frame-diagnostics, dev/eufy-packet-boundary-diagnostics]
     paths:
       - 'eufy_bridge_dev/**'
       - '.github/workflows/eufy-dev-addon-build.yml'
@@ -38,6 +38,9 @@ jobs:
           docker run --rm --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-hevc-headers.mjs:/app/test-hevc-headers.mjs:ro" \
             eufy-bridge-dev:ci /app/test-hevc-headers.mjs
+      - name: Verify packet observations
+        run: |
+          docker run --rm --entrypoint node -v "$PWD/eufy_bridge_dev/test-packet-diagnostics.mjs:/app/test-packet-diagnostics.mjs:ro" eufy-bridge-dev:ci /app/test-packet-diagnostics.mjs
   docker-build-aarch64:
     # Native ARM64 runner: Home Assistant Yellow uses this architecture.
     runs-on: ubuntu-24.04-arm
@@ -72,3 +75,6 @@ jobs:
           docker run --rm --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-hevc-headers.mjs:/app/test-hevc-headers.mjs:ro" \
             eufy-bridge-dev:arm64 /app/test-hevc-headers.mjs
+      - name: Verify ARM64 packet observations
+        run: |
+          docker run --rm --entrypoint node -v "$PWD/eufy_bridge_dev/test-packet-diagnostics.mjs:/app/test-packet-diagnostics.mjs:ro" eufy-bridge-dev:arm64 /app/test-packet-diagnostics.mjs
