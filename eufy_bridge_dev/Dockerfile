@@ -5,7 +5,6 @@ WORKDIR /upstream/ha_app
 COPY live-transcoder.ts ./src/live-transcoder.ts
 COPY diagnostics.ts ./src/diagnostics.ts
 COPY main.ts ./src/main.ts
-COPY server.ts ./src/server.ts
 RUN npm ci --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts
 # Try a newer HEVC decoder in the isolated DEV bridge only. Debian Trixie
 # ships FFmpeg 7.1; the existing production bridge stays on Bookworm/5.1.
