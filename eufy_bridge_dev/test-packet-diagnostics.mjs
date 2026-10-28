@@ -19,3 +19,27 @@ assert.equal(last.counts.codec_h264,20);
 process.env.EUFY_DIAGNOSTICS='false';
 observeVideoPacket({},null,null,null,0,false,true,()=>{throw Error('disabled diagnostic emitted')});
 console.log('Packet counters, disabled mode and numeric-only output passed');
+
+const {skipHevcPreroll}=await import('./packet-diagnostics.mjs');
+const {spawnSync}=await import('node:child_process');
+const silent=()=>{};
+const hevc=Buffer.from([0,0,0,1,64,1,0]);
+const h264=Buffer.from([0,0,0,1,103,100,0]);
+const gate={};
+assert.equal(skipHevcPreroll(gate,true,true,1,hevc,silent),true);
+assert.equal(skipHevcPreroll(gate,true,true,1,Buffer.from([0,0,1,2,1,128]),silent),true);
+assert.equal(skipHevcPreroll(gate,true,true,0,h264,silent),false);
+assert.equal(skipHevcPreroll(gate,false,true,0,Buffer.from([0,0,1,65,1]),silent),false);
+assert.equal(skipHevcPreroll({},true,false,1,hevc,silent),false);
+assert.equal(skipHevcPreroll({},true,true,0,h264,silent),false);
+assert.equal(skipHevcPreroll({},true,true,1,h264,silent),false);
+// Decode real synthetic H264 after rejecting a synthetic HEVC pre-roll header.
+const encoded=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=64x64:rate=10','-frames:v','30','-c:v','libx264','-preset','ultrafast','-tune','zerolatency','-f','h264','pipe:1']);
+assert.equal(encoded.status,0);
+const mixed={};
+assert.equal(skipHevcPreroll(mixed,true,true,1,hevc,silent),true);
+assert.equal(skipHevcPreroll(mixed,true,true,0,encoded.stdout,silent),false);
+const decoded=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-f','h264','-i','pipe:0','-f','framemd5','pipe:1'],{input:encoded.stdout});
+assert.equal(decoded.status,0);
+assert.equal(decoded.stdout.toString().split('\n').filter(l=>/^0,/.test(l)).length,30);
+console.log('Scoped preroll gate and 30 decoded live H264 frames passed');
