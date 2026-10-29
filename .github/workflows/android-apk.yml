@@ -1,4 +1,4 @@
-name: Build Android test APK
+name: Build Home TV Launcher APK
 on:
   workflow_dispatch:
   push:
@@ -22,13 +22,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Bundle current launcher UI
-        run: |
-          mkdir -p app/src/main/assets
-          cp index.html app/src/main/assets/index.html
+      - name: Check production dashboard
+        run: node --test tests/production-launcher.test.cjs
       - name: Build debug APK
         run: gradle :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: home-tv-launcher-s26-test-apk
+          name: Home-TV-Launcher-4.0-APK
           path: app/build/outputs/apk/debug/app-debug.apk
