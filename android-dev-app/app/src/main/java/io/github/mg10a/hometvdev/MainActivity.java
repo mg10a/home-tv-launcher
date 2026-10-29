@@ -1,7 +1,6 @@
 package io.github.mg10a.hometvdev;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -20,7 +19,7 @@ import java.util.concurrent.*;
 public final class MainActivity extends Activity {
   private WebView web;
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/dev/?v=3.88";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/dev/?v=3.89";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -50,19 +49,8 @@ public final class MainActivity extends Activity {
 
   public final class LauncherBridge {
     @JavascriptInterface public void openApp(String name) {
-      runOnUiThread(() -> confirmVpnAndLaunch(name));
+      runOnUiThread(() -> launchEntertainment(name));
     }
-  }
-  private void confirmVpnAndLaunch(String name) {
-    String country="NOW".equals(name)?"Ireland":"United Kingdom";
-    new AlertDialog.Builder(this).setTitle(name+" · "+country+" VPN")
-      .setMessage("Connect NordVPN to "+country+" before opening this app. The launcher cannot switch or verify your VPN connection.")
-      .setPositiveButton("Connected — open app",(dialog,which)->launchEntertainment(name))
-      .setNeutralButton("Open NordVPN",(dialog,which)->{
-        launchEntertainment("NordVPN");
-        // Returning to the launcher requires another explicit app click and confirmation.
-      })
-      .setNegativeButton("Cancel",null).show();
   }
   private void launchEntertainment(String name) {
     String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN"};
@@ -77,10 +65,10 @@ public final class MainActivity extends Activity {
         boolean same=label.equalsIgnoreCase(name)
           || ("Prime Video".equals(name)&&label.equalsIgnoreCase("Amazon Prime Video"))
           || ("BBC iPlayer".equals(name)&&label.equalsIgnoreCase("iPlayer"))
-          || ("NOW".equals(name)&&match.activityInfo.packageName.equals("com.nowtv.ie"));
+          || ("NOW".equals(name)&&(match.activityInfo.packageName.equals("com.nowtv.ie")
+            ||match.activityInfo.packageName.equals("com.bskyb.nowtv.beta")
+            ||label.equalsIgnoreCase("NOW TV")||label.equalsIgnoreCase("NOWTV")));
         if(!same)continue;
-        // Do not silently open the known UK phone app for an Ireland membership.
-        if("NOW".equals(name)&&match.activityInfo.packageName.equals("com.bskyb.nowtv.beta"))continue;
         Intent launch=new Intent(Intent.ACTION_MAIN).addCategory(category);
         launch.setClassName(match.activityInfo.packageName,match.activityInfo.name);
         try{startActivity(launch);return;}catch(android.content.ActivityNotFoundException|SecurityException ignored){}
