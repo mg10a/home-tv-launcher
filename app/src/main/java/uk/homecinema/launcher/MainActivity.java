@@ -18,6 +18,7 @@ import java.util.concurrent.*;
 
 public final class MainActivity extends Activity {
   private WebView web,authWeb;
+  private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
   private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0";
   @Override public void onCreate(Bundle b){super.onCreate(b);
@@ -107,7 +108,12 @@ public final class MainActivity extends Activity {
         android.net.Uri next=request.getUrl();
         if(request.isForMainFrame()&&isLauncher(next)){
           String callback=next.toString();
-          web.post(()->{closeAuth();web.loadUrl(callback);});return true;
+          // The launcher is detached during login: View.post waits for reattachment.
+          // Use the main looper so this callback can reattach it in the first place.
+          mainHandler.post(()->{
+            if(authWeb!=view)return;
+            closeAuth();web.loadUrl(callback);
+          });return true;
         }
         return !"https".equals(next.getScheme())||!host.equals(next.getHost())
           ||next.getUserInfo()!=null||(next.getPort()!=-1&&next.getPort()!=443);
