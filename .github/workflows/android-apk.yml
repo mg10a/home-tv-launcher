@@ -28,5 +28,5 @@ jobs:
         run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: Home-TV-Launcher-4.0-APK
+          name: Home-TV-Launcher-4.0.1-APK
           path: app/build/outputs/apk/debug/app-debug.apk
