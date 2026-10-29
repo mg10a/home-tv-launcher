@@ -1,6 +1,9 @@
 package io.github.mg10a.hometvdev;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.webkit.*;
 import android.widget.*;
@@ -22,6 +25,7 @@ public final class MainActivity extends Activity {
     web.setBackgroundColor(Color.BLACK);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setMediaPlaybackRequiresUserGesture(false);
     web.addJavascriptInterface(new Bridge(),"HomeTVNative");
+    web.addJavascriptInterface(new LauncherBridge(),"AndroidLauncher");
     web.setWebViewClient(new WebViewClient(){
       @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !r.getUrl().toString().startsWith("https://mg10a.github.io/home-tv-launcher/");}
       @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
@@ -42,6 +46,37 @@ public final class MainActivity extends Activity {
     });
     web.loadUrl(LAUNCHER);
   }
+
+  public final class LauncherBridge {
+    @JavascriptInterface public void openApp(String name) {
+      runOnUiThread(() -> launchEntertainment(name));
+    }
+  }
+  private void launchEntertainment(String name) {
+    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch"};
+    if(!Arrays.asList(names).contains(name))return;
+    PackageManager pm=getPackageManager();
+    // Query both TV and phone launchers so the installed platform variant is used.
+    for(String category:new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER,Intent.CATEGORY_LAUNCHER}) {
+      Intent query=new Intent(Intent.ACTION_MAIN).addCategory(category);
+      for(ResolveInfo match:pm.queryIntentActivities(query,0)) {
+        if(match.activityInfo==null)continue;
+        String label=match.loadLabel(pm).toString().trim();
+        boolean same=label.equalsIgnoreCase(name)
+          || ("Prime Video".equals(name)&&label.equalsIgnoreCase("Amazon Prime Video"))
+          || ("BBC iPlayer".equals(name)&&label.equalsIgnoreCase("iPlayer"))
+          || ("NOW".equals(name)&&match.activityInfo.packageName.equals("com.nowtv.ie"));
+        if(!same)continue;
+        // Do not silently open the known UK phone app for an Ireland membership.
+        if("NOW".equals(name)&&match.activityInfo.packageName.equals("com.bskyb.nowtv.beta"))continue;
+        Intent launch=new Intent(Intent.ACTION_MAIN).addCategory(category);
+        launch.setClassName(match.activityInfo.packageName,match.activityInfo.name);
+        try{startActivity(launch);return;}catch(android.content.ActivityNotFoundException|SecurityException ignored){}
+      }
+    }
+    Toast.makeText(this,name+" app not found. Check it is installed on this device.",Toast.LENGTH_LONG).show();
+  }
+
   private volatile String webBase,webToken;
   public final class Bridge {
     @JavascriptInterface public void request(String id,String base,String token,String path,String method){
