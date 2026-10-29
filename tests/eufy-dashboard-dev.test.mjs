@@ -12,7 +12,7 @@ assert.ok(html.includes("type:'eufy_viewer/ack'"),'Live JPEG acknowledges frames
 assert.ok(html.includes('eufy_viewer/launcher_events'),'Uses installed authenticated recording commands');
 assert.ok(!html.includes('HomeTVNative'),'No dependency on broken Android wrapper');
 
-const script=scripts.at(-1);
+const script=scripts.find(source=>source.includes('let eufyLiveSubscription='));
 const from=script.indexOf('let eufyLiveSubscription=');
 const to=script.indexOf('let eufyAbort=',from);
 assert.ok(from>=0&&to>from,'Live-JPEG block found');
