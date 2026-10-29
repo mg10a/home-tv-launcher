@@ -1,6 +1,7 @@
 package io.github.mg10a.hometvdev;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -19,7 +20,7 @@ import java.util.concurrent.*;
 public final class MainActivity extends Activity {
   private WebView web;
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/dev/?v=3.71";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/dev/?v=3.88";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -49,11 +50,22 @@ public final class MainActivity extends Activity {
 
   public final class LauncherBridge {
     @JavascriptInterface public void openApp(String name) {
-      runOnUiThread(() -> launchEntertainment(name));
+      runOnUiThread(() -> confirmVpnAndLaunch(name));
     }
   }
+  private void confirmVpnAndLaunch(String name) {
+    String country="NOW".equals(name)?"Ireland":"United Kingdom";
+    new AlertDialog.Builder(this).setTitle(name+" · "+country+" VPN")
+      .setMessage("Connect NordVPN to "+country+" before opening this app. The launcher cannot switch or verify your VPN connection.")
+      .setPositiveButton("Connected — open app",(dialog,which)->launchEntertainment(name))
+      .setNeutralButton("Open NordVPN",(dialog,which)->{
+        launchEntertainment("NordVPN");
+        // Returning to the launcher requires another explicit app click and confirmation.
+      })
+      .setNegativeButton("Cancel",null).show();
+  }
   private void launchEntertainment(String name) {
-    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch"};
+    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN"};
     if(!Arrays.asList(names).contains(name))return;
     PackageManager pm=getPackageManager();
     // Query both TV and phone launchers so the installed platform variant is used.
