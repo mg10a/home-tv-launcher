@@ -157,7 +157,7 @@ test('DEV dashboard can choose a second HA Eufy camera without changing the orig
  assert.equal(api.selected(),'camera.front_door','original is preserved by default');
  api.options();assert.equal(selection.hidden,false);
  assert.deepEqual(selection.options.map(x=>x.value),['camera.front_door','camera.front_door_2']);
- assert.ok(selection.options[1].textContent.includes('camera.front_door_2'));
+ assert.ok(selection.options[1].title.includes('camera.front_door_2'));
  selection.value='camera.front_door_2';api.changed();
  assert.equal(api.selected(),'camera.front_door_2');
  assert.equal(restarted,1,'switch initiates only the chosen camera session');
