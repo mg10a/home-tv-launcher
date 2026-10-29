@@ -76,7 +76,7 @@ const rec={document:recDocument,eufyAbort:null,eufyRecords:[],eufyStopLive(){},c
  AbortController,Error,Array,encodeURIComponent,
  eufyRecordingError:e=>e.message,
  eufyWsCommand:async command=>{paths.push(command);return {success:true,result:{complete:true,recordings:[{id:recordId,start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10',thumbnail:false}]}}},
- playEufyRecording(){},eufySelectRecording(){}};
+ playEufyRecording(){},eufyRenderClips(){},eufySelectRecording(){}};
 vm.createContext(rec);vm.runInContext(loader,rec);
 await vm.runInContext('loadEufyRecordings()',rec);
 assert.equal(paths[0].type,'eufy_viewer/launcher_events');
