@@ -1981,9 +1981,9 @@ async function loadEufyRecordings(){
  note.textContent='Loading HomeBase recordings through the existing Home Assistant integration…';
  try{
   let reply=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date},45000);
-  if(!reply.success&&/recording request failed/i.test(reply.error?.message||'')){
+  for(let attempt=0;attempt<2&&!reply.success&&/recording request failed/i.test(reply.error?.message||'Recording request failed');attempt++){
    if(signal.aborted)return;note.textContent='Checking recordings again…';
-   await new Promise(resolve=>{const timer=setTimeout(resolve,1000);signal.addEventListener('abort',()=>{clearTimeout(timer);resolve()},{once:true})});
+   await new Promise(resolve=>{const timer=setTimeout(resolve,3000*(attempt+1));signal.addEventListener('abort',()=>{clearTimeout(timer);resolve()},{once:true})});
    if(signal.aborted)return;reply=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date},45000);
   }
   if(!reply.success)throw Error(reply.error?.message||'Recording request failed');
