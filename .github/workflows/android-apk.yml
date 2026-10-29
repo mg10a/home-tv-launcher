@@ -25,7 +25,7 @@ jobs:
       - name: Check production dashboard
         run: node --test tests/production-launcher.test.cjs
       - name: Build debug APK
-        run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
+        run: gradle -Pandroid.useAndroidX=true :app:testDebugUnitTest :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: Home-TV-Launcher-4.0.1-APK
