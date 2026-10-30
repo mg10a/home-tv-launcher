@@ -58,7 +58,7 @@ export function liveArgs(codec: 'h264' | 'hevc', fps: number, mode: LiveAccelera
   // A VBV cap keeps keyframe bursts and busy scenes within what a WiFi viewer
   // decodes in time; an unconstrained ultrafast CRF encode does not.
   else args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency', '-crf', '26', '-maxrate', String(rate.maxrate), '-bufsize', String(rate.bufsize));
-  args.push('-pix_fmt', 'yuv420p', '-vf', `${wallclockStamp},scale=w='min(1280,iw)':h='min(1280,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`, '-threads', '1', '-g', '30');
+  args.push('-pix_fmt', 'yuv420p', '-vf', `${wallclockStamp},scale=w='min(1280,iw)':h='min(1280,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2${process.env.EUFY_PRESERVE_SHADOW_DETAIL === 'true' ? ':in_range=full:out_range=tv' : ''}`, '-threads', '1', '-g', '30');
   args.push('-fps_mode', 'vfr', '-enc_time_base', '1:90000');
   args.push('-mpegts_flags', '+resend_headers', '-muxdelay', '0', '-muxpreload', '0', '-f', 'mpegts', 'pipe:1');
   return args;
