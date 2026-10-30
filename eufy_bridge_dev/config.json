@@ -1,8 +1,8 @@
 {
   "name": "Eufy Bridge DEV - HEVC Recovery",
-  "version": "0.8.39-dev.10",
+  "version": "0.8.39-dev.11",
   "slug": "eufy_bridge_dev",
-  "description": "DEV portrait encoder capped at 1280 pixels on both axes; preserves dev.4 physical camera serials for HA integration identity isolation. FFmpeg 7.1 and bounded stall recovery.",
+  "description": "Preserves doorbell shadow detail for automatic dashboard night view. Original recordings remain unchanged; disable preserve_shadow_detail to restore previous decoding.",
   "url": "https://github.com/mg10a/home-tv-launcher",
   "arch": [
     "amd64",
@@ -15,7 +15,8 @@
   "timeout": 20,
   "options": {
     "token": "",
-    "diagnostics": true
+    "diagnostics": true,
+    "preserve_shadow_detail": true
   },
   "schema": {
     "token": "password",
@@ -25,7 +26,8 @@
     "live_max_streams_per_station": "int(1,4)?",
     "live_max_seconds_mains": "int(120,3600)?",
     "experimental_standalone": "bool?",
-    "standalone_recording_probe": "bool?"
+    "standalone_recording_probe": "bool?",
+    "preserve_shadow_detail": "bool?"
   },
   "stage": "experimental"
 }
