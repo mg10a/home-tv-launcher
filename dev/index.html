@@ -2099,7 +2099,7 @@ async function playEufyRecording(index){
   eufyPlaybackPath=data.path||(data.url||'').split('?')[0];
   const relative=data.url||data.path||data.playback_url;
   if(typeof relative!=='string'||!relative.startsWith('/api/eufy_viewer/playback/'))throw Error('Playback URL unavailable');
-  const video=document.getElementById('eufyPlayer');video.dataset.recordedAt=record.start||'';if(window.HomeTVNative)video.removeAttribute('crossorigin');video.src=haStoredUrl()+relative;
+  const video=document.getElementById('eufyPlayer');video.dataset.recordedAt=record.start||'';video.src=haStoredUrl()+relative;
   document.getElementById('eufyPlayerWrap').classList.remove('hidden');
   note.textContent=(record.start||'').slice(11,19)+' · Stored recording';video.play().catch(()=>{note.textContent='Press Play to start the recording.'});
  }catch(err){if(!signal?.aborted&&request===eufyPlaybackRequest)note.textContent='Recording playback unavailable: '+await eufyRecordingError(err)}
