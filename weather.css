@@ -19,3 +19,36 @@
 .wx-sun-summary{display:block;font-size:.85em;line-height:1.3;color:#c9d9e9}
 #weatherModal .wx-hour>strong .wx-peer{font-size:11px}
 @media(orientation:landscape) and (max-height:600px){#weatherModal .wx-hour dl{gap:5px 3px}#weatherModal .wx-hour{overflow-y:auto}#weatherModal .wx-outlook .wx-icon{font-size:25px}#weatherModal .wx-outlook article{gap:4px}#weatherModal .wx-foot{font-size:7px;max-height:18px}}
+
+/* Landscape sidebar gives the forecast the full content height. */
+@media(orientation:landscape){
+#weatherModal .wx-shell{display:grid;grid-template-columns:155px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+#weatherModal .wx-head{grid-column:1/-1}
+#weatherModal .wx-sidebar{grid-column:1;grid-row:2;border-right:1px solid #36516e;padding:8px;overflow:auto;min-height:0}
+#weatherModal .wx-locations{padding:0;display:block}
+#weatherModal form{display:grid;grid-template-columns:1fr;gap:5px}
+#weatherModal form label{display:none}
+#weatherModal input{width:100%;font-size:11px}
+#weatherModal #wxFavourites{display:flex;flex-direction:column;overflow:visible;margin:8px 0}
+#weatherModal #wxFavourites button{white-space:normal;text-align:left}
+#weatherModal .wx-tabs{padding:8px 0 0;display:flex;flex-direction:column;border:0}
+#weatherModal .wx-tabs button{min-width:0;text-align:left}
+#weatherModal .wx-body{grid-column:2;grid-row:2;padding:6px 10px}
+#weatherModal .wx-foot{grid-column:1/-1}
+#weatherModal .wx-hour{flex-basis:175px}
+#weatherModal .wx-overview>small{display:none}
+#weatherModal .wx-days button{min-width:75px}
+}
+@media(orientation:landscape) and (max-height:600px){
+#weatherModal .wx-shell{grid-template-columns:125px minmax(0,1fr)}
+#weatherModal .wx-sidebar{padding:5px}
+#weatherModal .wx-hour{padding:4px 7px;gap:1px;flex-basis:160px}
+#weatherModal .wx-hour dl{gap:4px 3px}
+#weatherModal .wx-hour dt,#weatherModal .wx-hour dd{font-size:9px}
+#weatherModal .wx-icon{font-size:18px}
+#weatherModal .wx-days small{display:none}
+#weatherModal .wx-overview h3{font-size:10px}
+}
+@media(orientation:portrait){#weatherModal .wx-sidebar{flex:none;max-height:22vh;overflow:auto}}
+.wx-warning{font-size:10px;padding:5px 8px;border:1px solid #b3954f;border-radius:7px;background:#463b22;color:#ffe5a4;flex:none;margin:3px 0}
+.wx-warning a{color:inherit;text-decoration:underline}
