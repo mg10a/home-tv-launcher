@@ -25,6 +25,8 @@ process.env.EUFY_DATA_DIR = directory;
 // Only local HA and its managed media service need access to this API.
 process.env.BIND_ADDRESS = '127.0.0.1';
 process.env.PORT = '8064';
+// Preserve original shadow samples for optional dashboard night enhancement.
+process.env.EUFY_PRESERVE_SHADOW_DETAIL = options.preserve_shadow_detail === false ? 'false' : 'true';
 process.env.EUFY_DIAGNOSTICS = options.diagnostics === true ? 'true' : 'false';
 // Optional live encoder cap such as 4M or 2500k; the bridge validates and defaults to 4M.
 if (typeof options.live_max_bitrate === 'string' && options.live_max_bitrate.trim()) process.env.EUFY_LIVE_MAX_BITRATE = options.live_max_bitrate.trim();
