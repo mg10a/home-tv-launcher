@@ -52,3 +52,21 @@
 @media(orientation:portrait){#weatherModal .wx-sidebar{flex:none;max-height:22vh;overflow:auto}}
 .wx-warning{font-size:10px;padding:5px 8px;border:1px solid #b3954f;border-radius:7px;background:#463b22;color:#ffe5a4;flex:none;margin:3px 0}
 .wx-warning a{color:inherit;text-decoration:underline}
+
+/* Fixed forecast navigation, type-ahead search, and header favourites. */
+#weatherModal .wx-head{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;overflow:visible}
+#weatherModal .wx-head>div:first-child{min-width:0}
+#weatherModal #wxFavourites{display:flex;flex-direction:row;flex-wrap:nowrap;gap:5px;overflow-x:auto;min-width:0;margin:0;align-items:center}
+#weatherModal #wxFavourites button{flex:0 0 auto;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:5px 8px}
+#weatherModal .wx-tabs{padding:0;gap:5px}
+#weatherModal .wx-locations{margin-top:12px}
+#weatherModal #wxSearch{display:block;width:100%}
+#weatherModal #wxQuery{box-sizing:border-box;min-width:0;width:100%}
+#weatherModal #wxResults{display:flex;flex-direction:column;gap:3px;max-height:32vh;overflow-y:auto;font-size:11px;margin-top:4px;border-radius:7px;background:#172d45}
+#weatherModal #wxResults:empty{display:none}
+#weatherModal #wxResults button{width:100%;min-width:0;white-space:normal;text-align:left;font-size:11px;padding:7px}
+#weatherModal .wx-warning{position:absolute;right:12px;top:100%;z-index:5;width:min(300px,50vw);max-height:130px;overflow:auto;box-shadow:0 4px 14px #0006}
+#weatherModal .wx-warning[hidden]{display:none!important}
+#weatherModal .wx-warning-status{margin-left:6px;color:#dfc494}
+@media(orientation:landscape) and (max-height:600px){#weatherModal .wx-head{gap:7px}#weatherModal #wxFavourites button{max-width:155px}#weatherModal .wx-locations{margin-top:10px}}
+@media(orientation:portrait){#weatherModal .wx-head{grid-template-columns:minmax(0,1fr) auto}#weatherModal #wxFavourites{grid-column:1/-1;grid-row:2}#weatherModal .wx-head-actions{grid-column:2;grid-row:1}}
