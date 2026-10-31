@@ -1,0 +1,55 @@
+/* Full-width home screens, shared navigation. */
+:root{--home-nav-height:calc(45px + env(safe-area-inset-top,0px))}
+body{padding-top:var(--home-nav-height)}
+#homeScreenNav{position:fixed;inset:0 0 auto;z-index:90;height:var(--home-nav-height);padding:calc(5px + env(safe-area-inset-top,0px)) 14px 5px;display:flex;justify-content:center;gap:6px;background:#101e31ee;border-bottom:1px solid #3b526d;backdrop-filter:blur(12px)}
+#homeScreenNav button{min-width:130px;max-width:240px;flex:1;border:1px solid #536c8b;border-radius:12px;background:#223a55;color:#c8d7e9;font-size:13px;padding:5px 12px}
+#homeScreenNav button[aria-pressed="true"]{background:#2c6758;border-color:#99d7bd;color:#fff;box-shadow:inset 0 0 0 1px #99d7bd55}
+#dashboardButton,#dashboardPage>.dashboard-top>.dashboard-toggle{display:none!important}
+body[data-home-screen="home"] #dashboardPage .family-panel,body[data-home-screen="family"] #dashboardPage .home-panel{display:none!important}
+#dashboardPage .overview-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
+#dashboardPage .overview-panel{grid-column:1!important;grid-row:1!important}
+#dashboardPage .home-panel{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);gap:12px!important}
+#dashboardPage .home-panel>.panel-heading{grid-column:1/-1;grid-row:1}
+#dashboardPage .home-room-grid{grid-column:1;grid-row:2/4;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+#dashboardPage .home-services{grid-column:2;grid-row:2;grid-template-columns:1fr 1fr}
+#dashboardPage .home-security{grid-column:2;grid-row:3;grid-template-columns:1fr 1fr}
+#dashboardPage .home-room strong,#dashboardPage .home-services strong,#dashboardPage .home-security strong{font-size:clamp(12px,1.45vw,19px)!important}
+#dashboardPage .home-room .room-readings,#dashboardPage .home-room .room-info,#dashboardPage .home-services small,#dashboardPage .home-security small{font-size:clamp(10px,1.1vw,15px)!important}
+#dashboardPage .family-sections{flex:1;display:grid!important;grid-template-columns:1.3fr 1fr 1fr!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:12px!important;min-height:0}
+#dashboardPage .family-sections>.family-section:first-child{grid-column:1!important;grid-row:1/3!important}
+#dashboardPage .family-sections>.family-section:nth-child(2){grid-column:2!important;grid-row:1!important}
+#dashboardPage .family-sections>.family-section:nth-child(3){grid-column:3!important;grid-row:1!important}
+#dashboardPage .family-sections>.meal-plan{grid-column:2!important;grid-row:2!important}
+#dashboardPage .family-sections>.find-panel{grid-column:3!important;grid-row:2!important}
+#dashboardPage .family-section{background:#1c3049;border:1px solid #38516e;border-radius:14px;padding:12px!important}
+#dashboardPage .family-title,#dashboardPage .calendar-open{font-size:clamp(12px,1.3vw,18px)!important}
+#dashboardPage .empty-row,#dashboardPage .calendar-layers span{font-size:clamp(10px,1.05vw,14px)!important}
+#dashboardPage .music-strip{align-items:center;overflow:hidden}
+#dashboardPage .now-playing{display:flex;flex-direction:column;gap:5px;min-width:0}
+#dashboardPage #sonosPlayer{max-width:100%;min-width:0;background:#203851;color:#e8f2ff;border:1px solid #59738e;border-radius:7px;padding:4px;font:inherit;font-size:11px}
+#dashboardPage #sonosTrack{font-size:clamp(11px,1.2vw,16px);overflow-wrap:anywhere}
+#dashboardPage .dashboard-top .eyebrow{display:none}
+@media(orientation:landscape){
+body[data-home-screen] main.shell,body[data-home-screen] #dashboardPage{height:calc(100dvh - var(--home-nav-height))!important;min-height:0!important}
+#dashboardPage .overview-panel{padding:12px!important}
+#dashboardPage .home-panel .panel-heading h2,#dashboardPage .family-panel .panel-heading h2{font-size:17px!important}
+#dashboardPage .family-panel{gap:8px!important}
+}
+@media(orientation:landscape) and (max-height:600px){
+:root{--home-nav-height:calc(34px + env(safe-area-inset-top,0px))}
+#homeScreenNav{padding-bottom:4px;padding-top:calc(4px + env(safe-area-inset-top,0px))}
+#homeScreenNav button{font-size:11px;padding:2px 8px}
+#dashboardPage .home-panel{gap:6px!important}
+#dashboardPage .family-sections{gap:6px!important}
+#dashboardPage .family-section{padding:6px!important}
+#dashboardPage .overview-panel{padding:7px!important}
+}
+@media(orientation:portrait){
+#homeScreenNav button{min-width:0;font-size:11px;padding:4px}
+#dashboardPage .home-panel{display:flex!important}
+#dashboardPage .home-room-grid{grid-auto-rows:minmax(55px,auto)!important}
+#dashboardPage .home-services,#dashboardPage .home-security{min-height:110px}
+#dashboardPage .family-sections{display:flex!important}
+#dashboardPage .family-section{min-height:120px}
+body[data-home-screen] #dashboardPage{min-height:calc(100dvh - var(--home-nav-height))!important}
+}
