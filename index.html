@@ -2200,5 +2200,5 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=8"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=9"></script></body></html>
 
