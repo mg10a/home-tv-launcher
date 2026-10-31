@@ -115,3 +115,29 @@
 }
 
 #weatherModal .wx-season-nav button[aria-pressed="true"]{background:#2c6959;border-color:#91ddc2;color:#fff;box-shadow:inset 0 0 0 1px #91ddc2}
+
+/* Hourly atmosphere: forecast condition underneath local daylight. */
+#weatherModal .wx-hour{--wx-sky:linear-gradient(155deg,#29455f,#152638);--wx-light:linear-gradient(transparent,transparent);background-image:var(--wx-light),var(--wx-sky);border-color:#617b9170;box-shadow:inset 0 1px 0 #ffffff12;transition:background-color .2s}
+#weatherModal .wx-sky-sunny{--wx-sky:radial-gradient(ellipse at 15% 0%,#efd17d88,transparent 65%),linear-gradient(155deg,#386d93,#213b51 80%)}
+#weatherModal .wx-sky-mixed{--wx-sky:radial-gradient(ellipse at 5% 0%,#e8c77b50,transparent 48%),linear-gradient(145deg,#53778e,#3b5066 40%,#20364d 85%)}
+#weatherModal .wx-sky-overcast{--wx-sky:linear-gradient(155deg,#626c7b,#3c4758 45%,#263345)}
+#weatherModal .wx-sky-fog{--wx-sky:linear-gradient(165deg,#697c86,#4b5f6c 42%,#293e4d)}
+#weatherModal .wx-sky-rain-light{--wx-sky:linear-gradient(155deg,#477d89,#315669 45%,#1b344a)}
+#weatherModal .wx-sky-rain-medium{--wx-sky:linear-gradient(155deg,#365d82,#283f65 45%,#182a46)}
+#weatherModal .wx-sky-rain-heavy{--wx-sky:linear-gradient(155deg,#343c69,#242d52 45%,#111c36)}
+#weatherModal .wx-sky-storm{--wx-sky:radial-gradient(ellipse at top,#76629066,transparent 60%),linear-gradient(155deg,#353453,#171b31)}
+#weatherModal .wx-sky-snow{--wx-sky:linear-gradient(155deg,#607f93,#3c6078 45%,#243c54)}
+#weatherModal .wx-light-night{--wx-light:linear-gradient(155deg,#090f28d9,#080e1beb);border-color:#48537280}
+#weatherModal .wx-light-dawn{--wx-light:linear-gradient(165deg,#c48b565e,#8d547b50 32%,#17284075 75%);border-color:#b78b8870}
+#weatherModal .wx-light-dusk{--wx-light:linear-gradient(165deg,#d58a5066,#8a526970 30%,#151a36b8 80%);border-color:#ac828970}
+#weatherModal .wx-hour dt{color:#c6d4e1}
+#weatherModal .wx-hour dd,#weatherModal .wx-hour time{color:#f0f5fa}
+#weatherModal .wx-hour>span:not(.wx-icon){color:#d6e0ec}
+#weatherModal .wx-temperature{color:#edf4fa;text-shadow:0 1px 3px #0007}
+#weatherModal .wx-temp-freezing{color:#c1e6ff}
+#weatherModal .wx-temp-cold{color:#95ceff}
+#weatherModal .wx-temp-cool{color:#a7e1ea}
+#weatherModal .wx-temp-mild{color:#bce8bc}
+#weatherModal .wx-temp-warm{color:#ffe09b}
+#weatherModal .wx-temp-hot{color:#ffba86}
+#weatherModal .wx-temp-veryhot{color:#ff9eaa}
