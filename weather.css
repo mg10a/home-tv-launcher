@@ -113,3 +113,5 @@
 #weatherModal .wx-season-nav>span{display:none}
 #weatherModal .wx-season-nav button{white-space:normal;font-size:8px;flex:1}
 }
+
+#weatherModal .wx-season-nav button[aria-pressed="true"]{background:#2c6959;border-color:#91ddc2;color:#fff;box-shadow:inset 0 0 0 1px #91ddc2}
