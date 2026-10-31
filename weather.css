@@ -70,3 +70,46 @@
 #weatherModal .wx-warning-status{margin-left:6px;color:#dfc494}
 @media(orientation:landscape) and (max-height:600px){#weatherModal .wx-head{gap:7px}#weatherModal #wxFavourites button{max-width:155px}#weatherModal .wx-locations{margin-top:10px}}
 @media(orientation:portrait){#weatherModal .wx-head{grid-template-columns:minmax(0,1fr) auto}#weatherModal #wxFavourites{grid-column:1/-1;grid-row:2}#weatherModal .wx-head-actions{grid-column:2;grid-row:1}}
+
+/* Saved locations below search; one-screen outlook grids. */
+#weatherModal .wx-head{grid-template-columns:minmax(0,1fr) auto}
+#weatherModal .wx-head-actions{grid-column:2;grid-row:1}
+#weatherModal #wxFavourites{display:flex;flex-direction:column;gap:5px;overflow-x:hidden;margin-top:9px;align-items:stretch}
+#weatherModal #wxFavourites button{max-width:none;white-space:normal;text-align:left;box-sizing:border-box}
+#weatherModal #wxResults{overflow-x:hidden}
+#weatherModal #wxResults button{box-sizing:border-box;flex-shrink:0}
+#weatherModal .wx-grid-heading{flex:none;display:flex;align-items:center;gap:6px;font-size:10px;color:#b6cddd;min-height:20px;margin-bottom:4px}
+#weatherModal .wx-outlook-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:5px;flex:1;min-height:0;min-width:0;overflow:hidden}
+#weatherModal .wx-outlook-cell{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:linear-gradient(135deg,#203d57,#1a2e42);border:1px solid #3a5872;border-radius:9px;padding:4px;box-sizing:border-box;overflow:hidden}
+#weatherModal .wx-outlook-cell time{font-size:12px;font-weight:600;white-space:nowrap}
+#weatherModal .wx-cell-weather{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px}
+#weatherModal .wx-outlook-cell .wx-icon{font-size:23px;line-height:1}
+#weatherModal .wx-outlook-cell strong{font-size:16px;white-space:nowrap}
+#weatherModal .wx-outlook-cell .wx-spread{font-size:.65em}
+#weatherModal .wx-cell-rain{font-size:11px;white-space:nowrap}
+#weatherModal .wx-season-pages{display:flex;flex:1;min-height:0;min-width:0;gap:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none}
+#weatherModal .wx-season-pages::-webkit-scrollbar{display:none}
+#weatherModal .wx-season-page{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;box-sizing:border-box}
+#weatherModal .wx-season-nav{justify-content:space-between}
+#weatherModal .wx-season-nav button{padding:3px 6px;font-size:10px;min-width:0;white-space:nowrap}
+@media(orientation:landscape) and (max-height:600px){
+#weatherModal .wx-outlook-grid{gap:3px}
+#weatherModal .wx-outlook-cell{padding:2px;gap:2px;border-radius:6px}
+#weatherModal .wx-outlook-cell time{font-size:9px}
+#weatherModal .wx-outlook-cell strong{font-size:12px}
+#weatherModal .wx-outlook-cell .wx-icon{font-size:16px}
+#weatherModal .wx-cell-rain{font-size:8px}
+#weatherModal .wx-grid-heading{font-size:8px;min-height:16px;margin-bottom:3px}
+#weatherModal .wx-season-nav>span{display:none}
+#weatherModal .wx-season-nav button{font-size:8px!important;flex:1}
+}
+@media(orientation:portrait){
+#weatherModal .wx-outlook-grid{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:3px}
+#weatherModal .wx-outlook-cell{gap:2px;padding:2px}
+#weatherModal .wx-outlook-cell time{font-size:9px}
+#weatherModal .wx-outlook-cell strong{font-size:12px}
+#weatherModal .wx-outlook-cell .wx-icon{font-size:16px}
+#weatherModal .wx-cell-rain{font-size:8px}
+#weatherModal .wx-season-nav>span{display:none}
+#weatherModal .wx-season-nav button{white-space:normal;font-size:8px;flex:1}
+}
