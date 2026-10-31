@@ -13,3 +13,7 @@ No API keys, HA authentication or geolocation permissions are required. Requests
 Tests: node --test tests/weather.test.cjs. Browser verification: both summary entry points; remaining today; 24 hourly cards for future dates; 30 ensemble days; search, save, reload and remove favourite; alternate location returns to Nantwich. Existing DEV camera regressions also passed.
 
 Rollback: remove the weather.css link and weather.js script from index.html and dev/index.html. No HA or camera configuration changes are involved.
+
+The 90-day view shares the 30-day GEFS rows for days 1–30 and uses seasonal rows for days 31–90, matched by local calendar date. Missing dates remain unavailable rather than shifting later dates forward or silently substituting another model. Both click and scroll update the active period. Refresh bypasses both outlook caches; old location requests cannot replace the current location's outlook. Seasonal forecasts are broad area trends, not validated daily accuracy claims (https://open-meteo.com/en/docs/seasonal-forecast-api).
+
+Only saved locations are restored on startup. Searching an unsaved location is temporary; closing weather or removing the active favourite returns to Nantwich. Existing orphaned selected locations are repaired on startup.
