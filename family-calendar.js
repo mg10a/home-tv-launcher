@@ -26,6 +26,7 @@ const actions=make('div','family-calendar-actions');actions.append(button('Calen
 const filters=make('div','family-calendar-filters');const status=make('p','family-calendar-status');status.setAttribute('role','status');const agenda=make('div','family-agenda');agenda.tabIndex=0;agenda.setAttribute('aria-label','This week’s events');card.append(actions,filters,status,agenda);
 const dialog=overlay.querySelector('.calendar-dialog'),grid=document.getElementById('calendarFullGrid'),foot=overlay.querySelector('.calendar-dialog-foot');
 const settings=make('details','family-calendar-settings');settings.append(make('summary','','Choose calendars'));const form=make('div');settings.append(form);dialog.insertBefore(settings,grid);
+grid.tabIndex=0;grid.setAttribute('aria-label','Calendar events');
 const fullFilters=make('div','family-calendar-filters');dialog.insertBefore(fullFilters,grid);
 const mealBox=document.querySelector('.meal-days');mealBox.classList.add('family-meals');
 const requests=(command)=>new Promise((resolve,reject)=>{if(!ready()||haSocket!==socket)return reject(Error('Home Assistant disconnected'));const id=haRequestId++;const timer=setTimeout(()=>{pending.delete(id);reject(Error('Request timed out'))},25000);pending.set(id,{resolve,reject,timer});try{socket.send(JSON.stringify({id,...command}))}catch(e){clearTimeout(timer);pending.delete(id);reject(e)}});
@@ -48,7 +49,7 @@ function drawSettings(){
  // Preserve unavailable selections rather than silently dropping them when saving.
  const missing=config.calendars.filter(c=>!states.some(s=>s.entity_id===c.id));if(missing.length)form.append(make('p','','Unavailable selections kept: '+missing.map(c=>c.label).join(', ')));
  const placeholder=make('input');placeholder.value=config.placeholders.join(', ');placeholder.placeholder='Future calendar names, separated by commas';placeholder.setAttribute('aria-label','Future calendars');form.append(placeholder);
- const result=make('p','family-calendar-status');const save=button('Save calendars',async()=>{save.disabled=true;result.textContent='Saving…';const next=normalize({calendars:[...rows.filter(r=>r.select.value).map(r=>({id:r.id,role:r.select.value,label:r.label.value,color:r.color.value})),...missing],placeholders:placeholder.value.split(',')});const active=socket;try{await requests({type:'frontend/set_user_data',key,value:next});if(socket!==active)return;config=next;hidden.clear();settings.open=false;loadedRange='';refresh(true)}catch(e){result.textContent='Could not save. Your previous choices are unchanged.'}finally{save.disabled=false}});form.append(save,result);
+ const result=make('p','family-calendar-status');const save=button('Save calendars',async()=>{save.disabled=true;result.textContent='Saving…';const next=normalize({calendars:[...rows.filter(r=>r.select.value).map(r=>({id:r.id,role:r.select.value,label:r.label.value,color:r.color.value})),...missing],placeholders:placeholder.value.split(',')});const active=socket;try{await requests({type:'frontend/set_user_data',key,value:next});if(socket!==active)return;config=next;hidden.clear();settings.open=false;settings.querySelector('summary').focus();loadedRange='';refresh(true)}catch(e){result.textContent='Could not save. Your previous choices are unchanged.'}finally{save.disabled=false}});form.append(save,result);
 }
 settings.addEventListener('toggle',()=>{if(settings.open)drawSettings()});
 function drawFilters(target){const focus=document.activeElement?.dataset?.calendarFilter;target.replaceChildren();for(const c of config?.calendars.filter(c=>c.role==='agenda')||[]){const b=button(c.label,()=>{hidden.has(c.id)?hidden.delete(c.id):hidden.add(c.id);draw()});b.dataset.calendarFilter=c.id;b.setAttribute('aria-pressed',String(!hidden.has(c.id)));b.style.setProperty('--calendar-color',c.color);target.append(b)}for(const name of config?.placeholders||[])target.append(make('span','calendar-placeholder',name+' · not connected'));if(focus&&target.contains(document.activeElement)===false){const b=[...target.querySelectorAll('button')].find(b=>b.dataset.calendarFilter===focus);if(b&&target.getClientRects().length)b.focus()}}
@@ -57,6 +58,7 @@ function eventNode(e,day,compact=false){const el=make('div','family-calendar-eve
 function dayContent(parent,day,events,compact){events.filter(e=>onDay(e,day)).forEach(e=>parent.append(eventNode(e,day,compact)))}
 function draw(){
  const today=dayKey(Date.now()),week=monday(today),range=period(cursor,mode);const connected=ready();const msg=!connected?'Connect Home Assistant to show calendars':loadingSettings?'Loading calendar choices…':settingsError||(!config?.calendars.length?'Choose your calendars to get started':busy?'Loading events…':errors.size?'Some calendars could not load: '+config.calendars.filter(c=>errors.has(c.id)).map(c=>c.label).join(', '):'');status.textContent=msg;foot.textContent=msg||'Times shown in UK time · '+(lastFetch?'Updated '+new Date(lastFetch).toLocaleTimeString('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit'}):'');
+ const badge=document.querySelector('.family-panel .offline-pill');if(badge)badge.textContent=!connected?'Not connected':errors.size?'Calendar issue':config?.calendars.length?'Calendars connected':'Choose calendars';
  drawFilters(filters);drawFilters(fullFilters);
  const strip=document.getElementById('calendarWeekStrip');strip.replaceChildren();for(let i=0;i<7;i++){const day=addDays(week,i);strip.append(make('span',day===today?'today':'',dateLabel(day,{weekday:'short',day:'numeric'})))}
  document.getElementById('calendarWeekLabel').textContent='This week · Mon–Sun ↗';
@@ -77,9 +79,10 @@ window.renderCalendar=()=>{draw();refresh()};window.openCalendar=()=>{cursor=day
 document.addEventListener('keydown',e=>{
  if(overlay.classList.contains('hidden')){if(agenda.contains(e.target)&&['ArrowUp','ArrowDown'].includes(e.key))e.stopPropagation();return}
  if(['Escape','BrowserBack'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();closeCalendar();return}
- if(e.target.matches('input,select,textarea')){if(e.key!=='Tab')e.stopImmediatePropagation();return}
- const items=[...overlay.querySelectorAll('button:not(:disabled),select,input,summary')].filter(el=>el.getClientRects().length);
+ if(e.target.matches('input,select,textarea')&&e.key!=='Tab'){e.stopImmediatePropagation();return}
+ const items=[...overlay.querySelectorAll('button:not(:disabled),select,input,summary,#calendarFullGrid')].filter(el=>el.getClientRects().length);
  if(e.key==='Tab'){e.stopImmediatePropagation();const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}return}
+ if(e.target===grid&&['ArrowUp','ArrowDown'].includes(e.key)){e.stopImmediatePropagation();return}
  if(e.key.startsWith('Arrow')){e.preventDefault();e.stopImmediatePropagation();const current=document.activeElement;const index=items.indexOf(current),step=['ArrowLeft','ArrowUp'].includes(e.key)?-1:1;items[Math.max(0,Math.min(items.length-1,index+step))]?.focus();return}
  if(e.key==='Enter'||e.key===' ')e.stopImmediatePropagation();
 },true);

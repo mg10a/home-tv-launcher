@@ -1,0 +1,21 @@
+name: Family calendar checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'family-calendar.*'
+      - 'tests/family-calendar.test.cjs'
+      - 'index.html'
+      - 'dev/index.html'
+      - '.github/workflows/family-calendar.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check family-calendar.js
+      - run: node --test tests/family-calendar.test.cjs tests/production-launcher.test.cjs dev/tests/eufy-dashboard.test.cjs

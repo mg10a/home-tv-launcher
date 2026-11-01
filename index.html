@@ -1506,7 +1506,7 @@ function connectHaSocket(base){
  const temp=entity.attributes.current_temperature;const target=entity.attributes.temperature;
  haProgress('Live connection verified ✓ · Brereton DS '+(temp??'—')+'°C · target '+(target??'—')+'°C');
  haSetStage('haStepLive','Connected');haConnectionStatus(true);haRetryCount=0;closeHaSetup();salusRender();if(!document.getElementById('salusOverlay').classList.contains('hidden'))salusHistory(document.getElementById('salusHistoryPeriod').value);
- const pills=document.querySelectorAll('.offline-pill');if(pills[0])pills[0].textContent='Connected';if(pills[1])pills[1].textContent='Not configured';
+ const pills=document.querySelectorAll('.offline-pill');if(pills[0])pills[0].textContent='Connected';
  const small=document.querySelector('.salus-strip small');
  }
  };
@@ -2200,5 +2200,5 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=11"></script><script src="./home-screens.js?v=1"></script><script src="./family-calendar.js?v=1"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=11"></script><script src="./home-screens.js?v=1"></script><script src="./family-calendar.js?v=2"></script></body></html>
 
