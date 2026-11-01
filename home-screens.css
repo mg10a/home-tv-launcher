@@ -107,3 +107,7 @@ body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:c
 }
 /* Small windows/accessibility zoom retain a scroll fallback rather than hiding content. */
 @media(max-height:310px){html:has(body[data-home-screen]),body[data-home-screen]{overflow:auto!important}body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:400px!important;overflow:visible!important}}
+/* Override the original card placement and block dashboard container. */
+body[data-home-screen="family"] #dashboardPage,body[data-home-screen="home"] #dashboardPage{display:flex!important;flex-direction:column!important}
+#dashboardPage .family-sections>.family-section.calendar-card:first-child{grid-column:1!important;grid-row:1/4!important}
+@media(orientation:portrait){#dashboardPage .family-sections>.family-section.calendar-card:first-child{grid-column:1/3!important;grid-row:1!important}}
