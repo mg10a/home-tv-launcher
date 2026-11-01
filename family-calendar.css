@@ -40,3 +40,4 @@
 .birthday-list{display:grid;grid-template-rows:minmax(24px,.6fr) minmax(0,1.4fr) minmax(0,1fr);flex:1;overflow:hidden}
 .birthday-group{display:flex;flex-direction:column;min-height:0}.birthday-group>div{min-height:0;overflow:auto;scrollbar-width:thin}.birthday-group h3{flex:none}
 .calendar-dialog{position:relative}
+#dashboardPage .meal-days.family-meals{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:repeat(7,minmax(0,1fr))!important;grid-auto-flow:row!important}
