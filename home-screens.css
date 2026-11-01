@@ -53,3 +53,57 @@ body[data-home-screen] main.shell,body[data-home-screen] #dashboardPage{height:c
 #dashboardPage .family-section{min-height:120px}
 body[data-home-screen] #dashboardPage{min-height:calc(100dvh - var(--home-nav-height))!important}
 }
+/* Orientation-aware screen sizing. All primary cards stay in view, with detail on demand. */
+:root{--home-nav-height:calc(36px + env(safe-area-inset-top,0px))}
+html:has(body[data-home-screen]),body[data-home-screen]{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+#homeScreenNav{padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
+body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:calc(100dvh - var(--home-nav-height))!important;min-height:0!important;max-height:none!important;overflow:hidden!important;padding:6px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;gap:5px!important}
+#dashboardPage .overview-layout{flex:1!important;min-height:0!important;margin:0!important}
+#dashboardPage .overview-panel{min-height:0!important;padding:8px!important;gap:6px!important}
+#dashboardPage .panel-heading{flex:none;align-items:center;min-height:0}#dashboardPage .panel-heading h2{font-size:16px!important;margin:0!important}#dashboardPage .panel-kicker{display:none}
+#dashboardPage .dashboard-top{flex:none;min-height:28px!important;margin:0!important;align-items:center}#dashboardPage .dash-heading,#dashboardPage .dashboard-note{display:none!important}
+#dashboardPage .family-sections{display:grid!important;grid-template-columns:minmax(0,1.65fr) repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr) minmax(0,1fr) minmax(24px,.28fr)!important;gap:6px!important;min-height:0!important;overflow:hidden!important}
+#dashboardPage .family-sections>.calendar-card{grid-column:1!important;grid-row:1/4!important}
+#dashboardPage .family-sections>.meal-plan{grid-column:2!important;grid-row:1!important}
+#dashboardPage .family-sections>.birthday-card{grid-column:3!important;grid-row:1!important}
+#dashboardPage .family-sections>.family-section:nth-child(2){grid-column:2!important;grid-row:2!important}
+#dashboardPage .family-sections>.family-section:nth-child(3){grid-column:3!important;grid-row:2!important}
+#dashboardPage .family-sections>.find-panel{grid-column:2/4!important;grid-row:3!important;display:flex!important;align-items:center;gap:6px;overflow:hidden}
+#dashboardPage .find-panel .find-map{border:0!important;min-height:0!important;background:none!important;padding:0!important;font-size:10px!important;line-height:1.15}#dashboardPage .find-panel .find-categories{display:none}#dashboardPage .find-panel .family-title{font-size:10px!important;flex:none}
+#dashboardPage .family-section{min-height:0!important;min-width:0!important;padding:7px!important;border-radius:10px!important;overflow:auto}
+#dashboardPage .family-title{font-size:clamp(11px,1.55vh,16px)!important;flex:none;align-items:center;line-height:1.15}
+#dashboardPage .empty-row{font-size:clamp(10px,1.4vh,13px)!important;padding:5px 0!important;line-height:1.2}
+#dashboardPage .home-room-grid{align-content:stretch!important;overflow:hidden!important}
+#dashboardPage .home-room{min-height:0!important;overflow:hidden!important}
+#dashboardPage .home-room strong,#dashboardPage .home-services strong,#dashboardPage .home-security strong{font-size:clamp(11px,1.5vh,18px)!important}
+#dashboardPage .home-room .room-readings,#dashboardPage .home-room .room-info,#dashboardPage .home-services small,#dashboardPage .home-security small{font-size:clamp(9px,1.25vh,14px)!important}
+@media(orientation:portrait){
+ #dashboardPage .family-sections{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr) minmax(130px,.29fr) minmax(60px,.13fr) 28px!important}
+ #dashboardPage .family-sections>.calendar-card{grid-column:1/3!important;grid-row:1!important}
+ #dashboardPage .family-sections>.meal-plan{grid-column:1!important;grid-row:2!important}
+ #dashboardPage .family-sections>.birthday-card{grid-column:2!important;grid-row:2!important}
+ #dashboardPage .family-sections>.family-section:nth-child(2){grid-column:1!important;grid-row:3!important}
+ #dashboardPage .family-sections>.family-section:nth-child(3){grid-column:2!important;grid-row:3!important}
+ #dashboardPage .family-sections>.find-panel{grid-column:1/3!important;grid-row:4!important}
+ #dashboardPage .home-panel{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto minmax(0,1.65fr) minmax(0,.7fr) minmax(0,.7fr)}
+ #dashboardPage .home-panel>.panel-heading{grid-column:1/3;grid-row:1}#dashboardPage .home-room-grid{grid-column:1/3;grid-row:2;grid-template-rows:repeat(4,minmax(0,1fr))!important}
+ #dashboardPage .home-services{grid-column:1/3;grid-row:3;min-height:0!important}#dashboardPage .home-security{grid-column:1/3;grid-row:4;min-height:0!important}
+ body[data-home-screen] main.shell{display:flex;flex-direction:column;gap:7px!important}body[data-home-screen] main.shell.hidden{display:none}
+ main.shell>header{flex:none;min-height:30px}main.shell>.rooms{margin:0;flex:none}.rooms .room{padding:5px 9px;font-size:11px}
+ main.shell>.hero{flex:0 0 12%;min-height:0;margin:0;padding:10px 16px}.hero h1{font-size:clamp(22px,4vw,40px);margin:3px 0}.hero p{font-size:12px}
+ main.shell>.launcher-split{flex:1;min-height:0;grid-template-rows:minmax(0,1fr) minmax(0,1.1fr);gap:8px}.launcher-split .apps{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.launcher-split .tile{min-height:0;padding:4px}.launcher-split .section-head{gap:5px;flex-wrap:wrap}.launcher-split .section-head h2{font-size:13px}.launcher-link{padding:4px 6px;font-size:10px}.photo-open{min-height:0}.photo-symbol{font-size:28px}#photoEmpty{padding:12px;gap:5px}.shell>.footer{margin:0;flex:none;font-size:9px}
+}
+@media(orientation:landscape) and (max-height:550px){
+ :root{--home-nav-height:calc(31px + env(safe-area-inset-top,0px))}#homeScreenNav button{font-size:11px}
+ #dashboardPage .overview-panel{padding:5px!important;gap:4px!important}#dashboardPage .family-sections{gap:4px!important;grid-template-rows:minmax(0,1fr) minmax(0,.55fr) 23px!important}
+ #dashboardPage .family-section{padding:5px!important}#dashboardPage .panel-heading{display:none}#dashboardPage .dashboard-top{min-height:24px!important}#dashboardPage .ha-connect-trigger{font-size:10px!important;padding:3px 6px!important}#dashTopTime{font-size:15px!important}#dashTopDate{font-size:9px!important}
+ #dashboardPage .find-panel .find-map{font-size:9px!important}#dashboardPage .find-panel .family-title{font-size:9px!important}
+ #dashboardPage .home-panel{grid-template-rows:minmax(0,1fr) minmax(0,1fr)}#dashboardPage .home-room-grid{grid-row:1/3}#dashboardPage .home-services{grid-row:1}#dashboardPage .home-security{grid-row:2}
+}
+@media(orientation:portrait) and (max-width:600px){
+ #dashboardPage .dashboard-top{min-height:30px!important}.dash-top-info{gap:5px!important}#dashTopTime{font-size:14px!important}#dashTopDate{display:none!important}#dashboardPage .ha-connect-trigger{font-size:10px!important;padding:4px 6px!important}
+ #dashboardPage .family-sections{grid-template-rows:minmax(0,1fr) 130px 62px 25px!important}#dashboardPage .family-section{padding:5px!important}.family-calendar-toolbar{min-height:22px}
+ .header-right .mini-status{display:none}.shell header>div:first-child .eyebrow{font-size:10px}.clock{font-size:14px}
+}
+/* Small windows/accessibility zoom retain a scroll fallback rather than hiding content. */
+@media(max-height:310px){html:has(body[data-home-screen]),body[data-home-screen]{overflow:auto!important}body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:400px!important;overflow:visible!important}}

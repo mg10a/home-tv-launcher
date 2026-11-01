@@ -12,7 +12,7 @@ function modalOpen(){return [...document.querySelectorAll('dialog[open],[role="d
 window.navigateHome=function(screen,focus=false){
 const index=keys.indexOf(screen);if(index<0)return;
 if(typeof hideDetailPages==='function')hideDetailPages();
-active=index;document.body.dataset.homeScreen=screen;
+active=index;document.body.dataset.homeScreen=screen;try{localStorage.setItem('home-active-screen',screen)}catch{}
 launcher.classList.toggle('hidden',index!==0);dashboard.classList.toggle('hidden',index===0);
 document.body.classList.toggle('dashboard-open',index!==0);
 dashboard.setAttribute('aria-label',names[index]||'Smart Home');
@@ -33,7 +33,8 @@ document.addEventListener('touchstart',e=>{if(e.touches.length!==1||ownsGesture(
 document.addEventListener('touchend',e=>{if(!start)return;const p=e.changedTouches[0],dx=p.clientX-start.x,dy=p.clientY-start.y,elapsed=Date.now()-start.time;start=null;if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.5||elapsed>1200||modalOpen())return;const next=Math.max(0,Math.min(2,active+(dx<0?1:-1)));if(next!==active){ignoreClickUntil=Date.now()+400;window.navigateHome(keys[next])}},{passive:true});
 document.addEventListener('touchcancel',()=>{start=null},{passive:true});
 document.addEventListener('click',e=>{if(Date.now()<ignoreClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
-window.navigateHome('launcher');
+let restored='launcher';try{const saved=localStorage.getItem('home-active-screen');if(keys.includes(saved))restored=saved}catch{}
+window.navigateHome(restored);
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
 const music=document.querySelector('.music-strip');
 if(music){

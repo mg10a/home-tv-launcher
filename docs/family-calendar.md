@@ -30,3 +30,32 @@ and node --test dev/tests/eufy-dashboard.test.cjs.
 Manual checks: save choices, reload with the same account, verify exact duplicate
 calendar IDs, filter off/on, change week/month, check all-day/multi-day events and
 empty meals, disconnect/reconnect, and navigate settings with keyboard/TV remote.
+
+## Responsive month / family views
+
+The overview and expanded calendar now offer Month and Family organiser. Month
+contains person and shared/holiday sources. The family planner has one date gutter
+and five content columns: four configured people, then Other (shared, holiday and
+birthday sources). Meals stay separate. Private settings version 2 adds role
+person/birthday and a people array specifying the four column names/order.
+Existing choices are preserved until saved; source IDs are never inferred from
+person names. Configure roles and names in Calendars & names.
+
+The birthday card uses a separate date range relative to UK today: seven previous
+days, today, and 28 following days, irrespective of the displayed calendar month.
+Each occurrence comes from HA; no birthdays or ages are manufactured.
+
+Portrait layouts fit all calendar dates into the available height. Cells contain
+bounded summaries and event counts; tapping opens complete details. Landscape
+family planners scroll vertically when their 28–31 rows exceed the available
+height. Month grids use four to six complete weeks. Tablet overviews rearrange
+cards by orientation; tiny windows have a scroll fallback. Arbitrarily many event
+texts cannot all be displayed without scrolling, so cells and birthday sections
+retain detail views rather than shrink text indefinitely.
+
+The current main screen and calendar view/month are stored on the device, so
+reloads/recreation restore navigation. Android handles orientation/size changes
+without recreating its WebView in builds from 4.0.2. The web persistence fallback
+also applies to earlier APKs. No credentials are part of navigation state.
+
+Use dev/layout-check.html for phone/tablet/TV viewport checks and rotation.
