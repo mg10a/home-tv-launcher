@@ -1,0 +1,28 @@
+/* Calendar content remains scrollable on TV and compact landscape screens. */
+#dashboardPage .family-sections>.family-section:first-child{display:flex!important;flex-direction:column;min-height:0;overflow:hidden!important}
+.family-calendar-actions,.family-calendar-filters{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+.family-calendar-actions button,.family-calendar-filters button{border:1px solid #617c99;border-radius:9px;background:#203650;color:#eef5ff;padding:5px 8px;font-size:12px}
+.family-calendar-filters button{border-left:5px solid var(--calendar-color);opacity:.55}
+.family-calendar-filters button[aria-pressed=true]{opacity:1;background:#30574f}
+.calendar-placeholder{font-size:11px;color:#bdc8d8;border:1px dashed #7e8b9e;border-radius:9px;padding:5px 8px}
+.family-calendar-status{font-size:12px;color:#d3deed;margin:4px 0;overflow-wrap:anywhere}
+.family-calendar-status:empty{display:none}
+.family-agenda{overflow-y:auto;min-height:0;flex:1;font-size:12px;overscroll-behavior:contain}
+.family-agenda h3{font-size:12px;color:#c4d5e9;margin:8px 0 4px}
+.family-calendar-event{border-left:3px solid var(--calendar-color);background:#112238;border-radius:5px;padding:5px 7px;margin:4px 0;overflow-wrap:anywhere;text-align:left}
+.family-calendar-event strong,.family-calendar-event small,.family-calendar-event span{display:block}
+.family-calendar-event small{font-size:10px;color:#c5d4e7;margin-bottom:2px}
+.family-calendar-event strong{font-size:12px;color:#f4f7fc}.family-calendar-event span{font-size:11px;color:#c6d1e1}
+.calendar-dialog{width:min(1200px,100%)}
+#calendarFullGrid .cal-cell{min-width:0}.calendar-full-grid .cal-cell.muted{opacity:.7}
+.family-calendar-settings{margin:8px 0;font-size:12px}.family-calendar-settings summary{cursor:pointer;padding:8px;border:1px solid #617c99;border-radius:8px}
+.family-calendar-setting{display:grid;grid-template-columns:minmax(120px,1fr) 130px minmax(100px,1fr) 45px;gap:5px;align-items:center;border-bottom:1px solid #43566f;padding:7px 0}
+.family-calendar-setting>span{grid-column:1}.family-calendar-setting>small{grid-column:1;grid-row:2;color:#a9bdd6;overflow-wrap:anywhere}.family-calendar-setting>select{grid-column:2;grid-row:1/3}.family-calendar-setting>input{grid-row:1/3;min-width:0;width:100%}
+.family-calendar-settings input{padding:7px;background:#203650;color:#eef5ff;border:1px solid #617c99;border-radius:5px;box-sizing:border-box}.family-calendar-settings input[type=color]{padding:2px;height:32px}
+#dashboardPage .meal-days.family-meals{display:flex!important;flex-direction:column;overflow-y:auto;min-height:0;gap:4px!important}
+#dashboardPage .meal-plan{display:flex!important;flex-direction:column;min-height:0;overflow:hidden!important}
+#dashboardPage .family-meal-day{display:grid;grid-template-columns:35px 1fr;gap:5px;text-align:left;font-size:12px}
+#dashboardPage .family-meal-day span{display:block!important;overflow-wrap:anywhere;background:none!important;padding:0!important}
+.family-calendar-actions button:focus-visible,.family-calendar-filters button:focus-visible,.family-calendar-settings :focus-visible,.family-agenda:focus-visible{outline:3px solid #aff4c9;outline-offset:2px}
+@media(max-width:650px){.family-calendar-setting{grid-template-columns:1fr 95px 42px}.family-calendar-setting>input:not([type=color]){grid-column:1;grid-row:3}.family-calendar-setting>input[type=color]{grid-column:3}.calendar-full-grid .family-calendar-event{padding:3px}.calendar-full-grid .family-calendar-event strong{font-size:10px}.calendar-full-grid .family-calendar-event small{font-size:9px}}
+@media(orientation:portrait){.family-agenda{max-height:430px}.family-meals{max-height:270px}}

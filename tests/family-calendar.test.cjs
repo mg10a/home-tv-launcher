@@ -1,0 +1,9 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');
+const c=require('../family-calendar.js');
+test('UK date differs from UTC around summer midnight',()=>{assert.equal(c.dayKey('2026-07-01T23:30:00Z'),'2026-07-02');assert.equal(c.dayKey('2026-11-01T23:30:00Z'),'2026-11-01')});
+test('UK day bounds track spring and autumn daylight savings',()=>{assert.equal(c.midnight('2026-03-29'),'2026-03-29T00:00:00.000Z');assert.equal(c.midnight('2026-03-30'),'2026-03-29T23:00:00.000Z');assert.equal(c.midnight('2026-10-25'),'2026-10-24T23:00:00.000Z');assert.equal(c.midnight('2026-10-26'),'2026-10-26T00:00:00.000Z')});
+test('multi-day all-day event has exclusive end',()=>{const e={start:'2026-11-01',end:'2026-11-03'};assert.ok(c.onDay(e,'2026-11-01'));assert.ok(c.onDay(e,'2026-11-02'));assert.ok(!c.onDay(e,'2026-11-03'))});
+test('timed overlap and midnight boundaries preserve UK days',()=>{const e={start:'2026-07-01T22:30:00Z',end:'2026-07-02T00:30:00Z'};assert.ok(c.onDay(e,'2026-07-01'));assert.ok(c.onDay(e,'2026-07-02'));assert.ok(!c.onDay(e,'2026-07-03'));assert.ok(!c.onDay({start:'2026-07-01T20:00:00Z',end:'2026-07-01T23:00:00Z'},'2026-07-02'))});
+test('month navigation from month end never skips February',()=>{assert.equal(c.shiftMonth('2026-01-31',1),'2026-02-01');assert.equal(c.shiftMonth('2026-12-31',1),'2027-01-01')});
+test('weeks start on Monday; months use complete rows',()=>{assert.equal(c.monday('2026-11-01'),'2026-10-26');assert.deepEqual(c.period('2026-11-01','month'),{start:'2026-10-26',end:'2026-12-07',count:42})});
+test('private settings validate roles, colours, and entity IDs',()=>{assert.deepEqual(c.normalize({calendars:[{id:'light.test',role:'agenda'},{id:'calendar.test',role:'write'},{id:'calendar.good',role:'meal',label:'Dinner',color:'url(x)'}],placeholders:['  Future  ','']}),{version:1,calendars:[{id:'calendar.good',role:'meal',label:'Dinner',color:'#83d6af'}],placeholders:['Future']})});
