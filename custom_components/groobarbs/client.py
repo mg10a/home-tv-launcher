@@ -64,7 +64,7 @@ class Client:
                 location=response.headers.get('Location','')
                 if location in ('/', BASE+'/'): return await self.request('GET','/')
                 raise GroobarbsError('Sign-in required or request rejected')
-            if response.status != 200: raise GroobarbsError('Groobarbs request failed; refresh before retrying')
+            if response.status != 200: raise GroobarbsError(f'Groobarbs returned HTTP {response.status}')
             parser=PageParser(); parser.feed(await response.text())
             if not parser.page: raise GroobarbsError('Website format changed')
             if parser.page.get('props',{}).get('errors'): raise GroobarbsError('Groobarbs rejected the request')
@@ -72,7 +72,7 @@ class Client:
     async def login(self):
         await self.request('GET','/login')
         page=await self.request('POST','/login',{'email':self.email,'password':self.password,'remember':False})
-        if page.get('component') != 'My/Dashboard': raise GroobarbsError('Sign-in was not completed')
+        if page.get('component') != 'My/Dashboard': raise GroobarbsError('Login returned a page other than the dashboard')
     async def read(self):
         page=await self.request('GET','/')
         if page.get('component') != 'My/Dashboard': raise GroobarbsError('Sign-in required')
