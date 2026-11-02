@@ -51,6 +51,10 @@ public final class MainActivity extends Activity {
   }
 
   public final class LauncherBridge {
+    @JavascriptInterface public void openGroobarbs(){runOnUiThread(()->{
+      try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://my.groobarbs.co.uk/")));}
+      catch(android.content.ActivityNotFoundException e){Toast.makeText(MainActivity.this,"Install a browser to open Groobarbs",Toast.LENGTH_LONG).show();}
+    });}
     @JavascriptInterface public void openAuth(String url){runOnUiThread(()->beginAuth(url));}
     @JavascriptInterface public void openApp(String name) {
       runOnUiThread(() -> launchEntertainment(name));

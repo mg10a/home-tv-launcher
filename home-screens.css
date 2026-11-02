@@ -129,3 +129,14 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
  #dashboardPage .family-sections>.family-section.calendar-card:first-child{grid-row:1!important}
  #dashboardPage .family-sections>.find-panel{grid-column:1/3!important;grid-row:4!important}
 }
+
+/* Groobarbs shortcut shares the lower row with Find. */
+#dashboardPage .family-sections>.find-panel{grid-column:1/3!important}
+#dashboardPage .family-sections>.groobarbs-card{grid-column:3!important;grid-row:3!important;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.groobarbs-card p,.groobarbs-status{margin:0;font-size:11px;line-height:1.25;color:#b9cbe0}
+.groobarbs-open{display:block;padding:8px 10px;border:1px solid #75bb98;border-radius:8px;background:#285345;color:#fff;text-align:center;text-decoration:none;font-size:13px}
+.groobarbs-open:focus-visible{outline:3px solid #cde4ff;outline-offset:2px}
+@media(orientation:portrait){
+ #dashboardPage .family-sections>.find-panel{grid-column:1!important}
+ #dashboardPage .family-sections>.groobarbs-card{grid-column:2!important;grid-row:4!important}
+}

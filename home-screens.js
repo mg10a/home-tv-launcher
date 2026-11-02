@@ -35,6 +35,15 @@ document.addEventListener('touchcancel',()=>{start=null},{passive:true});
 document.addEventListener('click',e=>{if(Date.now()<ignoreClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
 let restored='launcher';try{const saved=localStorage.getItem('home-active-screen');if(keys.includes(saved))restored=saved}catch{}
 window.navigateHome(restored);
+/* Account management stays on Groobarbs; no customer data is embedded here. */
+const sections=dashboard.querySelector('.family-sections');
+if(sections){
+const box=document.createElement('section');box.className='family-section groobarbs-card';
+box.innerHTML='<div class="family-title">🥕 Fruit &amp; veg box</div><p>View your next Groobarbs box, swap contents or skip a delivery.</p><a class="groobarbs-open" href="https://my.groobarbs.co.uk/" target="_blank" rel="noopener noreferrer">Manage box ↗</a><small class="groobarbs-status" role="status">Opens your Groobarbs account</small>';
+box.querySelector('a').addEventListener('click',event=>{
+if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function')window.AndroidLauncher.openGroobarbs();else box.querySelector('.groobarbs-status').textContent='Update the Android app to open Groobarbs, or visit my.groobarbs.co.uk in your browser.';}
+});sections.append(box);
+}
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
 const music=document.querySelector('.music-strip');
 if(music){
