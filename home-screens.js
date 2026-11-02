@@ -41,7 +41,8 @@ if(sections){
 const box=document.createElement('section');box.className='family-section groobarbs-card';
 box.innerHTML='<div class="family-title">🥕 Fruit &amp; veg box</div><p>View your next Groobarbs box, swap contents or skip a delivery.</p><a class="groobarbs-open" href="https://my.groobarbs.co.uk/" target="_blank" rel="noopener noreferrer">Manage box ↗</a><small class="groobarbs-status" role="status">Opens your Groobarbs account</small>';
 box.querySelector('a').addEventListener('click',event=>{
-if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function')window.AndroidLauncher.openGroobarbs();else box.querySelector('.groobarbs-status').textContent='App update needed. Open my.groobarbs.co.uk in your browser for now.';}
+if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function')window.AndroidLauncher.openGroobarbs();else box.querySelector('.groobarbs-status').textContent='Update the Home TV app to open Groobarbs here. In the meantime, open my.groobarbs.co.uk in your browser.';}
+else {event.preventDefault();window.location.assign('https://my.groobarbs.co.uk/');}
 });sections.append(box);
 const summary=document.createElement('div');summary.className='groobarbs-summary';box.insertBefore(summary,box.querySelector('a'));
 const contents=document.createElement('button');contents.type='button';contents.className='groobarbs-open';contents.textContent='View contents';contents.hidden=true;summary.after(contents);
