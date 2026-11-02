@@ -11,21 +11,13 @@ Not installed or live-tested. This is an unofficial integration based on Groobar
 - Address, delivery notes, account profile and payment details excluded from sensor attributes.
 - Swap client checks current data against the reviewed snapshot, item categories, swap allowance and delivery editability. No mutation retries. No swap service is exposed yet.
 
-## Installation for a live read test (requires owner approval)
+## Installation status — 2 November 2026
 
-1. Copy `custom_components/groobarbs` to Home Assistant's `/config/custom_components/groobarbs`.
-2. Add the following configuration, with credentials entered privately into HA secrets, never GitHub or chat:
+Version 0.1.1 files were installed in `/homeassistant/custom_components/groobarbs` from commit `151cf465a0b74828bbf64f2ac946729c2343f898`. Python syntax and JSON validation passed. Home Assistant's configuration check reported valid. An owner-approved Core restart was requested; post-restart setup and live account validation remain pending.
 
-```yaml
-groobarbs:
-  email: !secret groobarbs_email
-  password: !secret groobarbs_password
-```
+Setup now uses Settings → Devices & services → Add integration → Groobarbs. Enter credentials privately in the integration form; no configuration.yaml or secrets.yaml edits are needed. No order-change service is exposed.
 
-3. Validate Home Assistant configuration, then restart after approval.
-4. Compare the sensor's date, contents, swaps and separate extras with the Groobarbs account page.
-
-Rollback: remove the `groobarbs` configuration, restart, then remove the integration directory and its secrets.
+Rollback: remove the integration entry if configured, remove the added `custom_components/groobarbs` directory, then restart after approval. Existing configuration files were not modified.
 
 ## Remaining validation before dashboard editing
 
