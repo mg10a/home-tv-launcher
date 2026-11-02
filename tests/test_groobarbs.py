@@ -23,3 +23,18 @@ class Tests(unittest.TestCase):
   parser=m.PageParser();parser.feed('<div id="app" data-page="{&quot;component&quot;:&quot;My/Dashboard&quot;}"></div>')
   self.assertEqual(parser.page['component'],'My/Dashboard')
 if __name__=='__main__':unittest.main()
+
+class MutationTests(unittest.IsolatedAsyncioTestCase):
+ async def test_stale_snapshot_never_posts(self):
+  client=object.__new__(m.Client)
+  async def read(): return {'order_id':9,'editable':False}
+  async def request(*args,**kwargs): self.fail('Must not write a stale box')
+  client.read=read;client.request=request
+  with self.assertRaises(m.GroobarbsError):await client.swap(9,1,2,4,{})
+ async def test_timeout_is_not_retried(self):
+  client=object.__new__(m.Client);p=Tests().fixture();p['order_id']=9;posts=[]
+  async def read():return p
+  async def request(*args,**kwargs):posts.append(args);raise TimeoutError()
+  client.read=read;client.request=request
+  with self.assertRaises(TimeoutError):await client.swap(9,1,2,4,p)
+  self.assertEqual(len(posts),1)
