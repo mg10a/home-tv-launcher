@@ -65,8 +65,8 @@ calendar role is Excluded. calendarVisible controls planner visibility. Existing
 birthday-role sources migrate automatically; explicitly disabled birthday-card
 flags are respected. Month grids continue to omit birthday-role sources.
 
-The compact card lists today first, then nearby past and future birthdays by
-distance from today, without subheadings. The available card height clips the
+The compact card lists the two nearest past birthdays, today, then future
+birthdays in chronological order, without subheadings. The available card height clips the
 remaining rows; All opens the complete list. All opens a chronological -14/+28 day list positioned near today.
 Past entries are muted, today is gold, and +/-3 days have a subtle side marker.
 Per-occurrence Plan message / Message sent / Plan present / Present sent flags
@@ -76,3 +76,7 @@ date, so annual birthdays start fresh. No messages are sent or purchases made.
 Writes are serialised in a tab and merge the latest HA data; HA offers no atomic
 compare-and-swap, so simultaneous edits of the same flag on two devices are
 last-write-wins. Saving failures restore the previous checkbox and show an error.
+
+The overview calendar shows the current Monday-based fortnight (14 days), with
+separate fortnight navigation. Expand opens the full month; both grid and person
+column layouts are available. The Find card occupies a larger bottom area.
