@@ -48,9 +48,51 @@ const contents=document.createElement('button');contents.type='button';contents.
 const detail=document.createElement('dialog');detail.className='groobarbs-detail';detail.setAttribute('aria-label','Groobarbs delivery contents');document.body.append(detail);
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
 function grooState(){return typeof haVerified!=='undefined'&&haVerified&&typeof haStates!=='undefined'?haStates['sensor.groobarbs_next_delivery']:null}
-function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=!live;summary.textContent=live?'Next delivery: '+(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?'Live from HA · updates every 30 minutes':state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';if(detail.open)renderDetail()}
-function renderDetail(){const state=grooState();detail.replaceChildren();const close=addText(detail,'button','Close');close.type='button';close.className='groobarbs-open';close.addEventListener('click',()=>detail.close());addText(detail,'h2','Your Groobarbs delivery');if(!state||['unknown','unavailable'].includes(state.state)){addText(detail,'p','Live data unavailable. Try again once HA reconnects.');return}const a=state.attributes;addText(detail,'p','Delivery: '+a.date);addText(detail,'p',a.editable?'Changes open until '+a.deadline:'Changes closed for this delivery');for(const item of a.items||[]){addText(detail,'h3',item.title+' × '+item.qty);if(item.contents?.length){if(item.max_swaps)addText(detail,'p',item.swap_count+' of '+item.max_swaps+' swaps used');const list=document.createElement('ul');detail.append(list);for(const c of item.contents){const li=addText(list,'li',c.replaced_title?c.replaced_title+' → '+c.title:c.title);if(a.swaps_enabled&&a.editable&&item.contents_can_change&&(c.replaced_product_id||!item.max_swaps||item.swap_count<item.max_swaps)){const select=document.createElement('select');select.setAttribute('aria-label','Replace '+c.title);select.append(new Option('Choose replacement…',''));for(const r of a.replacements||[]){if(r.id!==(c.replaced_product_id||c.product_id)&&(r.category_ids||[]).some(id=>(c.category_ids||[]).includes(id)))select.append(new Option(r.title,String(r.id)))}li.append(select);const save=addText(li,'button','Review swap');save.type='button';save.className='groobarbs-open';save.addEventListener('click',async()=>{if(!select.value)return;const replacement=select.selectedOptions[0].textContent;if(!window.confirm('Save this change to Groobarbs for '+a.date+'?\n'+c.title+' → '+replacement+'\n'+(item.bespoke?'Your box already includes the bespoke surcharge.':'Customising makes this a bespoke box (£1 extra).')))return;save.disabled=true;select.disabled=true;save.textContent='Saving…';try{await eufyWsCommand({type:'call_service',domain:'groobarbs',service:'swap',service_data:{order_id:a.order_id,item_id:item.id,content_id:c.id,replacement_id:Number(select.value),revision:a.revision}},65000);renderDetail();addText(detail,'p','Saved to Groobarbs.')}catch(error){renderDetail();addText(detail,'p','Could not confirm the swap: '+(error?.message||'check Groobarbs before trying again'))}})}}}else addText(detail,'p','Extra item · £'+item.total)}addText(detail,'p',a.swaps_enabled?'Swaps save directly to Groobarbs after confirmation.':'Contents are live. Dashboard swaps await the HA connector update.')}
-contents.addEventListener('click',()=>{renderDetail();detail.showModal()});window.addEventListener('home-states-updated',renderGroo);renderGroo();
+function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=!live;summary.textContent=live?'Next delivery: '+(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?'Live from HA · updates every 30 minutes':state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
+let choice=null, saving=false, message='', lastGroo='';
+function button(parent,label,action){const b=addText(parent,'button',label);b.type='button';b.addEventListener('click',action);return b}
+function niceDate(value,withTime=false){if(!value)return '';const d=new Date(value.length===10?value+'T12:00:00Z':value);return Number.isNaN(+d)?value:new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'short',...(withTime?{hour:'2-digit',minute:'2-digit'}:{})}).format(d)}
+function renderDetail(){
+ const state=grooState();detail.replaceChildren();
+ const head=addText(detail,'header','');head.className='groo-head';const title=addText(head,'div','');addText(title,'h2','Your fruit & veg box');button(head,'Close',()=>detail.close());
+ if(!state||['unknown','unavailable'].includes(state.state)){addText(detail,'p','Live data unavailable. Reconnect Home Assistant to continue.');return}
+ const a=state.attributes,editable=a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline));
+ addText(title,'p',niceDate(a.date)+' · '+(editable?'Changes until '+niceDate(a.deadline,true):'Changes closed'));
+ const body=addText(detail,'div','');body.className='groo-body';
+ const boxes=(a.items||[]).filter(i=>i.contents_can_change||i.max_swaps),extras=(a.items||[]).filter(i=>!boxes.includes(i));
+ for(const item of boxes){
+  const section=addText(body,'section','');section.className='groo-box';
+  const meta=addText(section,'div','');meta.className='groo-box-head';addText(meta,'strong',item.title);
+  const limit=Math.min(4,Number(item.max_swaps)||4),used=Number(item.swap_count)||0,remaining=Math.max(0,limit-used);
+  const badge=addText(meta,'span',used+' of '+limit+' used · '+remaining+' remaining');badge.className='groo-allowance';badge.setAttribute('role','status');
+  const grid=addText(section,'div','');grid.className='groo-produce';
+  for(const c of item.contents||[]){const tile=addText(grid,'div','');tile.className='groo-tile'+(c.replaced_product_id?' is-swapped':'');const text=addText(tile,'div','');addText(text,'strong',c.title);if(c.replaced_title)addText(text,'small','Instead of '+c.replaced_title);
+   if(a.swaps_enabled&&editable){const b=button(tile,c.replaced_product_id?'Change':'Swap',()=>{choice={itemId:item.id,contentId:c.id,replacement:null,page:0};message='';renderDetail()});b.disabled=saving||(!c.replaced_product_id&&remaining===0);b.setAttribute('aria-label',(c.replaced_product_id?'Change ':'Swap ')+c.title)}
+  }
+ }
+ if(extras.length){const extra=addText(detail,'div','Extras: '+extras.map(i=>i.title+' × '+i.qty).join(' · '));extra.className='groo-extras'}
+ const foot=addText(detail,'footer',message||'Tap Swap to choose a replacement. Changing an existing swap does not use another slot.');foot.className='groo-note';foot.setAttribute('role','status');
+ if(choice){
+  const item=boxes.find(i=>i.id===choice.itemId),c=item?.contents?.find(c=>c.id===choice.contentId);
+  if(!item||!c||!editable){choice=null;return}
+  const panel=addText(detail,'section','');panel.className='groo-picker';panel.setAttribute('aria-label','Choose replacement');
+  const bar=addText(panel,'header','');button(bar,'Back',()=>{if(!saving){choice=null;renderDetail()}});addText(bar,'h3','Replace '+c.title);
+  const options=(a.replacements||[]).filter(r=>r.id!==(c.replaced_product_id||c.product_id)&&r.id!==c.product_id&&(r.category_ids||[]).some(id=>(c.category_ids||[]).includes(id)));
+  const choices=addText(panel,'div','');choices.className='groo-options';
+  const pages=Math.max(1,Math.ceil(options.length/6));choice.page=Math.min(choice.page,pages-1);
+  for(const r of options.slice(choice.page*6,choice.page*6+6)){const b=button(choices,r.title,()=>{choice.replacement=r;renderDetail()});b.setAttribute('aria-pressed',String(choice.replacement?.id===r.id));b.disabled=saving}
+  if(!options.length)addText(choices,'p','No replacements available.');
+  if(pages>1){const pager=addText(panel,'div','');pager.className='groo-pages';button(pager,'Previous',()=>{choice.page=Math.max(0,choice.page-1);renderDetail()}).disabled=saving||choice.page===0;addText(pager,'span',(choice.page+1)+' / '+pages);button(pager,'Next',()=>{choice.page=Math.min(pages-1,choice.page+1);renderDetail()}).disabled=saving||choice.page===pages-1}
+  const review=addText(panel,'div','');review.className='groo-review';addText(review,'strong',choice.replacement?c.title+' → '+choice.replacement.title:'Choose a replacement above');addText(review,'small',item.bespoke?'Bespoke surcharge already included.':'This makes your box bespoke: £1 extra.');
+  const save=button(panel,saving?'Saving…':'Save swap to Groobarbs',async()=>{
+   if(!choice?.replacement||saving)return;const request={order_id:a.order_id,item_id:item.id,content_id:c.id,replacement_id:choice.replacement.id,revision:a.revision};saving=true;renderDetail();
+   try{await eufyWsCommand({type:'call_service',domain:'groobarbs',service:'swap',service_data:request},65000);choice=null;message='Saved to Groobarbs. Contents and allowance updated.'}
+   catch(error){choice=null;message='Could not confirm the change. '+(error?.message||'Check Groobarbs before trying again.')}
+   finally{saving=false;renderDetail()}
+  });save.className='groo-save';save.disabled=saving||!choice.replacement;
+ }
+}
+contents.addEventListener('click',()=>{choice=null;message='';renderDetail();detail.showModal()});window.addEventListener('home-states-updated',renderGroo);renderGroo();
 }
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
 const music=document.querySelector('.music-strip');
