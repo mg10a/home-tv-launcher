@@ -140,3 +140,12 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
  #dashboardPage .family-sections>.find-panel{grid-column:1!important}
  #dashboardPage .family-sections>.groobarbs-card{grid-column:2!important;grid-row:4!important}
 }
+
+/* Keep the heading reachable when the phone's bottom row is short. */
+#dashboardPage .family-sections>.groobarbs-card{justify-content:flex-start;overflow:auto}
+.groobarbs-card>*{flex-shrink:0}
+@media(orientation:portrait) and (max-width:600px){
+ .groobarbs-card p{display:none}
+ .groobarbs-card .groobarbs-open{padding:7px 5px;font-size:12px}
+ .groobarbs-card .groobarbs-status{font-size:10px;overflow-wrap:anywhere}
+}

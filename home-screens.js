@@ -41,7 +41,7 @@ if(sections){
 const box=document.createElement('section');box.className='family-section groobarbs-card';
 box.innerHTML='<div class="family-title">🥕 Fruit &amp; veg box</div><p>View your next Groobarbs box, swap contents or skip a delivery.</p><a class="groobarbs-open" href="https://my.groobarbs.co.uk/" target="_blank" rel="noopener noreferrer">Manage box ↗</a><small class="groobarbs-status" role="status">Opens your Groobarbs account</small>';
 box.querySelector('a').addEventListener('click',event=>{
-if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function')window.AndroidLauncher.openGroobarbs();else box.querySelector('.groobarbs-status').textContent='Update the Android app to open Groobarbs, or visit my.groobarbs.co.uk in your browser.';}
+if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function')window.AndroidLauncher.openGroobarbs();else box.querySelector('.groobarbs-status').textContent='App update needed. Open my.groobarbs.co.uk in your browser for now.';}
 });sections.append(box);
 }
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
