@@ -53,3 +53,7 @@
 .birthday-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px 8px}.birthday-checks label{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}.birthday-checks input{width:17px;height:17px;accent-color:#89d3ad}.birthday-save{display:block;min-height:14px;padding:0 8px 3px;font-size:10px}
 .calendar-day-body .birthday-item{margin:5px 0;border-radius:6px}.calendar-day-body .birthday-open{font-size:14px;padding:6px 8px!important}.calendar-day-body .birthday-open>span{white-space:normal}.calendar-day-body .birthday-open>small{font-size:12px}.calendar-day-body .birthday-today-anchor{color:#ffe093}
 .calendar-source-options{grid-column:1/-1;display:flex;gap:16px;flex-wrap:wrap}.calendar-source-options label{display:flex;align-items:center;gap:5px}.calendar-source-options input[type=checkbox]{width:16px;height:16px;accent-color:#83d6af}
+
+/* Overview is a single compact list: today first, then nearest dates. */
+.birthday-card .birthday-list{display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1;min-height:0}
+.birthday-card .birthday-list>.birthday-item{flex:none;min-height:24px}

@@ -65,8 +65,9 @@ calendar role is Excluded. calendarVisible controls planner visibility. Existing
 birthday-role sources migrate automatically; explicitly disabled birthday-card
 flags are respected. Month grids continue to omit birthday-role sources.
 
-The compact card shows the two nearest past birthdays, today, and four upcoming
-birthdays. All opens a chronological -14/+28 day list positioned near today.
+The compact card lists today first, then nearby past and future birthdays by
+distance from today, without subheadings. The available card height clips the
+remaining rows; All opens the complete list. All opens a chronological -14/+28 day list positioned near today.
 Past entries are muted, today is gold, and +/-3 days have a subtle side marker.
 Per-occurrence Plan message / Message sent / Plan present / Present sent flags
 are saved separately in HA user data under home_tv_birthday_checklist_v1. The
