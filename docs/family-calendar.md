@@ -36,12 +36,12 @@ empty meals, disconnect/reconnect, and navigate settings with keyboard/TV remote
 The overview and expanded calendar now offer Month and Family organiser. Month
 contains person and shared/holiday sources. The family planner has one date gutter
 and five content columns: four configured people, then Other (shared, holiday and
-birthday sources). Meals stay separate. Private settings version 2 adds role
+birthday sources). Meals stay separate. Private settings version 3 adds role
 person/birthday and a people array specifying the four column names/order.
 Existing choices are preserved until saved; source IDs are never inferred from
 person names. Configure roles and names in Calendars & names.
 
-The birthday card uses a separate date range relative to UK today: seven previous
+The birthday card uses a separate date range relative to UK today: 14 previous
 days, today, and 28 following days, irrespective of the displayed calendar month.
 Each occurrence comes from HA; no birthdays or ages are manufactured.
 
@@ -59,3 +59,19 @@ without recreating its WebView in builds from 4.0.2. The web persistence fallbac
 also applies to earlier APKs. No credentials are part of navigation state.
 
 Use dev/layout-check.html for phone/tablet/TV viewport checks and rotation.
+
+Birthday-card sources have an independent birthdayCard flag, retained when the
+calendar role is Excluded. calendarVisible controls planner visibility. Existing
+birthday-role sources migrate automatically; explicitly disabled birthday-card
+flags are respected. Month grids continue to omit birthday-role sources.
+
+The compact card shows the two nearest past birthdays, today, and four upcoming
+birthdays. All opens a chronological -14/+28 day list positioned near today.
+Past entries are muted, today is gold, and +/-3 days have a subtle side marker.
+Per-occurrence Plan message / Message sent / Plan present / Present sent flags
+are saved separately in HA user data under home_tv_birthday_checklist_v1. The
+key includes the source, UID (or title when HA supplies no UID), and occurrence
+date, so annual birthdays start fresh. No messages are sent or purchases made.
+Writes are serialised in a tab and merge the latest HA data; HA offers no atomic
+compare-and-swap, so simultaneous edits of the same flag on two devices are
+last-write-wins. Saving failures restore the previous checkbox and show an error.

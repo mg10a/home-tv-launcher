@@ -41,3 +41,15 @@
 .birthday-group{display:flex;flex-direction:column;min-height:0}.birthday-group>div{min-height:0;overflow:auto;scrollbar-width:thin}.birthday-group h3{flex:none}
 .calendar-dialog{position:relative}
 #dashboardPage .meal-days.family-meals{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:repeat(7,minmax(0,1fr))!important;grid-auto-flow:row!important}
+/* Rolling birthday timeline: recent history, today, then the coming weeks. */
+.birthday-list{grid-template-rows:minmax(30px,.85fr) minmax(30px,.6fr) minmax(42px,1.55fr);gap:3px}
+.birthday-group h3{font-size:10px;margin:0 0 2px}.birthday-group-today h3{color:#ffe1a0}
+.birthday-item{display:block;padding:0;background:#203650;color:#eef5ff;border-left:2px solid transparent}
+.birthday-open{display:flex;align-items:center;justify-content:space-between;gap:5px;background:transparent!important;color:inherit!important;border:0!important;padding:3px 4px!important;width:100%;min-width:0;text-align:left;font-size:11px}
+.birthday-open>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.birthday-open>small{flex:none;font-size:10px}
+.birthday-past{color:#9ba9b9;background:#253140}.birthday-past small{color:#9ba9b9}
+.birthday-near{border-left-color:#91b9ce;background:#284252}.birthday-past.birthday-near{background:#293944;border-left-color:#748f9e}
+.birthday-today{background:#51442a;border:1px solid #e9c881;border-left:4px solid #ffe093;color:#fff2d4}.birthday-today small{color:#ffe093;font-weight:700}
+.birthday-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px 8px}.birthday-checks label{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}.birthday-checks input{width:17px;height:17px;accent-color:#89d3ad}.birthday-save{display:block;min-height:14px;padding:0 8px 3px;font-size:10px}
+.calendar-day-body .birthday-item{margin:5px 0;border-radius:6px}.calendar-day-body .birthday-open{font-size:14px;padding:6px 8px!important}.calendar-day-body .birthday-open>span{white-space:normal}.calendar-day-body .birthday-open>small{font-size:12px}.calendar-day-body .birthday-today-anchor{color:#ffe093}
+.calendar-source-options{grid-column:1/-1;display:flex;gap:16px;flex-wrap:wrap}.calendar-source-options label{display:flex;align-items:center;gap:5px}.calendar-source-options input[type=checkbox]{width:16px;height:16px;accent-color:#83d6af}
