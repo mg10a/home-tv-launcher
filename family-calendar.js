@@ -69,7 +69,7 @@ async function showBirthdays(focusEvent){
  content.push(make('h3','','Next 28 days'),...groups.upcoming.map(e=>birthdayRow(e,true)));if(!groups.upcoming.length)content.push(make('p','','None'));
  openDetail('Birthdays',content);
  const all=[...groups.past].reverse().concat(groups.today,groups.upcoming),rows=[...detailBody.querySelectorAll('.birthday-item')];const index=focusEvent?all.findIndex(e=>birthdayOccurrence(e)===birthdayOccurrence(focusEvent)):-1;
- requestAnimationFrame(()=>{const target=index>=0?rows[index]:past[Math.max(0,past.length-2)]||anchor;if(target)detail.scrollTop=Math.max(0,detail.scrollTop+target.getBoundingClientRect().top-detail.getBoundingClientRect().top-65)});
+ requestAnimationFrame(()=>{const target=index>=0?rows[index]:anchor;const inset=index>=0?65:Math.max(70,Math.min(280,detail.clientHeight*.35));if(target)detail.scrollTop=Math.max(0,detail.scrollTop+target.getBoundingClientRect().top-detail.getBoundingClientRect().top-inset)});
 }
 const requests=(command)=>new Promise((resolve,reject)=>{if(!ready()||haSocket!==socket)return reject(Error('Home Assistant disconnected'));const id=haRequestId++;const timer=setTimeout(()=>{pending.delete(id);reject(Error('Request timed out'))},25000);pending.set(id,{resolve,reject,timer});try{socket.send(JSON.stringify({id,...command}))}catch(e){clearTimeout(timer);pending.delete(id);reject(e)}});
 function rejectPending(){for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error('Home Assistant disconnected'))}pending.clear()}
