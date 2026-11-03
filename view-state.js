@@ -26,7 +26,7 @@ function restore(){
  else if(p?.kind==='room'&&typeof p.name==='string')window.openRoomDetails(p.name);
  else if(p?.kind==='calendar')window.openCalendar();
  else if(p?.kind==='heating')openSalusModal();
- else if(p?.kind==='pets')openPetDetails();
+ else if(p?.kind==='pets')showPetDetails();
  else if(p?.kind==='history')showHistory();
  else if(p?.kind==='weather')document.querySelector('[aria-label*="Open weather details"]')?.click();
  }finally{restoring=false;snapshot()}
