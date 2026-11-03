@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.3";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.4";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -56,12 +56,13 @@ public final class MainActivity extends Activity {
       catch(android.content.ActivityNotFoundException|SecurityException e){Toast.makeText(MainActivity.this,"No browser available. Use Manage box in the dashboard for contents and swaps.",Toast.LENGTH_LONG).show();}
     });}
     @JavascriptInterface public void openAuth(String url){runOnUiThread(()->beginAuth(url));}
+    @JavascriptInterface public boolean supportsAudioApps() { return true; }
     @JavascriptInterface public void openApp(String name) {
       runOnUiThread(() -> launchEntertainment(name));
     }
   }
   private void launchEntertainment(String name) {
-    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN"};
+    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN","Sonos","Yoto"};
     if(!Arrays.asList(names).contains(name))return;
     PackageManager pm=getPackageManager();
     // Query both TV and phone launchers so the installed platform variant is used.

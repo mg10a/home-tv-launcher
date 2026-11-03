@@ -50,6 +50,7 @@ const address=document.createElement('input');address.readOnly=true;address.valu
 const copy=document.createElement('button');copy.textContent='Copy address';copy.onclick=async()=>{try{await navigator.clipboard.writeText(address.value);copy.textContent='Copied'}catch{address.select();copy.textContent='Select and copy the address above'}};
 const close=document.createElement('button');close.textContent='Close';close.onclick=()=>help.close();help.append(title,note,address,copy,close);document.body.append(help);help.addEventListener('close',()=>help.remove());help.showModal();
 });sections.append(box);
+box.querySelector('.family-title').after(box.querySelector('.groobarbs-status'));
 const summary=document.createElement('div');summary.className='groobarbs-summary';box.insertBefore(summary,box.querySelector('a'));
 const contents=document.createElement('button');contents.type='button';contents.className='groobarbs-open';contents.textContent='Manage box';contents.hidden=false;summary.after(contents);
 const detail=document.createElement('dialog');detail.className='groobarbs-detail';detail.setAttribute('aria-label','Groobarbs delivery contents');document.body.append(detail);
@@ -63,7 +64,7 @@ function grooWindow(a,now=new Date()){
  const day=offset=>{const d=new Date(delivery);d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10)};
  return local>=day(-4)+'T00:00'&&local<day(-1)+'T11:00';
 }
-function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Delivery: '+niceDate(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?((grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline)))?'Changes open · closes Monday 11am':'Changes closed · Friday 00:00–Monday 11am'):state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable,grooWindow(a)]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
+function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Delivery: '+niceDate(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?((grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline)))?'Changes open until 11am Mon':'Changes closed'):state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable,grooWindow(a)]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
 let choice=null, saving=false, message='', lastGroo='';
 function button(parent,label,action){const b=addText(parent,'button',label);b.type='button';b.addEventListener('click',action);return b}
 function niceDate(value,withTime=false){if(!value)return '';const d=new Date(value.length===10?value+'T12:00:00Z':value);return Number.isNaN(+d)?value:new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'short',...(withTime?{hour:'2-digit',minute:'2-digit'}:{})}).format(d)}

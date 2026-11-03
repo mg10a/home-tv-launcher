@@ -184,3 +184,38 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
 #dashboardPage .home-security>.kia-placeholder{grid-column:2;grid-row:2}
 @media(orientation:portrait){#dashboardPage .home-security{grid-column:1/3!important;grid-row:3/5!important}}
 @media(orientation:landscape) and (max-height:550px){#dashboardPage .home-security{grid-row:1/3!important}}
+
+/* November compact controls: green denotes actual applied/on state only. */
+.room-detail button,.room-detail select,.coffee-detail button,.coffee-card button,.groobarbs-open,.groobarbs-detail button,.groobarbs-link-help button,.groobarbs-link-help input,.groo-save{background:#243b55!important;border:1px solid #607b98;color:#edf4ff}
+.room-detail button.is-active,.groo-options button[aria-pressed=true]{background:#285b4c!important;border-color:#84c9ab}
+#dashboardPage .family-sections>.groobarbs-card{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto minmax(26px,1fr);align-content:start;gap:3px 5px;overflow:hidden;padding:7px!important}
+.groobarbs-card>.family-title,.groobarbs-card>.groobarbs-status,.groobarbs-card>.groobarbs-summary{grid-column:1/-1;min-width:0}
+#dashboardPage .groobarbs-card .groobarbs-status{order:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(9px,1.5vh,12px);line-height:1.2;color:#bcd1e6}
+.groobarbs-card>p{display:none!important}.groobarbs-card>.family-title{font-size:clamp(11px,1.8vh,15px)!important;line-height:1.2}.groobarbs-card>.groobarbs-summary{font-size:clamp(9px,1.4vh,12px);line-height:1.2;white-space:nowrap}
+.groobarbs-card .groobarbs-open{display:flex;align-items:center;justify-content:center;min-height:0;padding:4px!important;font-size:clamp(10px,1.6vh,13px)!important;line-height:1.1;min-width:0}
+#dashboardPage .home-security{grid-template-rows:minmax(0,1fr) minmax(0,.65fr)!important}
+.doorbell-slot{grid-column:1;grid-row:1;min-width:0;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
+#dashboardPage .home-security .compact-eufy{box-sizing:border-box;width:min(100cqw,125cqh);height:auto!important;aspect-ratio:5/4;display:grid!important;grid-template-columns:1fr auto;grid-template-rows:auto minmax(0,1fr);padding:7px!important;gap:5px;align-self:center;overflow:hidden}
+#dashboardPage .compact-eufy>.panel-kicker{display:none!important}
+#dashboardPage .compact-eufy>strong{grid-column:1;grid-row:1;align-self:center;white-space:nowrap;font-size:clamp(11px,1.9vh,16px)}
+#dashboardPage .compact-eufy>#eufyTileStatus{grid-column:2;grid-row:1;align-self:center;font-size:clamp(9px,1.6vh,12px)}
+#dashboardPage .compact-eufy>.eufy-tile-preview{grid-column:1/-1;grid-row:2;min-height:0;width:100%;height:100%;align-self:stretch}
+#dashboardPage .compact-eufy #eufyTileImage{width:100%;height:100%;object-fit:contain}
+#dashboardPage .home-security>.kia-placeholder{grid-column:1;grid-row:2}
+#dashboardPage .home-security>.coffee-card{grid-column:2;grid-row:2}
+#dashboardPage .home-compact-stack>*{overflow:hidden}
+.coffee-card{min-width:0;min-height:0;display:grid;grid-template-columns:1fr auto;align-content:center;gap:5px;padding:10px;border:1px solid #38516e;border-radius:13px;background:#172b43}
+.coffee-card>strong,.coffee-status{grid-column:1/-1}.coffee-status{font-size:11px;color:#bcd1e6}.coffee-card button{font:inherit;font-size:12px;border-radius:8px;padding:7px 5px}.coffee-card button:disabled{opacity:.45}
+.room-detail{width:min(1080px,96vw);height:94dvh;max-height:94dvh;padding:clamp(8px,2vh,18px);overflow:hidden;font-size:clamp(12px,2vh,16px);border-color:#607b98;box-sizing:border-box}
+.room-detail[open]{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto minmax(0,1fr) auto;gap:10px 20px}
+.room-detail header{grid-column:1/-1}.room-detail h2{font-size:clamp(18px,3.8vh,26px)}.room-detail h3{font-size:inherit;margin:0}
+.room-detail button,.room-detail select{font:inherit;padding:7px 10px;min-height:32px;max-width:100%}.room-detail .room-live{display:flex;flex-direction:column;min-height:0;gap:6px;overflow:hidden}.room-climate-now{margin:0;color:#d0e3f6;font-size:1.05em;line-height:1.3}
+.room-light-heading,.room-pager{display:flex;align-items:center;justify-content:space-between;gap:8px}.room-pager{justify-content:center;font-size:12px}.room-pager button{padding:4px 10px}
+.room-light-list{min-height:0;flex:1;display:grid;grid-template-rows:repeat(4,minmax(0,1fr));gap:4px}.room-control-row{min-width:0;min-height:0;padding:3px 0;gap:8px;font-size:inherit}.room-control-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.room-control-row>button{padding:5px 10px;font-size:12px;min-width:65px}
+.room-detail label{margin:0;gap:8px;font-size:12px;flex-shrink:0}.room-detail select{max-width:72%;min-width:0}.room-fire-note{font-size:11px;color:#bdcfe3}
+.room-history{display:flex;flex-direction:column;min-height:0;gap:8px}.room-history-chart{display:flex;flex-direction:column;flex:1;min-height:0;justify-content:center}.room-history-chart svg{width:100%;height:100%;min-height:0;max-height:100%;flex:1}.room-history-chart small{font-size:10px}.room-command-status{grid-column:1/-1;grid-row:3;margin:0;min-height:1em;font-size:11px;color:#c9d9e8}
+.coffee-detail{box-sizing:border-box;width:min(650px,94vw);height:min(550px,94dvh);max-height:94dvh;overflow:hidden;background:#192d43;color:#eef5ff;border:1px solid #607b98;border-radius:14px;padding:14px;font-size:14px}.coffee-detail[open]{display:flex;flex-direction:column;gap:10px}.coffee-detail::backdrop{background:#000a}.coffee-detail header{display:flex;align-items:center;justify-content:space-between}.coffee-detail h2{font-size:20px;margin:0}.coffee-detail button{padding:7px 12px;border-radius:8px}.coffee-data{flex:1;min-height:0;display:grid;grid-template-rows:repeat(6,minmax(0,1fr))}.coffee-data strong{font-size:12px;text-align:right;max-width:45%;overflow-wrap:anywhere}
+@media(orientation:portrait){.room-detail[open]{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1.2fr) minmax(0,1fr) auto;gap:9px}.room-detail .room-command-status{grid-row:4}.room-detail .room-history{grid-row:3}.room-detail .room-live{grid-row:2}.room-detail{font-size:14px}.room-detail h2{font-size:21px}.room-detail .room-history-chart svg{max-height:100%}.coffee-card{padding:7px;gap:4px}.coffee-card button{font-size:11px}.kia-placeholder{font-size:12px}}
+@media(orientation:landscape) and (max-height:550px){.room-detail[open]{gap:5px 14px}.room-detail .room-live{gap:4px}.room-detail button,.room-detail select{padding:4px 8px;min-height:28px}.room-detail .room-control-row{padding:1px 0}.room-detail .room-climate-now{font-size:12px}.coffee-card{padding:6px;gap:3px}.coffee-card button{padding:4px;font-size:11px}.coffee-status{font-size:10px}.kia-placeholder{padding:7px;gap:3px;font-size:12px}}
+.launcher-split .apps{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr))}
+@media(orientation:portrait){.launcher-split .apps{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}}
