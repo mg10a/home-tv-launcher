@@ -41,15 +41,29 @@ if(sections){
 const box=document.createElement('section');box.className='family-section groobarbs-card';
 box.innerHTML='<div class="family-title">🥕 Fruit &amp; veg box</div><p>View your next Groobarbs box, swap contents or skip a delivery.</p><a class="groobarbs-open" href="https://my.groobarbs.co.uk/" target="_blank" rel="noopener noreferrer">Groobarbs website ↗</a><small class="groobarbs-status" role="status">Opens your Groobarbs account</small>';
 box.querySelector('a').addEventListener('click',event=>{
-if(window.AndroidLauncher){event.preventDefault();if(typeof window.AndroidLauncher.openGroobarbs==='function'){try{window.AndroidLauncher.openGroobarbs()}catch(error){box.querySelector('.groobarbs-status').textContent='Could not open the website. Use Manage box above to view and swap your contents.';}}else box.querySelector('.groobarbs-status').textContent='Update the Home TV app to open Groobarbs here. In the meantime, open my.groobarbs.co.uk in your browser.';}
-else {event.preventDefault();window.location.assign('https://my.groobarbs.co.uk/');}
+event.preventDefault();
+if(!window.AndroidLauncher){window.location.assign('https://my.groobarbs.co.uk/');return}
+if(typeof window.AndroidLauncher.openGroobarbs==='function'){try{window.AndroidLauncher.openGroobarbs();return}catch{}}
+const help=document.createElement('dialog');help.className='groobarbs-link-help';
+const title=document.createElement('h2');title.textContent='Open Groobarbs website';const note=document.createElement('p');note.textContent='This installed version of Home TV cannot open external websites. Copy this address into your phone browser. Manage box works here in the dashboard.';
+const address=document.createElement('input');address.readOnly=true;address.value='https://my.groobarbs.co.uk/';address.setAttribute('aria-label','Groobarbs website address');address.onclick=()=>address.select();
+const copy=document.createElement('button');copy.textContent='Copy address';copy.onclick=async()=>{try{await navigator.clipboard.writeText(address.value);copy.textContent='Copied'}catch{address.select();copy.textContent='Select and copy the address above'}};
+const close=document.createElement('button');close.textContent='Close';close.onclick=()=>help.close();help.append(title,note,address,copy,close);document.body.append(help);help.addEventListener('close',()=>help.remove());help.showModal();
 });sections.append(box);
 const summary=document.createElement('div');summary.className='groobarbs-summary';box.insertBefore(summary,box.querySelector('a'));
 const contents=document.createElement('button');contents.type='button';contents.className='groobarbs-open';contents.textContent='Manage box';contents.hidden=false;summary.after(contents);
 const detail=document.createElement('dialog');detail.className='groobarbs-detail';detail.setAttribute('aria-label','Groobarbs delivery contents');document.body.append(detail);
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
 function grooState(){return typeof haVerified!=='undefined'&&haVerified&&typeof haStates!=='undefined'?haStates['sensor.groobarbs_next_delivery']:null}
-function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Next delivery: '+(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?'Live from HA · updates every 30 minutes':state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
+function grooWindow(a,now=new Date()){
+ const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));
+ const local=parts.year+'-'+parts.month+'-'+parts.day+'T'+parts.hour+':'+parts.minute;
+ if(!a?.date||!/^\d{4}-\d{2}-\d{2}$/.test(a.date))return false;
+ const delivery=new Date(a.date+'T12:00:00Z');if(delivery.getUTCDay()!==2)return false;
+ const day=offset=>{const d=new Date(delivery);d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10)};
+ return local>=day(-4)+'T00:00'&&local<day(-1)+'T11:00';
+}
+function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Delivery: '+niceDate(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?((grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline)))?'Changes open · closes Monday 11am':'Changes closed · Friday 00:00–Monday 11am'):state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable,grooWindow(a)]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
 let choice=null, saving=false, message='', lastGroo='';
 function button(parent,label,action){const b=addText(parent,'button',label);b.type='button';b.addEventListener('click',action);return b}
 function niceDate(value,withTime=false){if(!value)return '';const d=new Date(value.length===10?value+'T12:00:00Z':value);return Number.isNaN(+d)?value:new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'short',...(withTime?{hour:'2-digit',minute:'2-digit'}:{})}).format(d)}
@@ -57,7 +71,7 @@ function renderDetail(){
  const state=grooState();detail.replaceChildren();
  const head=addText(detail,'header','');head.className='groo-head';const title=addText(head,'div','');addText(title,'h2','Your fruit & veg box');button(head,'Close',()=>detail.close());
  if(!state||['unknown','unavailable'].includes(state.state)){addText(detail,'p','Live data unavailable. Reconnect Home Assistant to continue.');return}
- const a=state.attributes,editable=a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline));
+ const a=state.attributes,editable=grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline));
  addText(title,'p',niceDate(a.date)+' · '+(editable?'Changes until '+niceDate(a.deadline,true):'Changes closed'));
  const body=addText(detail,'div','');body.className='groo-body';
  const boxes=(a.items||[]).filter(i=>i.contents_can_change||i.max_swaps),extras=(a.items||[]).filter(i=>!boxes.includes(i));
@@ -93,7 +107,7 @@ function renderDetail(){
   });save.className='groo-save';save.disabled=saving||!choice.replacement;
  }
 }
-contents.addEventListener('click',()=>{choice=null;message='';renderDetail();detail.showModal()});window.addEventListener('home-states-updated',renderGroo);renderGroo();
+contents.addEventListener('click',()=>{choice=null;message='';renderDetail();detail.showModal()});window.addEventListener('home-states-updated',renderGroo);setInterval(renderGroo,60000);renderGroo();
 }
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
 const music=document.querySelector('.music-strip');

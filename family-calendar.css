@@ -57,3 +57,5 @@
 /* Overview is a single compact list: today first, then nearest dates. */
 .birthday-card .birthday-list{display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1;min-height:0}
 .birthday-card .birthday-list>.birthday-item{flex:none;min-height:24px}
+
+.birthday-card .birthday-list{overflow-y:auto!important;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin}

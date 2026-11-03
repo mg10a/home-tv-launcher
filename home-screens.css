@@ -162,3 +162,25 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
 .groo-picker{position:absolute;inset:0;padding:16px;background:#192d43;display:flex;flex-direction:column;gap:12px;border-radius:14px}.groo-picker h3{margin:0;font-size:19px}.groo-options{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:10px}.groo-options button{background:#243e52}.groo-options button[aria-pressed=true]{border:2px solid #b6df94;background:#365d42}.groo-review{display:flex;flex-direction:column;gap:6px;text-align:center}.groo-review small{color:#c6d4bd}.groo-pages{display:flex;justify-content:center;align-items:center;gap:16px}.groo-save{background:#357355!important;font-weight:700!important}
 @media(orientation:portrait){.groo-produce{grid-template-columns:1fr;gap:5px}.groo-tile{padding:6px 10px}.groo-tile strong{font-size:14px}.groo-head h2{font-size:19px}.groo-box-head{gap:5px}.groo-note{font-size:11px}}
 @media(orientation:landscape) and (max-height:550px){.groobarbs-detail{height:96dvh;max-height:96dvh;padding:9px;gap:5px}.groo-head h2{font-size:17px}.groo-head p{font-size:11px}.groo-produce{gap:5px;grid-auto-rows:minmax(35px,1fr)}.groo-tile{padding:4px 8px}.groo-tile strong{font-size:12px}.groo-tile small{font-size:10px}.groo-tile button{padding:5px 8px}.groo-extras{padding:4px}.groo-note{font-size:10px}.groo-picker{gap:6px;padding:10px}.groo-options{grid-template-columns:repeat(3,minmax(0,1fr))}.groo-review{font-size:12px;gap:2px}.groo-picker button{padding:6px 10px}}
+
+/* Compact home utilities and room detail controls. */
+#dashboardPage .home-services{grid-template-columns:1fr!important}
+.home-compact-stack{display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;min-height:0}
+#dashboardPage .home-compact-stack>*{height:auto!important;min-height:0!important;padding:6px 10px!important;overflow:auto;gap:2px!important}
+#dashboardPage .home-compact-stack .compact-pets{display:grid;grid-template-columns:1fr 1fr;align-content:center}
+.home-compact-stack .compact-pets strong{grid-column:1/-1}.home-compact-stack .compact-pets .panel-kicker{display:none}
+.kia-placeholder{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px;background:#172b43;border:1px solid #38516e;border-radius:13px;color:#d7e6f6}
+#dashboardPage .music-strip{display:none!important}
+.room-detail,.groobarbs-link-help{box-sizing:border-box;width:min(900px,96vw);max-height:94dvh;overflow:auto;background:#192d43;color:#eef5ff;border:1px solid #75bb98;border-radius:14px;padding:16px}
+.room-detail::backdrop,.groobarbs-link-help::backdrop{background:#000a}.room-detail header{display:flex;align-items:center;justify-content:space-between;gap:15px}.room-detail h2{margin:0}.room-detail h3{margin:14px 0 8px;font-size:16px}
+.room-detail button,.room-detail select,.groobarbs-link-help button,.groobarbs-link-help input{padding:10px;border:1px solid #739f9c;border-radius:8px;background:#254b48;color:#fff;font:inherit}.room-detail button:disabled{opacity:.5}.room-detail label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0}.room-detail select{max-width:65%}.room-control-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #38516e}.room-control-row button{flex:none}.room-scene-list{display:flex;flex-wrap:wrap;gap:6px}.room-command-status{color:#c1dbbd;min-height:1.2em}.room-history-chart svg{width:100%;height:170px;background:#142437;border-radius:8px}.room-history-chart small{display:block;color:#bcd1e6}.groobarbs-link-help input{box-sizing:border-box;width:100%;margin-bottom:12px}.groobarbs-link-help button{margin-right:8px}
+#dashboardPage .groobarbs-card .groobarbs-status{display:block!important;font-size:11px;line-height:1.3;color:#d5e7cb;order:-1}
+@media(orientation:landscape){.room-live{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.room-live>h3,.room-live>.room-climate-now,.room-live>.room-scene-list{grid-column:1/-1}}
+
+#dashboardPage .home-services{display:none!important}
+#dashboardPage .home-security{grid-column:2!important;grid-row:2/4!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr));gap:6px}
+#dashboardPage .home-security>.compact-eufy{grid-column:1;grid-row:1/3}
+#dashboardPage .home-security>.home-compact-stack{grid-column:2;grid-row:1}
+#dashboardPage .home-security>.kia-placeholder{grid-column:2;grid-row:2}
+@media(orientation:portrait){#dashboardPage .home-security{grid-column:1/3!important;grid-row:3/5!important}}
+@media(orientation:landscape) and (max-height:550px){#dashboardPage .home-security{grid-row:1/3!important}}
