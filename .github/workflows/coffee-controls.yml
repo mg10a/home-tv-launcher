@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'kia-controls.js'
+      - 'kia-refresh.js'
+      - 'tests/kia-refresh.test.mjs'
       - 'location-map.js'
       - 'tests/location-map.test.mjs'
       - 'tests/kia-controls.test.mjs'
@@ -22,6 +24,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --ignore-scripts happy-dom@21.0.4
+      - run: node tests/kia-refresh.test.mjs
       - run: node tests/location-map.test.mjs
       - run: node --check kia-controls.js
       - run: node tests/kia-controls.test.mjs
