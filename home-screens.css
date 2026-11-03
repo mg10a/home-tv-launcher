@@ -19,7 +19,7 @@ body[data-home-screen="home"] #dashboardPage .family-panel,body[data-home-screen
 #dashboardPage .family-sections>.family-section:first-child{grid-column:1!important;grid-row:1/3!important}
 #dashboardPage .family-sections>.family-section:nth-child(2){grid-column:2!important;grid-row:1!important}
 #dashboardPage .family-sections>.family-section:nth-child(3){grid-column:3!important;grid-row:1!important}
-#dashboardPage .family-sections>.meal-plan{grid-column:2!important;grid-row:2!important}
+#dashboardPage .family-sections>.family-section.meal-plan{grid-column:2!important;grid-row:2!important}
 #dashboardPage .family-sections>.find-panel{grid-column:3!important;grid-row:2!important}
 #dashboardPage .family-section{background:#1c3049;border:1px solid #38516e;border-radius:14px;padding:12px!important}
 #dashboardPage .family-title,#dashboardPage .calendar-open{font-size:clamp(12px,1.3vw,18px)!important}
@@ -64,7 +64,7 @@ body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:c
 #dashboardPage .dashboard-top{flex:none;min-height:28px!important;margin:0!important;align-items:center}#dashboardPage .dash-heading,#dashboardPage .dashboard-note{display:none!important}
 #dashboardPage .family-sections{display:grid!important;grid-template-columns:minmax(0,1.65fr) repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr) minmax(0,1fr) minmax(24px,.28fr)!important;gap:6px!important;min-height:0!important;overflow:hidden!important}
 #dashboardPage .family-sections>.calendar-card{grid-column:1!important;grid-row:1/4!important}
-#dashboardPage .family-sections>.meal-plan{grid-column:2!important;grid-row:1!important}
+#dashboardPage .family-sections>.family-section.meal-plan{grid-column:2!important;grid-row:1!important}
 #dashboardPage .family-sections>.birthday-card{grid-column:3!important;grid-row:1!important}
 #dashboardPage .family-sections>.family-section:nth-child(2){grid-column:2!important;grid-row:2!important}
 #dashboardPage .family-sections>.family-section:nth-child(3){grid-column:3!important;grid-row:2!important}
@@ -80,7 +80,7 @@ body[data-home-screen] #dashboardPage,body[data-home-screen] main.shell{height:c
 @media(orientation:portrait){
  #dashboardPage .family-sections{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr) minmax(130px,.29fr) minmax(60px,.13fr) 28px!important}
  #dashboardPage .family-sections>.calendar-card{grid-column:1/3!important;grid-row:1!important}
- #dashboardPage .family-sections>.meal-plan{grid-column:1!important;grid-row:2!important}
+ #dashboardPage .family-sections>.family-section.meal-plan{grid-column:1!important;grid-row:2!important}
  #dashboardPage .family-sections>.birthday-card{grid-column:2!important;grid-row:2!important}
  #dashboardPage .family-sections>.family-section:nth-child(2){grid-column:1!important;grid-row:3!important}
  #dashboardPage .family-sections>.family-section:nth-child(3){grid-column:2!important;grid-row:3!important}
@@ -249,14 +249,39 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
  #eufyLiveFrame:not(:fullscreen):not(.eufy-expanded){flex:none!important;width:100%!important;height:auto!important;aspect-ratio:4/3;max-height:60dvh!important;align-self:center}
  #eufyOverlay .eufy-live-info{display:flex;flex-direction:column;justify-content:flex-start;align-content:start;gap:6px;padding:0;overflow:auto;flex:1;min-height:0}
  #eufyOverlay .eufy-live-info h3{display:none}#eufyOverlay .eufy-live-info p{margin:0;font-size:12px;line-height:1.35;flex:none}
- #eufyRecordPane:not(.hidden){display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1.4fr) auto minmax(80px,1fr)!important;gap:8px!important}
+ #eufyRecordPane:not(.hidden){display:grid!important;grid-template-columns:minmax(0,1fr) clamp(58px,15vw,100px)!important;grid-template-rows:minmax(0,1.25fr) minmax(80px,1fr)!important;gap:8px!important}
  #eufyRecordPane .eufy-recording-stage{grid-column:1;grid-row:1;width:100%!important;height:100%!important;min-height:0;aspect-ratio:auto}
- #eufyRecordPane .eufy-activity{grid-column:1;grid-row:2;min-width:0;min-height:0;overflow:hidden}
- #eufyActivityHours{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-template-rows:repeat(2,28px)!important;gap:3px!important;padding:0!important;height:auto!important}
- #eufyActivityHours .eufy-hour{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:1px!important;min-height:0!important;font-size:9px!important;border-radius:4px;background:#20364e}
- #eufyActivityHours .eufy-hour i{display:none}#eufyActivityHours .eufy-hour span{max-width:100%;font-size:9px!important}
- #eufyRecordPane .eufy-recording-browser{grid-column:1;grid-row:3;min-height:0;gap:5px;overflow:hidden}
+ #eufyRecordPane .eufy-activity{grid-column:2;grid-row:1/3;min-width:0;min-height:0;overflow:hidden}
+ #eufyActivityHours{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:repeat(24,minmax(0,1fr))!important;gap:2px!important;padding:0!important;height:100%!important}
+ #eufyActivityHours .eufy-hour{display:grid!important;grid-template-columns:16px minmax(0,1fr) 12px!important;align-items:center;gap:3px;padding:1px!important;min-height:0!important;font-size:9px!important;border-radius:4px;background:#20364e}
+ #eufyActivityHours .eufy-hour i{display:block;height:65%;min-height:2px}#eufyActivityHours .eufy-hour span{max-width:100%;font-size:9px!important}
+ #eufyRecordPane .eufy-recording-browser{grid-column:1;grid-row:2;min-height:0;gap:5px;overflow:hidden}
  #eufyRecordPane #eufyRecordingNote{font-size:11px;margin:0;line-height:1.3;flex:none}
  #eufyClipList{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(34px,auto);align-content:start;gap:5px;min-height:0;overflow:auto}
  #eufyClipList button{font-size:12px!important;padding:6px!important;min-width:0;min-height:34px!important;white-space:normal}
+}
+
+/* Household organiser: independent columns and one shared lists card. */
+#dashboardPage .family-sections>.family-section.tasks-card{grid-column:2!important;grid-row:2/4!important;display:flex;flex-direction:column;min-height:0}
+#dashboardPage .family-sections>.birthday-card{grid-column:3!important;grid-row:1/3!important}
+#dashboardPage .family-sections>.calendar-card{grid-column:1!important;grid-row:1/3!important}
+#dashboardPage .family-sections>.family-section.meal-plan{grid-column:2!important;grid-row:1!important}
+#dashboardPage .family-sections>.find-panel{grid-column:1!important;grid-row:3!important}
+#dashboardPage .family-sections>.groobarbs-card{grid-column:3!important;grid-row:3!important}
+.family-task-tabs{display:flex;gap:4px;flex:none}.family-task-tabs button{flex:1;min-width:0;padding:5px 3px;font:inherit;font-size:12px;background:#243b55;color:#eaf1fa;border:1px solid #607b98;border-radius:7px}
+.family-task-tabs button[aria-selected=true]{background:#2c6054;border-color:#85c5ac}.tasks-card [role=tabpanel]{flex:1;min-height:0;overflow:auto}.tasks-card [hidden]{display:none!important}
+#dashboardPage .birthday-card .birthday-open{font-size:clamp(10px,1.6vh,13px)!important;min-height:25px!important;padding:4px 5px!important;line-height:1.2}
+#dashboardPage .birthday-card .birthday-open>small{font-size:10px!important}.birthday-card .birthday-list>.birthday-item{min-height:25px}
+@media(orientation:portrait){
+ #dashboardPage .family-sections{grid-template-rows:minmax(0,1fr) minmax(100px,.28fr) minmax(60px,.20fr) minmax(94px,.22fr) minmax(55px,.20fr)!important}
+ #dashboardPage .family-sections>.calendar-card{grid-column:1/3!important;grid-row:1!important}
+ #dashboardPage .family-sections>.family-section.meal-plan{grid-column:1!important;grid-row:2!important}
+ #dashboardPage .family-sections>.family-section.tasks-card{grid-column:1!important;grid-row:3/5!important}
+ #dashboardPage .family-sections>.birthday-card{grid-column:2!important;grid-row:2/4!important}
+ #dashboardPage .family-sections>.groobarbs-card{grid-column:2!important;grid-row:4!important}
+ #dashboardPage .family-sections>.find-panel{grid-column:1/3!important;grid-row:5!important}
+ #eufyRecordControls:not(.hidden){display:block!important;grid-area:controls;min-width:0}
+ #eufyRecordControls .eufy-recording-toolbar{display:flex;width:100%;gap:6px}
+ #eufyRecordControls input[type=date]{min-width:0;flex:1;color:#eef4ff;background:#243b55;color-scheme:dark}
+ #eufyLiveControls.hidden{display:none!important}
 }

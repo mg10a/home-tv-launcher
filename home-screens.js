@@ -131,3 +131,6 @@ artist.textContent=connected&&state?[a.media_artist||a.media_album_artist,a.medi
 window.addEventListener('home-states-updated',renderMusic);document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderMusic()});renderMusic();
 }
 })();
+
+// Shared household-list card; tabs retain each panel's content.
+window.showFamilyList=function(which){for(const [key,name] of [['todo','Todo'],['shopping','Shopping']]){const active=key===which;document.getElementById('family'+name+'Tab').setAttribute('aria-selected',String(active));document.getElementById('family'+name+'Panel').hidden=!active}};
