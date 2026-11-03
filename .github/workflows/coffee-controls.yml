@@ -1,8 +1,10 @@
-name: Coffee and room controls
+name: Device dashboard controls
 on:
   push:
     branches: [main]
     paths:
+      - 'kia-controls.js'
+      - 'tests/kia-controls.test.mjs'
       - 'coffee-controls.js'
       - 'room-controls.js'
       - 'tests/coffee-controls.test.mjs'
@@ -18,6 +20,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --ignore-scripts happy-dom@21.0.4
+      - run: node --check kia-controls.js
+      - run: node tests/kia-controls.test.mjs
       - run: node --check coffee-controls.js
       - run: node tests/coffee-controls.test.mjs
       - run: node tests/room-controls.test.mjs

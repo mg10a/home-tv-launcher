@@ -11,6 +11,7 @@ state('sensor.kitchen_temp','Kitchen Temperature','20',{device_class:'temperatur
 state('sensor.kitchen_humidity','Kitchen Humidity','60',{device_class:'humidity',unit_of_measurement:'%'});
 state('automation.coffee','Coffee','off');state('binary_sensor.coffee_remote_start','Coffee Maker Remote start','on');
 w.haSocket=new w.EventTarget();w.haSocket.readyState=1;w.haSocket.send=raw=>{const c=JSON.parse(raw);commands.push(c);let result={};if(c.type.startsWith('config/'))result=[];if(c.type==='history/history_during_period')result={[c.entity_ids[0]]:c.entity_ids[0].includes('humidity')?[{s:'55',lu:Date.now()/1000-3600},{s:'60',lu:Date.now()/1000}]:[{s:'19',lu:Date.now()/1000-3600},{s:'21',lu:Date.now()/1000}]};queueMicrotask(()=>w.haSocket.dispatchEvent(new w.MessageEvent('message',{data:JSON.stringify({id:c.id,type:'result',success:true,result})})))};
+w.createKiaPanel=()=>({});
 w.eval(readFileSync(new URL('../coffee-controls.js',import.meta.url),'utf8'));
 w.eval(readFileSync(new URL('../room-controls.js',import.meta.url),'utf8'));
 await w.openRoomDetails('Kitchen');await new Promise(r=>setTimeout(r,30));
