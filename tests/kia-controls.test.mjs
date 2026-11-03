@@ -25,11 +25,12 @@ console.log('Kia: passive discovery, exact vehicle targeting, staged climate wit
 {
 const {w,calls,states,registry,api,d,click}=await setup();
 const add=(id,state,attributes={})=>{states[id]={entity_id:id,state,attributes};registry.push({entity_id:id,device_id:'sorento',platform:'kia_uvo'})};
+add('sensor.sorento_location_last_updated','2026-11-03T21:06:53+00:00',{device_class:'timestamp'});
 add('sensor.odometer','26472.7739998409',{unit_of_measurement:'mi'});
 add('binary_sensor.washer_warning','on',{friendly_name:'Washer fluid warning',device_class:'problem'});
 add('binary_sensor.back_window_heater','on',{friendly_name:'Back window heater'});
 for(let i=0;i<54;i++)add('sensor.reading_'+i,''+i,{friendly_name:'Reading '+i});
-w.haSocket={};api.update();await tick();assert(d.textContent.includes('26,473 mi'));assert(d.querySelector('.kia-alert-trigger').textContent.includes('1 active alert'));
+w.haSocket={};api.update();await tick();assert(d.textContent.includes('26,473 mi'));assert.equal(w.getKiaMapState().locationAt,'2026-11-03T21:06:53+00:00');assert(d.querySelector('.kia-alert-trigger').textContent.includes('1 active alert'));
 click('Readings');assert(d.querySelectorAll('.kia-reading-row').length>54);assert(!d.querySelector('.kia-pager'));assert(d.querySelector('.kia-reading-row').textContent.includes('Washer'));
 click('Climate');assert(!d.textContent.includes('Off °C'));assert(d.querySelector('.kia-alert-trigger').textContent.includes('Washer'));click('Defrost');assert.equal(calls.filter(c=>c.type==='call_service').length,0);click('Send request');await tick();assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).service_data)),{device_id:'sorento',climate:true,temperature:24,heating:'2',duration:10,defrost:true});await w.happyDOM.close();
 }
