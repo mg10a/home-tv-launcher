@@ -316,3 +316,28 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
 @media(orientation:portrait){.kia-detail footer{flex-direction:column;align-items:stretch;gap:7px}.kia-command-status{max-width:none}.kia-detail h2{font-size:19px}.kia-detail button{padding:7px}.kia-metric strong{font-size:15px}.kia-tabs{gap:5px}.kia-tabs button{font-size:12px}}
 @media(max-height:500px) and (orientation:landscape){.kia-detail{padding:10px;gap:6px;font-size:12px}.kia-detail h2{font-size:18px}.kia-detail button,.kia-detail select{padding:4px 8px;min-height:28px}.kia-data-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.kia-metric{padding:7px;gap:3px}.kia-metric strong{font-size:14px}.kia-panel-body{gap:6px}.kia-note,.kia-command-status{font-size:11px}.kia-field{padding:6px;gap:3px}.kia-field input[type=range]{min-height:20px}.kia-climate-options{gap:6px}}
 .kia-action-row input[type=number]{min-width:0;width:80px;border:1px solid #607b98;background:#243b55;color:#eef5ff;border-radius:8px;font:inherit;padding:5px}
+/* Compact vehicle dashboard: persistent alerts and complete control lists. */
+.kia-detail,.kia-detail *{box-sizing:border-box}
+.kia-detail{width:min(1100px,96vw);height:96dvh;max-height:96dvh;padding:12px;font:13px/1.3 system-ui}
+.kia-detail[open]{grid-template-rows:auto auto auto minmax(0,1fr) auto;gap:7px}
+.kia-detail button,.kia-detail select{min-height:32px;padding:5px 9px;font:inherit}
+.kia-detail h2{font-size:20px}.kia-panel-body{gap:7px;overflow:auto}
+.kia-alertbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.kia-detail .kia-alert-trigger{background:transparent;border:0;text-align:left;padding:3px 0;min-height:22px;font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kia-detail .kia-alert-trigger.has-alerts{background:#663b27;border:1px solid #efb263;color:#ffe4bd;padding:4px 8px;font-weight:700}
+.kia-report-stamp{font-size:10px;color:#b9cbe0;flex-shrink:0}.kia-report-stamp.is-stale{color:#f0c785}.kia-card-alert{color:#ffcb86!important;font-weight:700}
+.kia-overview-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.kia-metric{padding:7px;gap:3px;justify-content:flex-start}.kia-metric small{font-size:11px}.kia-metric strong{font-size:16px}.kia-metric strong:empty{display:none}
+.kia-presets{flex:none}.kia-section-label{font-size:12px;margin-top:3px}
+.kia-access-list,.kia-readings-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 8px;align-content:start;min-height:0}
+.kia-readings-list{grid-template-columns:repeat(4,minmax(0,1fr));overflow:auto;flex:1}
+.kia-reading-row{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;min-height:25px;padding:3px 5px;border-bottom:1px solid #38516e;background:#14263a;border-radius:3px;font-size:11px}
+.kia-reading-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdcfe2}.kia-reading-row>strong{flex-shrink:0;font-size:11px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kia-reading-row.is-warning{background:#652e32;border-color:#ff8c94}.kia-reading-row.is-attention{background:#594327;border-color:#e9ba6f}.kia-reading-row.is-warning>span,.kia-reading-row.is-attention>span{color:#fff0de}.kia-reading-row.is-unavailable{color:#d2b484}
+.kia-detail[data-view=controls] .kia-data-grid{flex:none;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;gap:7px}.kia-detail[data-view=controls] .kia-metric .kia-action-row{margin-top:3px}
+.kia-climate-options{flex:none;gap:7px}.kia-field{padding:6px;gap:3px}.kia-field input[type=range]{min-height:20px;height:20px}.kia-field button{font-size:11px}
+.kia-detail[data-view=climate] .kia-panel-body>.kia-note{font-size:11px}.kia-detail[data-view=climate] button[aria-pressed=true]{background:#304765;border-color:#a7d2ff}
+.kia-command-status{font-size:11px}.kia-command-status[data-result=error]{color:#ffb7bd;font-weight:650}.kia-command-status[data-result=pending]{color:#f0cc91}
+.kia-detail[data-view=review] .kia-panel-body{justify-content:center}.kia-detail[data-view=review] .kia-note{font-size:14px;margin:10px 0}
+@media(orientation:portrait){.kia-detail{padding:10px}.kia-alertbar{align-items:stretch;flex-direction:column;gap:2px}.kia-overview-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.kia-access-list,.kia-readings-list{grid-template-columns:repeat(2,minmax(0,1fr))}.kia-detail[data-view=controls] .kia-data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kia-filters{gap:3px;flex-wrap:wrap}.kia-filters button{flex:1 0 28%;min-height:28px}.kia-reading-row{font-size:10px;min-height:21px;padding:2px 4px}.kia-reading-row>strong{font-size:10px}.kia-detail footer{gap:4px}.kia-climate-options{grid-template-columns:1fr 1fr}.kia-detail[data-view=climate] .kia-panel-body{gap:10px}}
+@media(orientation:landscape) and (max-height:550px){.kia-detail{padding:8px;font-size:12px}.kia-detail[open]{gap:5px}.kia-detail h2{font-size:17px}.kia-detail button,.kia-detail select{min-height:27px;padding:3px 7px}.kia-readings-list{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px 6px}.kia-reading-row{min-height:18px;padding:1px 4px;font-size:10px}.kia-reading-row>strong{font-size:10px}.kia-panel-body{gap:5px}.kia-overview-stats .kia-metric{padding:5px}.kia-climate-options{gap:5px}.kia-field{padding:4px 6px}.kia-field input[type=range]{min-height:17px;height:17px}.kia-field span{font-size:10px}.kia-detail[data-view=climate] .kia-presets button{min-height:26px}.kia-detail[data-view=controls] .kia-data-grid{gap:5px}}
