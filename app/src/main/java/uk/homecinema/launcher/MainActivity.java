@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.3";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -30,7 +30,7 @@ public final class MainActivity extends Activity {
     web.addJavascriptInterface(new Bridge(),"HomeTVNative");
     web.addJavascriptInterface(new LauncherBridge(),"AndroidLauncher");
     web.setWebViewClient(new WebViewClient(){
-      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !isLauncher(r.getUrl());}
+      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){if(r.isForMainFrame() && isGroobarbs(r.getUrl())){new LauncherBridge().openGroobarbs();return true;}return !isLauncher(r.getUrl());}
       @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
         String url=r.getUrl().toString();
         if(!url.contains("/api/eufy_viewer/playback/"))return null;
@@ -53,7 +53,7 @@ public final class MainActivity extends Activity {
   public final class LauncherBridge {
     @JavascriptInterface public void openGroobarbs(){runOnUiThread(()->{
       try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://my.groobarbs.co.uk/")));}
-      catch(android.content.ActivityNotFoundException e){Toast.makeText(MainActivity.this,"Install a browser to open Groobarbs",Toast.LENGTH_LONG).show();}
+      catch(android.content.ActivityNotFoundException|SecurityException e){Toast.makeText(MainActivity.this,"No browser available. Use Manage box in the dashboard for contents and swaps.",Toast.LENGTH_LONG).show();}
     });}
     @JavascriptInterface public void openAuth(String url){runOnUiThread(()->beginAuth(url));}
     @JavascriptInterface public void openApp(String name) {
@@ -83,6 +83,11 @@ public final class MainActivity extends Activity {
       }
     }
     Toast.makeText(this,name+" app not found. Check it is installed on this device.",Toast.LENGTH_LONG).show();
+  }
+
+  private boolean isGroobarbs(android.net.Uri uri) {
+    return "https".equals(uri.getScheme()) && "my.groobarbs.co.uk".equals(uri.getHost())
+      && uri.getUserInfo()==null && (uri.getPort()==-1||uri.getPort()==443);
   }
 
   private boolean isLauncher(android.net.Uri uri) {
