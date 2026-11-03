@@ -43,7 +43,7 @@ const css=el('style');css.textContent='.family-task-tools{display:flex;gap:5px;m
 #dashboardPage .birthday-card .birthday-item{min-height:23px!important;margin:2px 0!important}
 #dashboardPage .family-sections>.find-panel{justify-content:flex-start!important;gap:5px!important;padding:8px!important}
 #dashboardPage .find-panel .family-title{font-size:12px!important;line-height:1.2!important;margin:0!important}
-#dashboardPage .find-panel .family-location-preview{display:flex;flex-wrap:wrap;gap:5px;min-height:0}
+#dashboardPage .find-panel .family-location-preview{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:5px;min-height:0}
 #dashboardPage .find-panel .family-location-preview button{font-size:11px!important;line-height:1.2!important;padding:5px 7px!important;min-height:28px!important;flex:1 1 42%;margin:0!important}
 #dashboardPage .find-panel .family-location-summary{font-size:9px!important;line-height:1.2!important;margin:0!important}
 `;document.head.append(css);
