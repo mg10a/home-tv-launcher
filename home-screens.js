@@ -32,6 +32,7 @@ return !launcher.getClientRects().length&&!dashboard.getClientRects().length;
 document.addEventListener('touchstart',e=>{if(e.touches.length!==1||ownsGesture(e.target)){start=null;return}const p=e.touches[0];start={x:p.clientX,y:p.clientY,time:Date.now()}},{passive:true});
 document.addEventListener('touchend',e=>{if(!start)return;const p=e.changedTouches[0],dx=p.clientX-start.x,dy=p.clientY-start.y,elapsed=Date.now()-start.time;start=null;if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.5||elapsed>1200||modalOpen())return;const next=Math.max(0,Math.min(2,active+(dx<0?1:-1)));if(next!==active){ignoreClickUntil=Date.now()+400;window.navigateHome(keys[next])}},{passive:true});
 document.addEventListener('touchcancel',()=>{start=null},{passive:true});
+window.addEventListener('resize',()=>{start=null});window.addEventListener('orientationchange',()=>{start=null});
 document.addEventListener('click',e=>{if(Date.now()<ignoreClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
 let restored='launcher';try{const saved=localStorage.getItem('home-active-screen');if(keys.includes(saved))restored=saved}catch{}
 window.navigateHome(restored);

@@ -285,3 +285,7 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
  #eufyRecordControls input[type=date]{min-width:0;flex:1;color:#eef4ff;background:#243b55;color-scheme:dark}
  #eufyLiveControls.hidden{display:none!important}
 }
+
+/* Recordings are chronological rows, never a tile grid. */
+#eufyClipList{display:flex!important;flex-direction:column;gap:5px;overflow-y:auto;min-height:0}
+#eufyClipList>button{width:100%;flex:none;min-height:32px!important;text-align:left;white-space:nowrap!important;padding:6px 8px!important}
