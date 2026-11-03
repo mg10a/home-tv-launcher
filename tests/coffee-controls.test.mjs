@@ -1,4 +1,4 @@
-import {Window} from '../../calendar-test-runtime/node_modules/happy-dom/lib/index.js';
+const {Window}=await import(process.env.HAPPY_DOM_MODULE || 'happy-dom');
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 const w=new Window({url:'https://example.com'});w.haSocket={};let connected=true;

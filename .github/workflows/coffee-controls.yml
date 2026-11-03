@@ -1,0 +1,23 @@
+name: Coffee and room controls
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'coffee-controls.js'
+      - 'room-controls.js'
+      - 'tests/coffee-controls.test.mjs'
+      - 'tests/room-controls.test.mjs'
+      - '.github/workflows/coffee-controls.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --ignore-scripts happy-dom@21.0.4
+      - run: node --check coffee-controls.js
+      - run: node tests/coffee-controls.test.mjs
+      - run: node tests/room-controls.test.mjs
