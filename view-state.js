@@ -12,6 +12,7 @@ function snapshot(){
  else if(document.querySelector('.coffee-detail[open]'))state.panel={kind:'coffee'};
  else if(document.querySelector('.groobarbs-detail[open]'))state.panel={kind:'groobarbs'};
  else if(document.querySelector('.calendar-day-dialog[open] h2')?.textContent==='Birthdays')state.panel={kind:'birthdays'};
+ else if(window.getFamilyDetailView?.())state.panel=window.getFamilyDetailView();
  else if(document.getElementById('photoSettings')?.open)state.panel={kind:'photoSettings'};
  else if(document.getElementById('launchSettings')?.open)state.panel={kind:'appSettings'};
  else if(document.getElementById('photoStage')?.classList.contains('photo-fullscreen'))state.panel={kind:'photos'};
@@ -25,7 +26,7 @@ function snapshot(){
 function restore(){
  if(!pending)return;const p=pending.panel;
  if(p&&!['weather','appSettings'].includes(p.kind)&&(typeof haVerified==='undefined'||!haVerified||typeof haStatesReady==='undefined'||!haStatesReady))return;
- if(p?.kind==='birthdays'&&!window.familyViewReady?.())return;
+ if(['birthdays','calendarDay'].includes(p?.kind)&&!window.familyViewReady?.())return;
  const saved=pending;pending=null;restoring=true;
  try{
  if(['launcher','home','family'].includes(saved.screen))window.navigateHome(saved.screen);
@@ -39,6 +40,7 @@ function restore(){
  else if(p?.kind==='coffee')window.openCoffeeDetails();
  else if(p?.kind==='groobarbs')window.openGroobarbsDetails();
  else if(p?.kind==='birthdays')window.openBirthdayDetails();
+ else if(p?.kind==='calendarDay')window.restoreCalendarDay(p);
  else if(p?.kind==='photos')openPhotoFullscreen();
  else if(p?.kind==='photoSettings')openPhotoSettings();
  else if(p?.kind==='appSettings')openLaunchSettings();

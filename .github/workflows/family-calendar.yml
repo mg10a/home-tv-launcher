@@ -7,6 +7,8 @@ on:
       - 'home-screens.*'
       - 'tests/family-calendar.test.cjs'
       - 'index.html'
+      - 'view-state.js'
+      - 'tests/view-state.test.cjs'
       - 'dev/index.html'
       - '.github/workflows/family-calendar.yml'
   workflow_dispatch:
@@ -19,4 +21,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check family-calendar.js
-      - run: node --test tests/family-calendar.test.cjs tests/production-launcher.test.cjs dev/tests/eufy-dashboard.test.cjs
+      - run: node --test tests/family-calendar.test.cjs tests/production-launcher.test.cjs tests/view-state.test.cjs dev/tests/eufy-dashboard.test.cjs
