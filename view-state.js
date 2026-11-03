@@ -10,7 +10,7 @@ function primeView(){
  const p=pending.panel;
  if(p?.kind==='doorbell')openEufyOverlay({mode:p.mode,date:p.date,deferLoad:true});
  else if(p&&!['weather','appSettings'].includes(p.kind)){
-  const titles={room:p.name,calendar:'Calendar',calendarDay:'Calendar',birthdays:'Birthdays',heating:'Heating',pets:'Cat flap',history:'Sensor history',coffee:'Coffee machine',kia:'Kia Connect',groobarbs:'Your Groobarbs delivery',photos:'Your photos',photoSettings:'Photo albums'};
+  const titles={room:p.name,calendar:'Calendar',calendarDay:'Calendar',birthdays:'Birthdays',heating:'Heating',pets:'Cat flap',history:'Sensor history',coffee:'Coffee machine',familyMap:'Family map',kia:'Kia Connect',groobarbs:'Your Groobarbs delivery',photos:'Your photos',photoSettings:'Photo albums'};
   resumeCover=document.createElement('section');resumeCover.setAttribute('role','dialog');resumeCover.setAttribute('aria-label',titles[p.kind]||'Restoring view');
   resumeCover.style.cssText='position:fixed;inset:3dvh 3vw;z-index:99999;background:#192d43;color:#eef5ff;border:1px solid #607b98;border-radius:16px;padding:20px;box-shadow:0 0 0 100vmax #080d17dd';
   const h=document.createElement('h2');h.textContent=titles[p.kind]||'Restoring view';const status=document.createElement('p');status.textContent='Reconnecting…';status.setAttribute('role','status');const close=document.createElement('button');close.textContent='Close';close.style.cssText='float:right;background:#243b55;color:#eef5ff;border:1px solid #607b98;border-radius:8px;padding:8px 14px';close.onclick=()=>{pending=null;dismissCover();snapshot()};resumeCover.append(close,h,status);document.body.append(resumeCover);
@@ -23,6 +23,7 @@ function snapshot(){
  const state={at:Date.now(),screen:document.body.dataset.homeScreen||'launcher'};
  if(shown('eufyOverlay'))state.panel={kind:'doorbell',mode:document.getElementById('eufyRecordTab').getAttribute('aria-pressed')==='true'?'recordings':'live',date:document.getElementById('eufyDate').value};
  else if(document.querySelector('.room-detail[open]'))state.panel={kind:'room',name:document.querySelector('.room-detail h2')?.textContent};
+ else if(window.getFamilyMapView?.())state.panel=window.getFamilyMapView();
  else if(window.getKiaDetailView?.())state.panel=window.getKiaDetailView();
  else if(document.querySelector('.coffee-detail[open]'))state.panel={kind:'coffee'};
  else if(document.querySelector('.groobarbs-detail[open]'))state.panel={kind:'groobarbs'};
@@ -52,6 +53,7 @@ async function restore(){
  else if(p?.kind==='pets')showPetDetails();
  else if(p?.kind==='history')showHistory();
  else if(p?.kind==='weather')window.openHomeWeather();
+ else if(p?.kind==='familyMap')window.openFamilyMap();
  else if(p?.kind==='kia')window.openKiaDetails(p);
  else if(p?.kind==='coffee')window.openCoffeeDetails();
  else if(p?.kind==='groobarbs')window.openGroobarbsDetails();

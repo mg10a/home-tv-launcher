@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'kia-controls.js'
+      - 'location-map.js'
+      - 'tests/location-map.test.mjs'
       - 'tests/kia-controls.test.mjs'
       - 'coffee-controls.js'
       - 'room-controls.js'
@@ -20,6 +22,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --ignore-scripts happy-dom@21.0.4
+      - run: node tests/location-map.test.mjs
       - run: node --check kia-controls.js
       - run: node tests/kia-controls.test.mjs
       - run: node --check coffee-controls.js
