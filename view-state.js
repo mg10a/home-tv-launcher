@@ -19,7 +19,7 @@ function primeView(){
 }
 const shown=id=>{const e=document.getElementById(id);return e&&!e.classList.contains('hidden')&&e.getClientRects().length>0};
 function snapshot(){
- if(pending||restoring)return;
+ if(pending){try{pending.at=Date.now();localStorage.setItem(key,JSON.stringify(pending))}catch{}return}if(restoring)return;
  const state={at:Date.now(),screen:document.body.dataset.homeScreen||'launcher'};
  if(shown('eufyOverlay'))state.panel={kind:'doorbell',mode:document.getElementById('eufyRecordTab').getAttribute('aria-pressed')==='true'?'recordings':'live',date:document.getElementById('eufyDate').value};
  else if(document.querySelector('.room-detail[open]'))state.panel={kind:'room',name:document.querySelector('.room-detail h2')?.textContent};
