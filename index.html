@@ -950,8 +950,8 @@ function boostCountdown(){
  b.textContent=mins+' mins';
  b.title=mins?'Estimated remaining time since activation':'Timer elapsed; awaiting Salus state update';
 }
-setInterval(boostCountdown,10000);let haAccessToken=null,haSocket=null,haRequestId=1,haVerified=false,haStates={},haPendingTarget=null,haServiceRequest=null,haHistoryRequest=0,haHistoryWsId=null,haReconnectTimer=null,haRetryCount=0,haServiceTimers=new Map();
-function haConnectionStatus(ok,reason){haVerified=ok;const b=document.querySelector('.ha-connect-trigger');if(b){b.textContent=ok?'✓ HA Connected':'⚙ Connect Home Assistant';b.title=ok?'Home Assistant connected — tap for details':(reason||'Sign in to Home Assistant');b.classList.toggle('ha-connected',ok)}if(!ok){document.querySelectorAll('.offline-pill').forEach(x=>x.textContent='Not connected');if(reason)haProgress(reason)}salusRender();renderPets();window.dispatchEvent(new Event('home-states-updated'));}
+setInterval(boostCountdown,10000);let haAccessToken=null,haSocket=null,haRequestId=1,haVerified=false,haStatesReady=false,haStates={},haPendingTarget=null,haServiceRequest=null,haHistoryRequest=0,haHistoryWsId=null,haReconnectTimer=null,haRetryCount=0,haServiceTimers=new Map();
+function haConnectionStatus(ok,reason){haVerified=ok;if(!ok)haStatesReady=false;const b=document.querySelector('.ha-connect-trigger');if(b){b.textContent=ok?'✓ HA Connected':'⚙ Connect Home Assistant';b.title=ok?'Home Assistant connected — tap for details':(reason||'Sign in to Home Assistant');b.classList.toggle('ha-connected',ok)}if(!ok){document.querySelectorAll('.offline-pill').forEach(x=>x.textContent='Not connected');if(reason)haProgress(reason)}salusRender();renderPets();window.dispatchEvent(new Event('home-states-updated'));}
 function haProgress(msg){const e=document.getElementById('haSetupStatus');if(e)e.textContent=msg}
 function haSetStage(id,msg){const e=document.getElementById(id);if(e)e.textContent=msg}
 function haRandom(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
@@ -1500,7 +1500,7 @@ function connectHaSocket(base){
  haGetStatesRequestId=null;
  if(!data.success||!Array.isArray(data.result)){haProgress('Connected, but device states could not be loaded. Retrying…');haSetStage('haStepLive','③ Connected ✓ · retrying device states');setTimeout(()=>{if(haSocket===ws&&ws.readyState===WebSocket.OPEN){haGetStatesRequestId=haRequestId++;ws.send(JSON.stringify({id:haGetStatesRequestId,type:'get_states'}))}},5000);return}
 
- haStates=Object.fromEntries(data.result.map(x=>[x.entity_id,x]));window.dispatchEvent(new Event('home-states-updated'));if(typeof eufyTileUpdate==='function')eufyTileUpdate();refreshRoomClimate();refreshRoomLights();renderPets();if(Date.now()-petHistoryLastFetch>300000)setTimeout(petLoadHistory,1500);if(haStates['binary_sensor.brereton_ds_boost']?.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}
+ haStates=Object.fromEntries(data.result.map(x=>[x.entity_id,x]));haStatesReady=true;window.dispatchEvent(new Event('home-states-updated'));if(typeof eufyTileUpdate==='function')eufyTileUpdate();refreshRoomClimate();refreshRoomLights();renderPets();if(Date.now()-petHistoryLastFetch>300000)setTimeout(petLoadHistory,1500);if(haStates['binary_sensor.brereton_ds_boost']?.state==='off'){boostEnd=0;localStorage.removeItem(BOOST_END_KEY)}
  const entity=data.result.find(x=>x.entity_id==='climate.brereton_ds');
  if(!entity||['unknown','unavailable'].includes(entity.state)){haProgress('Home Assistant connected ✓ · thermostat currently unavailable');haSetStage('haStepLive','③ Connected ✓ · thermostat unavailable');closeHaSetup();salusRender();return}
  const temp=entity.attributes.current_temperature;const target=entity.attributes.temperature;
@@ -2048,13 +2048,19 @@ async function eufySelectRecording(){
   preview.src=url;preview.classList.remove('hidden');note.classList.add('hidden');
  }catch(err){if(request===eufyPreviewRequest)note.textContent='Preview unavailable · select Play'}
 }
+let eufyWaitingForStates=false;
+window.addEventListener('home-states-updated',()=>{
+ if(eufyWaitingForStates&&haVerified&&haStatesReady&&eufyMode==='recordings'&&!document.getElementById('eufyOverlay').classList.contains('hidden')){eufyWaitingForStates=false;loadEufyRecordings()}
+});
 async function loadEufyRecordings(){
  eufyStopLive();
  eufyAbort?.abort();eufyAbort=new AbortController();const signal=eufyAbort.signal;
  closeEufyPlayer();eufyClearThumbs();eufyRecords=[];eufyHourFilter=null;
  const grid=document.getElementById('eufyRecordingGrid'),note=document.getElementById('eufyRecordingNote');grid.replaceChildren();eufyRenderClips(0);
  const camera=eufyRecordingCamera(),date=document.getElementById('eufyDate').value;
- if(!camera||!date){note.textContent='Camera or date unavailable.';return}
+ if(!haVerified||!haStatesReady){eufyWaitingForStates=true;note.textContent='Reconnecting to Home Assistant · waiting for camera…';return}
+ eufyWaitingForStates=false;
+ if(!camera||!date){note.textContent=!camera?'Doorbell camera is unavailable in Home Assistant.':'Choose a recording date.';return}
  note.textContent='Loading HomeBase recordings through the existing Home Assistant integration…';
  try{
   let reply=await eufyWsCommand({type:'eufy_viewer/launcher_events',entity_id:camera,date},45000);
@@ -2213,6 +2219,6 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=12"></script><script src="./home-screens.js?v=13"></script><script src="./family-calendar.js?v=8"></script><script src="./sensor-refresh.js?v=1"></script><script src="./room-controls.js?v=5"></script><script src="./view-state.js?v=2"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./home-screens.js?v=14"></script><script src="./family-calendar.js?v=9"></script><script src="./sensor-refresh.js?v=1"></script><script src="./room-controls.js?v=6"></script><script src="./view-state.js?v=3"></script></body></html>
 
 

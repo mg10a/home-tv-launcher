@@ -66,6 +66,8 @@ function birthdayRow(e,checklist=false){
  const notice=make('small','birthday-save',checksReady?'':'Checklist unavailable — reopen to retry');notice.setAttribute('role','status');row.append(fields,notice);return row;
 }
 async function loadBirthdayChecks(){checksReady=false;const active=socket;try{const result=await requests({type:'frontend/get_user_data',key:birthdayKey});if(socket!==active)return;birthdayChecks=result?.value&&typeof result.value==='object'&&!Array.isArray(result.value)?result.value:{};checksReady=true}catch{birthdayChecks={}}}
+window.openBirthdayDetails=()=>showBirthdays();
+window.familyViewReady=()=>!!config&&!busy&&!loadingSettings;
 async function showBirthdays(focusEvent){
  await loadBirthdayChecks();const content=[],groups=birthdayGroups(),anchor=make('h3','birthday-today-anchor','Today');
  content.push(make('p','','14 days ago through 28 days ahead. Checkboxes only record your plans and actions; they do not send anything.'));

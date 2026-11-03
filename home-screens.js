@@ -109,7 +109,7 @@ function renderDetail(){
   });save.className='groo-save';save.disabled=saving||!choice.replacement;
  }
 }
-contents.addEventListener('click',()=>{choice=null;message='';renderDetail();detail.showModal()});window.addEventListener('home-states-updated',renderGroo);setInterval(renderGroo,60000);renderGroo();
+window.openGroobarbsDetails=()=>{choice=null;message='';renderDetail();if(!detail.open)detail.showModal()};contents.addEventListener('click',window.openGroobarbsDetails);window.addEventListener('home-states-updated',renderGroo);setInterval(renderGroo,60000);renderGroo();
 }
 /* Read-only now-playing card, using the launcher's existing authenticated state stream. */
 const music=document.querySelector('.music-strip');

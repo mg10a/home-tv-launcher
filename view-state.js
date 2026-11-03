@@ -9,6 +9,12 @@ function snapshot(){
  const state={at:Date.now(),screen:document.body.dataset.homeScreen||'launcher'};
  if(shown('eufyOverlay'))state.panel={kind:'doorbell',mode:document.getElementById('eufyRecordTab').getAttribute('aria-pressed')==='true'?'recordings':'live',date:document.getElementById('eufyDate').value};
  else if(document.querySelector('.room-detail[open]'))state.panel={kind:'room',name:document.querySelector('.room-detail h2')?.textContent};
+ else if(document.querySelector('.coffee-detail[open]'))state.panel={kind:'coffee'};
+ else if(document.querySelector('.groobarbs-detail[open]'))state.panel={kind:'groobarbs'};
+ else if(document.querySelector('.calendar-day-dialog[open] h2')?.textContent==='Birthdays')state.panel={kind:'birthdays'};
+ else if(document.getElementById('photoSettings')?.open)state.panel={kind:'photoSettings'};
+ else if(document.getElementById('launchSettings')?.open)state.panel={kind:'appSettings'};
+ else if(document.getElementById('photoStage')?.classList.contains('photo-fullscreen'))state.panel={kind:'photos'};
  else if(shown('calendarOverlay'))state.panel={kind:'calendar'};
  else if(shown('salusOverlay'))state.panel={kind:'heating'};
  else if(shown('petOverlay'))state.panel={kind:'pets'};
@@ -18,7 +24,8 @@ function snapshot(){
 }
 function restore(){
  if(!pending)return;const p=pending.panel;
- if(p&&p.kind!=='weather'&&(typeof haVerified==='undefined'||!haVerified))return;
+ if(p&&!['weather','appSettings'].includes(p.kind)&&(typeof haVerified==='undefined'||!haVerified||typeof haStatesReady==='undefined'||!haStatesReady))return;
+ if(p?.kind==='birthdays'&&!window.familyViewReady?.())return;
  const saved=pending;pending=null;restoring=true;
  try{
  if(['launcher','home','family'].includes(saved.screen))window.navigateHome(saved.screen);
@@ -28,7 +35,13 @@ function restore(){
  else if(p?.kind==='heating')openSalusModal();
  else if(p?.kind==='pets')showPetDetails();
  else if(p?.kind==='history')showHistory();
- else if(p?.kind==='weather')document.querySelector('[aria-label*="Open weather details"]')?.click();
+ else if(p?.kind==='weather')window.openHomeWeather();
+ else if(p?.kind==='coffee')window.openCoffeeDetails();
+ else if(p?.kind==='groobarbs')window.openGroobarbsDetails();
+ else if(p?.kind==='birthdays')window.openBirthdayDetails();
+ else if(p?.kind==='photos')openPhotoFullscreen();
+ else if(p?.kind==='photoSettings')openPhotoSettings();
+ else if(p?.kind==='appSettings')openLaunchSettings();
  }finally{restoring=false;snapshot()}
 }
 // Save before a reload, and after navigation without retaining any HA credentials.
