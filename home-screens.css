@@ -242,7 +242,7 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
  #eufyOverlay .eufy-dialog-head>strong{overflow:visible;text-overflow:clip;font-size:14px!important}
  #eufyOverlay .eufy-dialog-head [role=group]{width:auto;justify-self:end}
  #eufyOverlay .eufy-dialog-head #eufyCameraSelect[hidden]{display:none!important}
- #eufyOverlay .eufy-dialog-head .eufy-actions{display:grid!important;width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}
+ #eufyOverlay .eufy-dialog-head .eufy-actions:not(.hidden){display:grid!important;width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}
  #eufyOverlay .eufy-dialog-head input[type=date]{width:auto!important;max-width:none!important;flex:1}
  #eufyOverlay .eufy-night-controls{font-size:11px;gap:8px;padding:0;min-height:26px}.eufy-night-controls span{white-space:nowrap;text-overflow:ellipsis}
  #eufyLivePane:not(.hidden){display:flex!important;flex-direction:column!important;gap:10px!important;overflow:hidden}
