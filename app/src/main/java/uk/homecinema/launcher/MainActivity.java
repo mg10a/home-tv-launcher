@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.5";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.0";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -71,6 +71,12 @@ public final class MainActivity extends Activity {
     String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN","Sonos","Yoto"};
     if(!Arrays.asList(names).contains(name))return;
     PackageManager pm=getPackageManager();
+    String[] packages="Yoto".equals(name)?new String[]{"com.yotoplay.yoto"}:"Sonos".equals(name)?new String[]{"com.sonos.acr2","com.sonos.acr"}:new String[0];
+    for(String pkg:packages){
+      Intent launch=pm.getLaunchIntentForPackage(pkg);
+      if(launch==null)launch=pm.getLeanbackLaunchIntentForPackage(pkg);
+      if(launch!=null){try{startActivity(launch);return;}catch(android.content.ActivityNotFoundException|SecurityException ignored){}}
+    }
     // Query both TV and phone launchers so the installed platform variant is used.
     for(String category:new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER,Intent.CATEGORY_LAUNCHER}) {
       Intent query=new Intent(Intent.ACTION_MAIN).addCategory(category);

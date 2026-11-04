@@ -1,14 +1,14 @@
 {
   "id": "/home-tv-launcher/",
-  "name": "Home TV Launcher",
-  "short_name": "Home TV",
-  "description": "Home cinema launcher and smart home dashboard",
+  "name": "Halo",
+  "short_name": "Halo",
+  "description": "Home Assistant Life Organiser",
   "start_url": "/home-tv-launcher/",
   "scope": "/home-tv-launcher/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#080d17",
-  "theme_color": "#101b2e",
+  "background_color": "#101B2D",
+  "theme_color": "#101B2D",
   "icons": [
     {
       "src": "./icon.svg",
