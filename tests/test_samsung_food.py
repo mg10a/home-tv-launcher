@@ -24,4 +24,33 @@ class Validate(unittest.TestCase):
         week=self.week();week[1]['meals']=[{'title':'Notes'}]
         with self.assertRaises(ValueError):bridge.validate(week)
 
+class ShoppingValidate(unittest.TestCase):
+    def snapshot(self):
+        return {'name': 'Weekly shop', 'source_url': 'https://app.samsungfood.com/shopping-list/example',
+                'items': [{'name': 'Apples', 'quantity': '2', 'completed': False}]}
+
+    def test_empty_list_is_valid(self):
+        value = self.snapshot()
+        value['items'] = []
+        self.assertEqual(bridge.validate_shopping(value)['items'], [])
+
+    def test_malformed_item_rejects_entire_read(self):
+        value = self.snapshot()
+        value['items'].append({'name': 'Milk'})
+        with self.assertRaises(ValueError):
+            bridge.validate_shopping(value)
+
+    def test_untrusted_url_is_rejected(self):
+        value = self.snapshot()
+        value['source_url'] = 'https://example.com/shopping-list/example'
+        with self.assertRaises(ValueError):
+            bridge.validate_shopping(value)
+
+    def test_completed_state_is_boolean(self):
+        value = self.snapshot()
+        value['items'][0]['completed'] = 'false'
+        with self.assertRaises(ValueError):
+            bridge.validate_shopping(value)
+
+
 if __name__=='__main__':unittest.main()

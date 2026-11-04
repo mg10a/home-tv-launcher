@@ -3,12 +3,14 @@ import asyncio
 import datetime as dt
 import json
 import os
+import re
 from pathlib import Path
 import urllib.request
 
 DATA = Path('/data')
 ORIGIN = 'https://app.samsungfood.com'
 ENTITY = 'sensor.samsung_food_meal_plan'
+SHOPPING_ENTITY = 'sensor.samsung_food_shopping_list'
 
 
 def validate(days):
@@ -28,20 +30,52 @@ def validate(days):
     return days
 
 
-def publish(status, snapshot):
-    attributes = {'friendly_name': 'Samsung Food meal plan', 'icon': 'mdi:food',
-                  'read_only': True, 'source_url': ORIGIN + '/meal-plan',
-                  'days': snapshot.get('days', []),
-                  'last_success': snapshot.get('last_success'),
-                  'sync_status': status}
+def validate_shopping(value):
+    if not isinstance(value, dict) or not isinstance(value.get('name'), str) or not value['name'].strip():
+        raise ValueError('invalid_shopping_list')
+    if not isinstance(value.get('source_url'), str) or not re.fullmatch(
+            r'https://app\.samsungfood\.com/shopping-list/[a-zA-Z0-9-]+', value['source_url']):
+        raise ValueError('invalid_shopping_url')
+    if not isinstance(value.get('items'), list):
+        raise ValueError('invalid_shopping_items')
+    for item in value['items']:
+        if not isinstance(item, dict):
+            raise ValueError('invalid_shopping_item')
+        if not isinstance(item.get('name'), str) or not item['name'].strip() or len(item['name']) > 500:
+            raise ValueError('invalid_shopping_name')
+        if not isinstance(item.get('quantity'), str) or len(item['quantity']) > 300:
+            raise ValueError('invalid_shopping_quantity')
+        if not isinstance(item.get('completed'), bool):
+            raise ValueError('invalid_shopping_completion')
+    return value
+
+
+def publish_shopping(status, snapshot):
+    attributes = {'friendly_name': 'Samsung Food shopping list', 'icon': 'mdi:cart',
+                  'read_only': True, 'source_url': snapshot.get('source_url', ORIGIN + '/shopping-list'),
+                  'name': snapshot.get('name', ''), 'items': snapshot.get('items', []),
+                  'last_success': snapshot.get('last_success'), 'sync_status': status}
+    publish_state(SHOPPING_ENTITY, status, attributes)
+
+
+def publish_state(entity, status, attributes):
     request = urllib.request.Request(
-        'http://supervisor/core/api/states/' + ENTITY,
+        'http://supervisor/core/api/states/' + entity,
         data=json.dumps({'state': status, 'attributes': attributes}).encode(),
         headers={'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
                  'Content-Type': 'application/json'}, method='POST')
     with urllib.request.urlopen(request, timeout=20) as response:
         if response.status not in (200, 201):
             raise RuntimeError('ha_publish_failed')
+
+
+def publish(status, snapshot):
+    attributes = {'friendly_name': 'Samsung Food meal plan', 'icon': 'mdi:food',
+                  'read_only': True, 'source_url': ORIGIN + '/meal-plan',
+                  'days': snapshot.get('days', []),
+                  'last_success': snapshot.get('last_success'),
+                  'sync_status': status}
+    publish_state(ENTITY, status, attributes)
 
 
 async def login(page, options):
@@ -78,6 +112,19 @@ async def main():
     except (OSError, ValueError, KeyError, TypeError):
         snapshot = {}
 
+    shopping_snapshot = {}
+    try:
+        shopping_snapshot = validate_shopping(json.loads((DATA / 'last-shopping-success.json').read_text()))
+    except (OSError, ValueError, KeyError, TypeError):
+        shopping_snapshot = {}
+
+    async def report_shopping(status):
+        print('Samsung Food shopping sync: ' + status, flush=True)
+        try:
+            await asyncio.to_thread(publish_shopping, status, shopping_snapshot)
+        except Exception:
+            print('Samsung Food shopping sync: ha_publish_failed', flush=True)
+
     async def report(status):
         # Never log exceptions, page content, account identifiers or credentials.
         print('Samsung Food sync: ' + status, flush=True)
@@ -87,8 +134,10 @@ async def main():
             print('Samsung Food sync: ha_publish_failed', flush=True)
 
     await report('starting')
+    await report_shopping('starting')
     if not options.get('email') or not options.get('password'):
         await report('login_required')
+        await report_shopping('login_required')
         return
     async with async_playwright() as pw:
         browser = await pw.chromium.launch_persistent_context(
@@ -109,6 +158,7 @@ async def main():
             category = 'timeout' if isinstance(error, TimeoutError) else 'browser_error'
             print('Samsung Food login failure: ' + category, flush=True)
             await report('login_required')
+            await report_shopping('login_required')
             await browser.close()
             return
         failures = 0
@@ -128,11 +178,30 @@ async def main():
             except Exception:
                 if await page.get_by_role('button', name='Log in', exact=True).count():
                     await report('login_required')
+                    await report_shopping('login_required')
                     break
                 failures += 1
                 await report('read_failed')
                 if failures >= 3:
                     break
+            # Shopping failures have their own status and preserve the last successful list.
+            try:
+                shopping_url = shopping_snapshot.get('source_url', ORIGIN + '/shopping-list')
+                await page.goto(shopping_url, wait_until='domcontentloaded')
+                await page.get_by_role('searchbox', name='Add item', exact=True).wait_for()
+                await page.wait_for_timeout(3000)
+                shopping = validate_shopping(await page.evaluate(Path('/app/extract-shopping.js').read_text()))
+                shopping['last_success'] = dt.datetime.now(dt.timezone.utc).isoformat()
+                temporary = DATA / 'last-shopping-success.tmp'
+                temporary.write_text(json.dumps(shopping))
+                temporary.replace(DATA / 'last-shopping-success.json')
+                shopping_snapshot = shopping
+                await report_shopping('ok')
+            except Exception:
+                if await page.get_by_role('button', name='Log in', exact=True).count():
+                    await report_shopping('login_required')
+                    break
+                await report_shopping('read_failed')
             await asyncio.sleep(interval * min(4, 2 ** failures))
         await browser.close()
 

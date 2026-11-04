@@ -1,8 +1,8 @@
 {
   "name": "Samsung Food — experimental read-only sync",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "slug": "samsung_food_bridge",
-  "description": "Reads the current weekly web meal plan into Home Assistant. No meal edits or grocery orders.",
+  "description": "Reads Samsung Food meals and a shopping list into Home Assistant.",
   "arch": ["amd64", "aarch64"],
   "startup": "application",
   "boot": "manual",
