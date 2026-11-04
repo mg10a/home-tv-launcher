@@ -20,8 +20,13 @@ def refresh():
         headers={'Authorization':'Bearer '+os.environ['SUPERVISOR_TOKEN'],'Content-Type':'application/json'})
     with urllib.request.urlopen(req, timeout=30) as response:
         response.read()
+print('Halo photo converter started', flush=True)
 pending = False
 while True:
+    if not ROOT.is_dir():
+        print('Photo folder unavailable; retrying next minute', flush=True)
+        time.sleep(60)
+        continue
     converted = failed = 0
     for source in ROOT.rglob('*'):
         if source.suffix.lower() not in ('.heic', '.heif') or source.is_symlink():

@@ -1,6 +1,6 @@
 {
   "name": "Halo Photo Converter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "slug": "halo_photos",
   "description": "Creates local display JPEGs from downloaded HEIC photos and refreshes the family album.",
   "arch": [
@@ -12,7 +12,11 @@
   "init": false,
   "homeassistant_api": true,
   "map": [
-    "homeassistant:rw"
+    {
+      "type": "homeassistant_config",
+      "read_only": false,
+      "path": "/homeassistant"
+    }
   ],
   "options": {},
   "schema": {}
