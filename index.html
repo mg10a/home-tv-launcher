@@ -1678,7 +1678,7 @@ function eufyTileRemember(src){
 }
 function eufyTileUpdate(){
  const tile=document.getElementById('eufyTileStatus');
- if(tile)tile.textContent='🔋 '+(eufyBattery()||'—')+(!haVerified?' · Offline':'');
+ if(tile){const battery=eufyBattery(),low=battery!==null&&parseInt(battery,10)<=15;tile.textContent='🔋 '+(battery||'—')+(low?' · Charge doorbell':'')+(!haVerified?' · Offline':'');tile.style.color=low?'#ffbd75':'';}
  const hint=document.getElementById('eufyTileHint');
  if(hint)hint.textContent=eufyTileFrameAt?'Viewed '+new Date(eufyTileFrameAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'Open live';
 }
@@ -1986,7 +1986,8 @@ async function eufyFullscreen(){
  catch(e){frame.classList.add('eufy-expanded')}
 }
 function eufyUpdateLiveInfo(){
- document.getElementById('eufyLiveBattery').textContent='Doorbell battery · '+(eufyBattery()||'Unavailable');
+ const battery=eufyBattery();
+ document.getElementById('eufyLiveBattery').textContent='Doorbell battery · '+(battery||'Unavailable')+(battery!==null&&parseInt(battery,10)<=15?' · Low — charge before testing live video':' · Latest reported by Eufy');
  const event=haStates?.[eufyCameraEntity()==='camera.doorbell_dev'?'event.doorbell_dev_event':'event.doorbell_event'];
  const time=Date.parse(event?.state);
  document.getElementById('eufyLatestActivity').textContent=Number.isFinite(time)?'Latest activity · '+String(event.attributes?.event_type||'Detected').replaceAll('_',' ')+' · '+new Date(time).toLocaleString():'Latest activity · Waiting for event data';

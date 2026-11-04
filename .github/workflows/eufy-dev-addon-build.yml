@@ -13,6 +13,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build deployable HA add-on image
         run: docker build --progress=plain -t eufy-bridge-dev:ci eufy_bridge_dev
+      - name: Verify battery refresh without camera wake-ups
+        run: docker run --rm --entrypoint node -v "$PWD/eufy_bridge_dev/test-battery-refresh.mjs:/app/test-battery-refresh.mjs:ro" eufy-bridge-dev:${{ runner.arch == 'ARM64' && 'arm64' || 'ci' }} /app/test-battery-refresh.mjs
       - name: Assert FFmpeg 7.1 and real paced HEVC to H.264 compatibility
         run: |
           docker run --rm --entrypoint /bin/sh \
@@ -23,6 +25,8 @@ jobs:
           docker run --rm --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
             eufy-bridge-dev:ci /app/test-stall-recovery.mjs
+      - name: Verify battery refresh without camera wake-ups
+        run: docker run --rm --entrypoint node -v "$PWD/eufy_bridge_dev/test-battery-refresh.mjs:/app/test-battery-refresh.mjs:ro" eufy-bridge-dev:${{ runner.arch == 'ARM64' && 'arm64' || 'ci' }} /app/test-battery-refresh.mjs
       - name: Assert authenticated DEV HTTP bridge identity and restart stability
         run: |
           docker run --rm --entrypoint /bin/sh \
@@ -60,6 +64,8 @@ jobs:
           docker run --rm --platform linux/arm64 --entrypoint node \
             -v "$PWD/eufy_bridge_dev/test-stall-recovery.mjs:/app/test-stall-recovery.mjs:ro" \
             eufy-bridge-dev:arm64 /app/test-stall-recovery.mjs
+      - name: Verify battery refresh without camera wake-ups
+        run: docker run --rm --entrypoint node -v "$PWD/eufy_bridge_dev/test-battery-refresh.mjs:/app/test-battery-refresh.mjs:ro" eufy-bridge-dev:${{ runner.arch == 'ARM64' && 'arm64' || 'ci' }} /app/test-battery-refresh.mjs
       - name: Assert ARM64 DEV bridge identity and restart stability
         run: |
           docker run --rm --platform linux/arm64 --entrypoint /bin/sh \

@@ -5,6 +5,7 @@ WORKDIR /upstream/ha_app
 COPY live-transcoder.ts ./src/live-transcoder.ts
 COPY diagnostics.ts ./src/diagnostics.ts
 COPY main.ts ./src/main.ts
+COPY mega-backend.ts battery-refresh.ts ./src/
 COPY patch-packet-diagnostics.mjs patch-night-range.mjs ./
 RUN node patch-night-range.mjs
 RUN npm ci --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts && node patch-packet-diagnostics.mjs && node --check node_modules/@keesmod/eufy-mega-client/dist/vendor/p2p/session.js
