@@ -1,0 +1,1 @@
+{"title":"Halo Photo Uploads","config":{"step":{"user":{"title":"Connect existing photo folder","description":"Uses the existing read-only Drive service account. Photos stay private.","data":{"folder_id":"Drive folder ID","credential_file":"Existing service-account JSON path"}}},"abort":{"single_instance_allowed":"Already configured"}}}

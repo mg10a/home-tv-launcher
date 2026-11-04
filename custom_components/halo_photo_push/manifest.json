@@ -1,0 +1,1 @@
+{"domain":"halo_photo_push","name":"Halo Photo Uploads","version":"0.1.0","config_flow":true,"documentation":"https://github.com/mg10a/home-tv-launcher","codeowners":[],"dependencies":["webhook","cloud"],"requirements":["google-auth==2.40.3"],"iot_class":"cloud_push"}
