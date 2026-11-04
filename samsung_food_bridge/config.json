@@ -1,14 +1,25 @@
 {
-  "name": "Samsung Food — experimental read-only sync",
-  "version": "0.2.0",
+  "name": "Samsung Food — meal planner and shopping",
+  "version": "0.3.0",
   "slug": "samsung_food_bridge",
-  "description": "Reads Samsung Food meals and a shopping list into Home Assistant.",
-  "arch": ["amd64", "aarch64"],
+  "description": "Plan meals from saved Samsung Food recipes and generate weekly shopping lists.",
+  "arch": [
+    "amd64",
+    "aarch64"
+  ],
   "startup": "application",
-  "boot": "manual",
+  "boot": "auto",
   "init": false,
   "homeassistant_api": true,
   "stage": "experimental",
-  "options": {"email": "", "password": "", "interval_minutes": 15},
-  "schema": {"email": "email", "password": "password", "interval_minutes": "int(5,120)"}
+  "options": {
+    "email": "",
+    "password": "",
+    "interval_minutes": 15
+  },
+  "schema": {
+    "email": "email",
+    "password": "password",
+    "interval_minutes": "int(5,120)"
+  }
 }

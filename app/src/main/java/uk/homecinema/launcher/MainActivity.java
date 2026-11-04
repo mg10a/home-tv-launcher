@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.4";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.0.5";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -30,7 +30,7 @@ public final class MainActivity extends Activity {
     web.addJavascriptInterface(new Bridge(),"HomeTVNative");
     web.addJavascriptInterface(new LauncherBridge(),"AndroidLauncher");
     web.setWebViewClient(new WebViewClient(){
-      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){if(r.isForMainFrame() && isGroobarbs(r.getUrl())){new LauncherBridge().openGroobarbs();return true;}return !isLauncher(r.getUrl());}
+      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){if(r.isForMainFrame() && isSamsungFood(r.getUrl())){new LauncherBridge().openSamsungFood(r.getUrl().toString());return true;}if(r.isForMainFrame() && isGroobarbs(r.getUrl())){new LauncherBridge().openGroobarbs();return true;}return !isLauncher(r.getUrl());}
       @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
         String url=r.getUrl().toString();
         if(!url.contains("/api/eufy_viewer/playback/"))return null;
@@ -51,6 +51,12 @@ public final class MainActivity extends Activity {
   }
 
   public final class LauncherBridge {
+    @JavascriptInterface public void openSamsungFood(String url){runOnUiThread(()->{
+      android.net.Uri uri=android.net.Uri.parse(url);
+      if(!isSamsungFood(uri))return;
+      try{startActivity(new Intent(Intent.ACTION_VIEW,uri));}
+      catch(android.content.ActivityNotFoundException|SecurityException e){Toast.makeText(MainActivity.this,"Install a browser or Samsung Food to open this link.",Toast.LENGTH_LONG).show();}
+    });}
     @JavascriptInterface public void openGroobarbs(){runOnUiThread(()->{
       try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://my.groobarbs.co.uk/")));}
       catch(android.content.ActivityNotFoundException|SecurityException e){Toast.makeText(MainActivity.this,"No browser available. Use Manage box in the dashboard for contents and swaps.",Toast.LENGTH_LONG).show();}
@@ -84,6 +90,13 @@ public final class MainActivity extends Activity {
       }
     }
     Toast.makeText(this,name+" app not found. Check it is installed on this device.",Toast.LENGTH_LONG).show();
+  }
+
+  private boolean isSamsungFood(android.net.Uri uri) {
+    String path=uri.getPath();
+    return "https".equals(uri.getScheme()) && "app.samsungfood.com".equals(uri.getHost())
+      && uri.getUserInfo()==null && (uri.getPort()==-1||uri.getPort()==443)
+      && path!=null && path.matches("^/(meal-plan|shopping-list|recipe-box|recipes)(/.*)?$");
   }
 
   private boolean isGroobarbs(android.net.Uri uri) {
