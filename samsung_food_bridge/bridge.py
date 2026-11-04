@@ -46,19 +46,27 @@ def publish(status, snapshot):
 
 async def login(page, options):
     # One attempt per process start. An expired session stops sync until restart.
+    print('Samsung Food stage: opening_login', flush=True)
     await page.get_by_role('button', name='Log in', exact=True).click()
+    print('Samsung Food stage: choosing_email', flush=True)
     await page.get_by_role('button', name='Use email or phone', exact=True).click()
+    print('Samsung Food stage: entering_email', flush=True)
     await page.get_by_role('textbox', name='Email or phone number', exact=True).fill(options['email'])
+    print('Samsung Food stage: submitting_email', flush=True)
     await page.get_by_role('button', name='Continue', exact=True).click()
+    print('Samsung Food stage: choosing_password', flush=True)
     await page.get_by_role('button', name='Use password instead', exact=True).click(timeout=20000)
+    print('Samsung Food stage: entering_password', flush=True)
     await page.get_by_role('textbox', name='Password', exact=True).fill(options['password'])
+    print('Samsung Food stage: submitting_password', flush=True)
     await page.get_by_role('button', name='Log in', exact=True).last.click()
+    print('Samsung Food stage: waiting_for_sign_in', flush=True)
     await page.get_by_role('button', name='Log in', exact=True).first.wait_for(state='hidden', timeout=20000)
     await page.get_by_role('link', name='Planner', exact=True).wait_for()
 
 
 async def main():
-    from playwright.async_api import async_playwright
+    from playwright.async_api import async_playwright, TimeoutError
     os.umask(0o077)
     DATA.mkdir(exist_ok=True)
     options = json.loads((DATA / 'options.json').read_text())
@@ -88,13 +96,18 @@ async def main():
         page = await browser.new_page()
         page.set_default_timeout(20000)
         try:
+            print('Samsung Food stage: opening_planner', flush=True)
             await page.goto(ORIGIN + '/meal-plan', wait_until='domcontentloaded')
+            print('Samsung Food stage: waiting_for_account_or_login', flush=True)
             # The hydrated page exposes the account button or a login button.
             await page.get_by_role('button').filter(has_text=options['email']).or_(
                 page.get_by_role('button', name='Log in', exact=True)).first.wait_for()
             if await page.get_by_role('button', name='Log in', exact=True).count():
                 await login(page, options)
-        except Exception:
+        except Exception as error:
+            # Log only a fixed error category, never exception text or page data.
+            category = 'timeout' if isinstance(error, TimeoutError) else 'browser_error'
+            print('Samsung Food login failure: ' + category, flush=True)
             await report('login_required')
             await browser.close()
             return
