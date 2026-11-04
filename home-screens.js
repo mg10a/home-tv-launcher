@@ -133,5 +133,24 @@ window.addEventListener('home-states-updated',renderMusic);document.addEventList
 }
 })();
 
-// Shared household-list card; tabs retain each panel's content.
-window.showFamilyList=function(which){for(const [key,name] of [['todo','Todo'],['shopping','Shopping']]){const active=key===which;document.getElementById('family'+name+'Tab').setAttribute('aria-selected',String(active));document.getElementById('family'+name+'Panel').hidden=!active}};
+// Shared household card: keep the existing meal renderer and task controls intact.
+(function(){
+const card=document.querySelector('.tasks-card'),meal=document.querySelector('.family-section.meal-plan'),tabs=card?.querySelector('[role="tablist"]');
+if(!card||!meal||!tabs)return;
+meal.id='familyMealPanel';meal.setAttribute('role','tabpanel');meal.setAttribute('aria-labelledby','familyMealTab');meal.hidden=true;
+const tab=document.createElement('button');tab.type='button';tab.id='familyMealTab';tab.setAttribute('role','tab');tab.setAttribute('aria-controls',meal.id);tab.setAttribute('aria-selected','false');tab.textContent='🍽 Meals';tab.onclick=()=>window.showFamilyList('meal');
+tabs.insertBefore(tab,document.getElementById('familyShoppingTab'));card.append(meal);
+const choices=[['todo','Todo'],['meal','Meal'],['shopping','Shopping']];
+window.showFamilyList=function(which){
+ if(!choices.some(([key])=>key===which))return;
+ for(const [key,name] of choices){const active=key===which,b=document.getElementById('family'+name+'Tab');b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;document.getElementById('family'+name+'Panel').hidden=!active}
+ try{localStorage.setItem('family-active-list',which)}catch{}
+};
+tabs.addEventListener('keydown',event=>{
+ const index=choices.findIndex(([,name])=>'family'+name+'Tab'===event.target.id);if(index<0)return;
+ let next=index;if(event.key==='ArrowRight')next=(index+1)%3;else if(event.key==='ArrowLeft')next=(index+2)%3;else if(event.key==='Home')next=0;else if(event.key==='End')next=2;else return;
+ event.preventDefault();window.showFamilyList(choices[next][0]);document.getElementById('family'+choices[next][1]+'Tab').focus();
+});
+let selected='todo';try{selected=localStorage.getItem('family-active-list')||'todo'}catch{}
+window.showFamilyList(choices.some(([key])=>key===selected)?selected:'todo');
+})();
