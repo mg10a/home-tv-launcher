@@ -1,1 +1,20 @@
 :root{color-scheme:dark;--halo-mint:#66d5be;--halo-blue:#69a9f7;--halo-amber:#f2bb67;--halo-coral:#ed8277}body{background:#101b2d}.hero{background:linear-gradient(115deg,#20364d,#101b2d)}.hero:after{content:"";width:150px;height:150px;top:30px;right:6%;background:url("./icon.svg") center/contain no-repeat;opacity:.35}button:focus-visible,a:focus-visible{outline:3px solid #66d5be;outline-offset:3px}.room.active{background:#66d5be;border-color:#66d5be;color:#101b2d}
+/* Landscape launcher: photos span the room selector, greeting and app rows. */
+@media (orientation:landscape){
+ body[data-home-screen] main.shell:not(.hidden){
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:auto auto minmax(64px,.28fr) minmax(0,1fr) auto;
+  column-gap:clamp(12px,2vw,26px)!important;
+  justify-content:normal;
+ }
+ main.shell>header{grid-column:1/-1;grid-row:1}
+ main.shell>.rooms{grid-column:1;grid-row:2;margin:0;min-width:0}
+ main.shell>.hero{grid-column:1;grid-row:3;margin:0;min-width:0;min-height:0}
+ main.shell>.launcher-split{display:contents}
+ main.shell .launcher-entertainment{grid-column:1;grid-row:4}
+ main.shell .launcher-photos{grid-column:2;grid-row:2/5}
+ main.shell>.footer{grid-column:1/-1;grid-row:5;margin:0}
+ main.shell .launcher-photos>.section-head{flex-wrap:wrap;flex:none}
+ main.shell .launcher-photos .photo-open{min-height:0}
+}
