@@ -12,6 +12,7 @@ on:
       - 'coffee-controls.js'
       - 'room-controls.js'
       - 'tests/coffee-controls.test.mjs'
+      - 'tests/coffee-confirmation.test.mjs'
       - 'tests/room-controls.test.mjs'
       - '.github/workflows/coffee-controls.yml'
   workflow_dispatch:
@@ -30,4 +31,5 @@ jobs:
       - run: node tests/kia-controls.test.mjs
       - run: node --check coffee-controls.js
       - run: node tests/coffee-controls.test.mjs
+      - run: node tests/coffee-confirmation.test.mjs
       - run: node tests/room-controls.test.mjs

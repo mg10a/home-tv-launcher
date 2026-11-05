@@ -27,11 +27,46 @@ async function init(){
  const seed=registry.find(e=>e.entity_id===selected()?.entity_id&&e.platform==='home_connect');device=seed?.device_id||null;entities=device?registry.filter(e=>e.device_id===device&&e.platform==='home_connect'):[];services=available;loadedSocket=socket;
  }catch(e){message=e.message}finally{initializing=false;render()}
 }
+let refreshPending=null,refreshTimer=null;
+// Read HA's current state without waking, toggling or starting the machine.
+// Never replace a newer push update with an older in-flight snapshot.
+function refreshState(){
+ if(!connected())return Promise.resolve();
+ if(refreshPending)return refreshPending;
+ const socket=haSocket,before=new Map(all().map(s=>[s.entity_id,{object:s,value:s.state,updated:s.last_updated}]));
+ refreshPending=(async()=>{try{
+  const result=await request({type:'get_states'});
+  if(socket!==haSocket||!connected()||!Array.isArray(result))return;
+  const current=states();let changed=false;
+  for(const s of result){const old=before.get(s.entity_id),now=current[s.entity_id];
+   if(old&&now===old.object&&now.state===old.value&&now.last_updated===old.updated){current[s.entity_id]=s;changed=true}
+  }
+  if(changed)window.dispatchEvent(new Event('home-states-updated'));
+ }catch(_){/* The bounded command wait reports a missing confirmation. */}
+ finally{refreshPending=null}})();
+ return refreshPending;
+}
 async function command(domain,service,id,data={},expected){
  if(busy)return;busy=true;confirmation=null;picker=null;message='Sending…';render();
- try{await request({type:'call_service',domain,service,...(id?{target:{entity_id:id}}:{}),service_data:data});
- if(expected){await new Promise((resolve,reject)=>{const check=()=>{if(!connected()){done();reject(Error('Home Assistant disconnected'));return}if(states()[id]?.state===expected){done();resolve()}};const done=()=>{clearTimeout(timer);window.removeEventListener('home-states-updated',check)};const timer=setTimeout(()=>{done();reject(Error('Still waiting for the machine. Check its status before trying again.'))},15000);window.addEventListener('home-states-updated',check);check()})}
- message='Applied';
+ try{await new Promise((resolve,reject)=>{
+  let finished=false;
+  const done=error=>{if(finished)return;finished=true;clearTimeout(timer);clearInterval(poll);window.removeEventListener('home-states-updated',check);error?reject(error):resolve()};
+  const check=()=>{
+   if(!connected()){done(Error('Home Assistant disconnected. Check the machine before trying again.'));return}
+   const value=states()[id]?.state;
+   if(expected!==undefined&&usable(states()[id])&&(value===expected||(domain==='number'&&Number(value)===Number(expected))))done();
+  };
+  const timer=setTimeout(()=>done(Error('Machine status not confirmed. Check the machine before trying again.')),20000);
+  const poll=setInterval(()=>{check();if(!finished)refreshState()},3000);
+  window.addEventListener('home-states-updated',check);
+  // Send exactly once. Confirmation may arrive before the service reply.
+  Promise.resolve().then(()=>request({type:'call_service',domain,service,...(id?{target:{entity_id:id}}:{}),service_data:data})).then(()=>{
+   if(finished)return;
+   if(expected===undefined){done();return}
+   message='Command sent · waiting for machine status…';render();check();
+   if(!finished)refreshState();
+  },error=>{if(!finished){check();if(!finished)done(error)}});
+ });message='Applied · confirmed by Home Assistant';
  }catch(e){message=e.message}finally{busy=false;render()}
 }
 function choose(s,title){picker={id:s.entity_id,title,page:0};render()}
@@ -61,7 +96,9 @@ function render(){if(!dialog.open)return;if(dialog.querySelector('input:focus')&
  if(tab==='drink'&&!picker&&!confirmation){if(power()?.state==='off'){const on=button('Switch machine on',()=>command('switch','turn_on',power().entity_id,{},'on'));on.disabled=busy||!connected();foot.append(on)}else{const brew=button('Review drink',()=>{if(!canBrew())return;confirmation={signature:signature(),label:pretty(selected().state),details:options().filter(usable).map(s=>optionLabel(s)+': '+pretty(s.state)+(s.attributes?.unit_of_measurement?' '+s.attributes.unit_of_measurement:'')).join(' · ')};render()});brew.disabled=!canBrew();foot.append(brew)}}dialog.append(head,tabs,body,foot);
 }
 function update(){if(!connected()){loadedSocket=null;device=null;services=null}if(brewSent){if(running())sawRunning=true;else if(sawRunning){brewSent=false;sawRunning=false}}if(confirmation&&confirmation.signature!==signature()){confirmation=null;message='Machine settings changed. Review the updated drink.'}render();if(dialog.open)init()}
-function open(){tab='drink';page=0;picker=null;confirmation=null;message='';if(!dialog.open)dialog.showModal();render();init()}
+function open(){tab='drink';page=0;picker=null;confirmation=null;if(!busy)message='';if(!dialog.open)dialog.showModal();render();init();refreshState();clearInterval(refreshTimer);refreshTimer=setInterval(()=>{if(dialog.open&&!busy)refreshState();else if(!dialog.open){clearInterval(refreshTimer);refreshTimer=null}},10000)}
+dialog.addEventListener('close',()=>{clearInterval(refreshTimer);refreshTimer=null});
 dialog.addEventListener('keydown',e=>{if(e.key==='Escape'&&(picker||confirmation)){e.preventDefault();picker=null;confirmation=null;render()}});
 return {open,update};
 };
+
