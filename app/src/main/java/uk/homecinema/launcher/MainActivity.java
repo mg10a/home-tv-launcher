@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.0";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.1";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -47,7 +47,9 @@ public final class MainActivity extends Activity {
         }catch(Exception e){return null;}
       }
     });
-    web.loadUrl(LAUNCHER);
+    // Fetch current HTML on a cold launch without clearing sign-in or album preferences.
+    // Versioned CSS/JS can still use the normal resource cache.
+    web.loadUrl(LAUNCHER+"&launch="+UUID.randomUUID(),Collections.singletonMap("Cache-Control","no-cache"));
   }
 
   public final class LauncherBridge {
