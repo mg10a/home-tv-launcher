@@ -13,12 +13,44 @@ const find=(re,domain)=>all().find(s=>(!domain||s.entity_id.startsWith(domain+'.
 const selected=()=>find(/selected.?program/i,'select');
 const running=()=>/run|pause|action.?required/i.test(find(/operation.?state/i)?.state||'');
 const power=()=>find(/\bpower\b|_power$/i,'switch');
+const powerKey='halo.coffee.powerIntent.v1';
+let powerIntent=null,powerDelay=null;
+try{const saved=JSON.parse(localStorage.getItem(powerKey));if(saved&&['on','off'].includes(saved.target)&&typeof saved.id==='string'){powerIntent={...saved,assumed:true}}}catch(_){}
+function savePower(){try{if(powerIntent)localStorage.setItem(powerKey,JSON.stringify(powerIntent));else localStorage.removeItem(powerKey)}catch(_){}}
+const shownPower=()=>powerIntent?.assumed?powerIntent.target:power()?.state;
+const powerNotice=()=>!powerIntent?'':powerIntent.error?powerIntent.error:!powerIntent.assumed?'Sending power command…':pretty(powerIntent.target)+' · '+(connected()?'checking in background':'connection lost; not confirmed');
+function reconcilePower(){
+ if(!powerIntent)return;
+ const s=states()[powerIntent.id];
+ if(s?.state===powerIntent.target&&(powerIntent.before!==powerIntent.target||Date.parse(s.last_updated)>=powerIntent.started)){
+  clearTimeout(powerDelay);powerIntent=null;savePower();message='Power confirmed by Home Assistant';
+ }
+}
+function setPower(target){
+ const s=power();if(!connected()||busy||!s||!['on','off'].includes(target))return;
+ if(powerIntent&&(!powerIntent.assumed||powerIntent.target===target))return;
+ const intent={id:s.entity_id,target,before:s.state,started:Date.now(),assumed:false};
+ powerIntent=intent;savePower();confirmation=null;picker=null;message='';clearTimeout(powerDelay);
+ powerDelay=setTimeout(()=>{if(powerIntent!==intent)return;intent.assumed=true;savePower();render();refreshState()},1000);
+ render();
+ // Exactly one write. A slow or missing reply never triggers another clean cycle.
+ Promise.resolve().then(()=>request({type:'call_service',domain:'switch',service:'turn_'+target,target:{entity_id:s.entity_id},service_data:{}})).then(()=>{
+  if(powerIntent!==intent)return;reconcilePower();refreshState();render();
+ },()=>{if(powerIntent!==intent)return;intent.assumed=true;intent.error='Power request could not be confirmed. Check the machine; no command was resent.';clearTimeout(powerDelay);savePower();render()});
+}
+function powerButtons(){
+ const row=node('div',null,'coffee-review-actions');row.style.flexWrap='wrap';row.style.flex='1';row.style.marginTop='0';
+ const on=button('Switch machine on',()=>setPower('on')),off=button('Switch machine off',()=>setPower('off'));
+ on.disabled=!connected()||busy||!!powerIntent||power()?.state==='on'||!usable(power());
+ off.disabled=!connected()||busy||!power()||!!(powerIntent&&(!powerIntent.assumed||powerIntent.target==='off'));
+ row.append(on,off);return row;
+}
 const remote=()=>find(/remote.?start/i);
 const options=()=>all().filter(s=>['select','number','switch'].includes(s.entity_id.split('.')[0])&&match(s,/bean.?amount|fill.?quantity|coffee.?temperature|hot.?water.?temperature|multiple.?beverages|coffee.?milk.?ratio|flow.?rate|bean.?container.?selection/i));
 const optionLabel=s=>match(s,/bean.?amount/i)?'Strength':match(s,/fill.?quantity/i)?'Size':label(s).replace(/^Coffee Maker /i,'');
-const editable=()=>connected()&&!busy&&!brewSent&&!running()&&power()?.state==='on';
+const editable=()=>connected()&&!busy&&!brewSent&&!running()&&shownPower()==='on';
 const signature=()=>JSON.stringify([selected()?.state,...options().map(s=>[s.entity_id,s.state])]);
-const canBrew=()=>editable()&&['ready','finished'].includes(find(/operation.?state/i)?.state)&&find(/child.?lock/i,'switch')?.state!=='on'&&remote()?.state==='on'&&usable(selected())&&device&&services?.home_connect?.start_selected_program;
+const canBrew=()=>!powerIntent&&power()?.state==='on'&&editable()&&['ready','finished'].includes(find(/operation.?state/i)?.state)&&find(/child.?lock/i,'switch')?.state!=='on'&&remote()?.state==='on'&&usable(selected())&&device&&services?.home_connect?.start_selected_program;
 const statusText=()=>!connected()?'Home Assistant disconnected':brewSent?'Brew requested · waiting for machine':running()?'Machine busy · '+pretty(find(/operation.?state/i)?.state):power()?.state!=='on'?'Switch the machine on to load drink options':remote()?.state!=='on'?'Enable remote start on the machine':'Choose a drink, then adjust its options';
 async function init(){
  if(!connected()||!selected()||initializing||loadedSocket===haSocket)return;
@@ -82,7 +114,7 @@ function drink(body){
  else{const b=toggle(item,title);b.disabled=b.disabled||!editable();field.append(b)}list.append(field)}body.append(list);pager(body,choices.length,4,page,n=>{page=n;render()});
  if(!choices.length)body.append(node('p','Drink options will appear when reported by the machine.','coffee-note'));
 }
-function settings(body){const list=node('div',null,'coffee-options');for(const [re,title] of [[/\bpower\b|_power$/i,'Power'],[/cup.?warmer/i,'Cup warmer'],[/child.?lock/i,'Child lock']]){const s=find(re,'switch'),row=node('div',null,'coffee-field');row.append(node('span',title),toggle(s,title));list.append(row)}body.append(list);if(brewSent&&!running()&&!busy)body.append(button('Machine checked · allow another brew',()=>{brewSent=false;sawRunning=false;message='Ready for a new drink review';render()}));const data=[find(/operation.?state/i),remote(),find(/programme?.?progress/i)].filter(Boolean);body.append(node('p',data.map(s=>label(s).replace(/^Coffee Maker /,'')+': '+(usable(s)?pretty(s.state):'Unavailable')).join(' · '),'coffee-note'))}
+function settings(body){const list=node('div',null,'coffee-options');for(const [re,title] of [[/\bpower\b|_power$/i,'Power'],[/cup.?warmer/i,'Cup warmer'],[/child.?lock/i,'Child lock']]){const s=find(re,'switch'),row=node('div',null,'coffee-field');row.append(node('span',title));if(title==='Power'){row.append(node('strong',pretty(shownPower())+(powerIntent?' · unconfirmed':'')),powerButtons())}else row.append(toggle(s,title));list.append(row)}body.append(list);if(brewSent&&!running()&&!busy)body.append(button('Machine checked · allow another brew',()=>{brewSent=false;sawRunning=false;message='Ready for a new drink review';render()}));const data=[find(/operation.?state/i),remote(),find(/programme?.?progress/i)].filter(Boolean);body.append(node('p',data.map(s=>label(s).replace(/^Coffee Maker /,'')+': '+(usable(s)?pretty(s.state):'Unavailable')).join(' · '),'coffee-note'))}
 const carePattern=/water.?tank.?empty|bean.?container.?empty|drip.?tray.?full|descal|clean|milk.?tank.?cool/i;
 function care(body){const list=node('div',null,'coffee-care-list'),data=all().filter(s=>match(s,carePattern)&&['event','binary_sensor','sensor'].includes(s.entity_id.split('.')[0]));page=Math.min(page,Math.max(0,Math.ceil(data.length/4)-1));
  for(const s of data.slice(page*4,page*4+4)){const row=node('div',null,'coffee-field');let text='Not reported';if(usable(s)){if(s.entity_id.startsWith('event.')){const date=new Date(s.state);text=Number.isNaN(+date)?'Last event: '+pretty(s.attributes?.event_type||s.state):'Last reported '+date.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}else text=s.state==='on'?'Attention needed':s.state==='off'?'Not currently reported':pretty(s.state)}row.append(node('span',label(s).replace(/^Coffee Maker /i,'')),node('strong',text));row.classList.toggle('needs-attention',s.state==='on');list.append(row)}body.append(list);pager(body,data.length,4,page,n=>{page=n;render()});
@@ -91,12 +123,12 @@ function care(body){const list=node('div',null,'coffee-care-list'),data=all().fi
  body.append(node('p','Water level in mL is not exposed. Alerts show what the machine reports; dated events are history, not an all-clear check.','coffee-note'));if(!data.length)body.prepend(node('p','No maintenance readings available yet.'));
 }
 function review(body){body.append(node('h3','Ready to brew?'),node('p',confirmation.label,'coffee-review-drink'),node('p',confirmation.details||'Machine defaults','coffee-note'),node('p','Place a cup under the spout. For milk drinks, connect the milk supply.','coffee-note'));const controls=node('div',null,'coffee-review-actions');const start=button('Brew now',async()=>{if(!canBrew()||confirmation.signature!==signature()){confirmation=null;message='Settings changed. Please review your drink again.';render();return}brewSent=true;busy=true;confirmation=null;message='Requesting brew…';render();try{await request({type:'call_service',domain:'home_connect',service:'start_selected_program',service_data:{device_id:device}});message='Brew requested. Waiting for machine status.'}catch(e){message=e.message+' Check the machine before requesting again.'}finally{busy=false;render()}});start.disabled=!canBrew();controls.append(button('Back',()=>{confirmation=null;render()}),start);body.append(controls)}
-function render(){if(!dialog.open)return;if(dialog.querySelector('input:focus')&&!busy)return;dialog.replaceChildren();const head=node('header');head.append(node('h2','☕ Coffee machine'),button('Close',()=>dialog.close()));const tabs=node('nav',null,'coffee-tabs');for(const [id,title] of [['drink','Drink'],['settings','Machine'],['care','Care']]){const b=button(title,()=>{tab=id;page=0;picker=null;confirmation=null;render()});b.setAttribute('aria-pressed',String(id===tab));tabs.append(b)}const body=node('section',null,'coffee-panel-body');if(picker)choiceView(body);else if(confirmation)review(body);else if(tab==='drink')drink(body);else if(tab==='settings')settings(body);else care(body);
- const foot=node('footer',null,'coffee-panel-footer'),notice=node('p',message||statusText(),'coffee-command-status');notice.setAttribute('role','status');foot.append(notice);
- if(tab==='drink'&&!picker&&!confirmation){if(power()?.state==='off'){const on=button('Switch machine on',()=>command('switch','turn_on',power().entity_id,{},'on'));on.disabled=busy||!connected();foot.append(on)}else{const brew=button('Review drink',()=>{if(!canBrew())return;confirmation={signature:signature(),label:pretty(selected().state),details:options().filter(usable).map(s=>optionLabel(s)+': '+pretty(s.state)+(s.attributes?.unit_of_measurement?' '+s.attributes.unit_of_measurement:'')).join(' · ')};render()});brew.disabled=!canBrew();foot.append(brew)}}dialog.append(head,tabs,body,foot);
+function render(){if(!dialog.open)return;if(dialog.querySelector('input:focus')&&!busy)return;dialog.replaceChildren();const head=node('header');head.append(node('h2','☕ Coffee machine'),button('Close',()=>dialog.close()));const tabs=node('nav',null,'coffee-tabs');for(const [id,title] of [['drink','Drink'],['settings','Machine'],['care','Care']]){const b=button(title,()=>{tab=id;page=0;picker=null;confirmation=null;render()});b.setAttribute('aria-pressed',String(id===tab));tabs.append(b)}const body=node('section',null,'coffee-panel-body');if(picker)choiceView(body);else if(confirmation)review(body);else if(tab==='drink')drink(body);else if(tab==='settings')settings(body);else care(body);if(powerIntent&&tab==='settings'){body.append(button('Refresh status',()=>refreshState()),button('I checked: machine is off',()=>{clearTimeout(powerDelay);powerIntent=null;savePower();message='Machine checked as off. Reported readings may still be delayed.';render()}))}
+ const foot=node('footer',null,'coffee-panel-footer'),notice=node('p',powerNotice()||message||statusText(),'coffee-command-status');notice.setAttribute('role','status');foot.style.flexWrap='wrap';notice.style.flex='1 1 100%';notice.style.maxWidth='none';foot.append(notice);
+ if(tab==='drink'&&!picker&&!confirmation){foot.append(powerButtons());if(shownPower()!=='off'){const brew=button('Review drink',()=>{if(!canBrew())return;confirmation={signature:signature(),label:pretty(selected().state),details:options().filter(usable).map(s=>optionLabel(s)+': '+pretty(s.state)+(s.attributes?.unit_of_measurement?' '+s.attributes.unit_of_measurement:'')).join(' · ')};render()});brew.disabled=!canBrew();foot.append(brew)}}dialog.append(head,tabs,body,foot);
 }
-function update(){if(!connected()){loadedSocket=null;device=null;services=null}if(brewSent){if(running())sawRunning=true;else if(sawRunning){brewSent=false;sawRunning=false}}if(confirmation&&confirmation.signature!==signature()){confirmation=null;message='Machine settings changed. Review the updated drink.'}render();if(dialog.open)init()}
-function open(){tab='drink';page=0;picker=null;confirmation=null;if(!busy)message='';if(!dialog.open)dialog.showModal();render();init();refreshState();clearInterval(refreshTimer);refreshTimer=setInterval(()=>{if(dialog.open&&!busy)refreshState();else if(!dialog.open){clearInterval(refreshTimer);refreshTimer=null}},10000)}
+function update(){reconcilePower();if(!connected()){loadedSocket=null;device=null;services=null}if(brewSent){if(running())sawRunning=true;else if(sawRunning){brewSent=false;sawRunning=false}}if(confirmation&&confirmation.signature!==signature()){confirmation=null;message='Machine settings changed. Review the updated drink.'}render();if(dialog.open)init()}
+function open(){reconcilePower();tab='drink';page=0;picker=null;confirmation=null;if(!busy)message='';if(!dialog.open)dialog.showModal();render();init();refreshState();clearInterval(refreshTimer);refreshTimer=setInterval(()=>{if(dialog.open&&!busy)refreshState();else if(!dialog.open){clearInterval(refreshTimer);refreshTimer=null}},10000)}
 dialog.addEventListener('close',()=>{clearInterval(refreshTimer);refreshTimer=null});
 dialog.addEventListener('keydown',e=>{if(e.key==='Escape'&&(picker||confirmation)){e.preventDefault();picker=null;confirmation=null;render()}});
 return {open,update};
