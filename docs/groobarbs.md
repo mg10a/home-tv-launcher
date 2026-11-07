@@ -1,8 +1,8 @@
-# Experimental Groobarbs connector — 0.1.0
+# Groobarbs connector
 
-Not installed or live-tested. This is an unofficial integration based on Groobarbs' public website assets observed 2 November 2026, not a supported public API.
+This is an unofficial integration based on Groobarbs' public website assets observed 2 November 2026, not a supported public API.
 
-## Prepared implementation
+## Initial implementation — 0.1.0
 
 - Private Home Assistant client with an in-memory cookie jar and no credential logging.
 - Read-only sensor: `sensor.groobarbs_next_delivery`, refreshed every 30 minutes.
@@ -30,3 +30,38 @@ Rollback: remove the integration entry if configured, remove the added `custom_c
 ## Evidence
 
 Public frontend: `https://my.groobarbs.co.uk/build/assets/Dashboard-C49SiE8V.js`, `DeliveryCalendar-CU7Zka7b.js`, `Login-DJ1TRR0K.js`; route definitions in the public login page. The frontend posts `replacement_id` to `/orders/{order}/items/{item}/content/{content}/swap`; reset uses DELETE at that route. Changes are immediate; the contents modal's Done button only closes it.
+
+## Restore original item in 0.3.0
+
+The dashboard's **Keep [original]** choice uses `groobarbs.reset` for an item
+that was already swapped. This sends Groobarbs' own DELETE request after
+checking the delivery window and reviewed box revision. The integration then
+verifies the restored product and publishes the supplier's swap count. It
+checks the box after uncertain responses and does not repeat the write.
+
+Update the existing manually installed component in Home Assistant before using
+the dashboard's direct restore. The Groobarbs credentials and config entry stay
+in Home Assistant. From its Terminal, download the three changed files into a
+temporary directory, back up the installed component, and replace those files:
+
+```sh
+(
+  set -eu
+  cd /homeassistant/custom_components
+  [ -f groobarbs/manifest.json ]
+  stage=$(mktemp -d)
+  trap 'rm -rf "$stage"' EXIT
+  source=https://raw.githubusercontent.com/mg10a/home-tv-launcher/main/custom_components/groobarbs
+  for file in __init__.py client.py manifest.json; do
+    curl -fsSL "$source/$file" -o "$stage/$file"
+  done
+  grep -q '"version": "0.3.0"' "$stage/manifest.json"
+  cp -a groobarbs "../groobarbs-backup-$(date +%Y%m%d-%H%M%S)"
+  cp "$stage/"* groobarbs/
+)
+```
+
+Restart Home Assistant Core after the copy succeeds so it loads the new Python
+code. Reopen Halo and use **Change → Keep [original] → Restore original item**.
+The dashboard links to Groobarbs itself for restoration while the older
+integration is installed. No change is sent when keeping an unswapped item.

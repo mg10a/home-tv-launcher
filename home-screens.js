@@ -41,7 +41,8 @@ const sections=dashboard.querySelector('.family-sections');
 if(sections){
 const box=document.createElement('section');box.className='family-section groobarbs-card';
 box.innerHTML='<div class="family-title">🥕 Fruit &amp; veg box</div><p>View your next Groobarbs box, swap contents or skip a delivery.</p><a class="groobarbs-open" href="https://my.groobarbs.co.uk/" target="_blank" rel="noopener noreferrer">Groobarbs website ↗</a><small class="groobarbs-status" role="status">Opens your Groobarbs account</small>';
-box.querySelector('a').addEventListener('click',event=>{
+const grooWebsite=box.querySelector('a');
+grooWebsite.addEventListener('click',event=>{
 event.preventDefault();
 if(!window.AndroidLauncher){window.location.assign('https://my.groobarbs.co.uk/');return}
 if(typeof window.AndroidLauncher.openGroobarbs==='function'){try{window.AndroidLauncher.openGroobarbs();return}catch{}}
@@ -65,7 +66,7 @@ function grooWindow(a,now=new Date()){
  const day=offset=>{const d=new Date(delivery);d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10)};
  return local>=day(-4)+'T00:00'&&local<day(-1)+'T11:00';
 }
-function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Delivery: '+niceDate(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?((grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline)))?'Changes open until 11am Mon':'Changes closed'):state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable,grooWindow(a)]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
+function renderGroo(){const state=grooState(),a=state?.attributes;const live=state&&!['unknown','unavailable'].includes(state.state);contents.hidden=false;summary.textContent=live?'Delivery: '+niceDate(a.date||state.state):'';box.querySelector('p').hidden=!!live;box.querySelector('.groobarbs-status').textContent=live?((grooWindow(a)&&a.editable&&(!a.deadline||Date.now()<Date.parse(a.deadline)))?'Changes open until 11am Mon':'Changes closed'):state?'Groobarbs temporarily unavailable':'Opens your Groobarbs account';const sig=JSON.stringify([live,a?.revision,a?.swap_count,a?.items,a?.editable,a?.resets_enabled,grooWindow(a)]);if(detail.open&&sig!==lastGroo&&!saving)renderDetail();lastGroo=sig}
 let choice=null, saving=false, message='', lastGroo='';
 function button(parent,label,action){const b=addText(parent,'button',label);b.type='button';b.addEventListener('click',action);return b}
 function niceDate(value,withTime=false){if(!value)return '';const d=new Date(value.length===10?value+'T12:00:00Z':value);return Number.isNaN(+d)?value:new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'short',...(withTime?{hour:'2-digit',minute:'2-digit'}:{})}).format(d)}
@@ -83,8 +84,8 @@ function renderDetail(){
   const limit=Math.min(4,Number(item.max_swaps)||4),used=Number(item.swap_count)||0,remaining=Math.max(0,limit-used);
   const badge=addText(meta,'span',used+' of '+limit+' used · '+remaining+' remaining');badge.className='groo-allowance';badge.setAttribute('role','status');
   const grid=addText(section,'div','');grid.className='groo-produce';
-  for(const c of item.contents||[]){const tile=addText(grid,'div','');tile.className='groo-tile'+(c.replaced_product_id?' is-swapped':'');const text=addText(tile,'div','');addText(text,'strong',c.title);if(c.replaced_title)addText(text,'small','Instead of '+c.replaced_title);
-   if(a.swaps_enabled&&editable){const b=button(tile,c.replaced_product_id?'Change':'Swap',()=>{choice={itemId:item.id,contentId:c.id,replacement:null};message='';renderDetail()});b.disabled=saving||(!c.replaced_product_id&&remaining===0);b.setAttribute('aria-label',(c.replaced_product_id?'Change ':'Swap ')+c.title)}
+  for(const c of item.contents||[]){const tile=addText(grid,'div','');tile.className='groo-tile'+(c.replaced_product_id?' is-swapped':'');const row=addText(tile,'div','');row.className='groo-item';window.attachGrooboxPhoto?.(row,c.title);const text=addText(row,'div','');addText(text,'strong',c.title);if(c.replaced_title)addText(text,'small','Instead of '+c.replaced_title);
+   if(a.swaps_enabled&&editable){const b=button(tile,c.replaced_product_id?'Change':'Swap',()=>{choice={itemId:item.id,contentId:c.id,revision:a.revision,replacement:null};message='';renderDetail()});b.disabled=saving||(!c.replaced_product_id&&remaining===0);b.setAttribute('aria-label',(c.replaced_product_id?'Change ':'Swap ')+c.title)}
   }
  }
  if(extras.length){const extra=addText(detail,'div','Extras: '+extras.map(i=>i.title+' × '+i.qty).join(' · '));extra.className='groo-extras'}
@@ -99,35 +100,49 @@ function renderDetail(){
   addText(bar,'h3','Replace '+c.title);
   button(bar,'Close',()=>detail.close());
   const options=(a.replacements||[]).filter(r=>r.id!==(c.replaced_product_id||c.product_id)&&r.id!==c.product_id&&(r.category_ids||[]).some(id=>(c.category_ids||[]).includes(id)));
-  if(choice.replacement&&!options.some(r=>r.id===choice.replacement.id))choice.replacement=null;
+  if(choice.revision!==a.revision){
+   choice.revision=a.revision;
+   choice.replacement=null;
+  }
+  const original=c.replaced_title||'original item';
+  const keep={title:c.replaced_product_id?original:c.title,reset:!!c.replaced_product_id};
+  const cards=[keep,...options];
   const choices=addText(panel,'div','');
   choices.className='groo-options';
-  const columns=Math.min(options.length||1,Math.max(3,Math.ceil(Math.sqrt(options.length*1.7))));
+  const columns=Math.min(cards.length,Math.max(3,Math.ceil(Math.sqrt(cards.length*1.7))));
   choices.style.setProperty('--groo-columns',columns);
   choices.style.setProperty('--groo-portrait-columns',Math.min(columns,3));
-  for(const r of options){
+  for(const r of cards){
+   const isKeep=r===keep;
    const b=button(choices,'',()=>{
+    if(isKeep&&!r.reset){choice=null;renderDetail();return}
     choice.replacement=r;
     renderDetail();
     detail.querySelector('.groo-options [aria-pressed="true"]')?.focus({preventScroll:true});
    });
-   const photo=window.haloGrooboxImages?.[String(r.title).trim().toLowerCase()];
-   if(photo){
-    const image=document.createElement('img');
-    image.alt='';image.src=photo;image.referrerPolicy='no-referrer';image.decoding='async';
-    image.addEventListener('error',()=>image.remove(),{once:true});
-    b.append(image);
-   }
-   addText(b,'span',r.title);
-   b.setAttribute('aria-pressed',String(choice.replacement?.id===r.id));
+   if(r.title!=='original item')window.attachGrooboxPhoto?.(b,r.title);
+   addText(b,'span',isKeep?'Keep '+r.title:r.title);
+   b.setAttribute('aria-pressed',String(!!choice.replacement&&(isKeep?choice.replacement.reset:choice.replacement.id===r.id)));
    b.disabled=saving;
   }
-  if(!options.length)addText(choices,'p','No replacements available.');
-  const review=addText(panel,'div','');review.className='groo-review';addText(review,'strong',choice.replacement?c.title+' → '+choice.replacement.title:'Choose a replacement above');addText(review,'small',item.bespoke?'Bespoke surcharge already included.':'This makes your box bespoke: £1 extra.');
-  const save=button(panel,saving?'Saving…':'Save swap to Groobarbs',async()=>{
-   if(!choice?.replacement||saving)return;const request={order_id:a.order_id,item_id:item.id,content_id:c.id,replacement_id:choice.replacement.id,revision:a.revision};saving=true;renderDetail();
-   try{await eufyWsCommand({type:'call_service',domain:'groobarbs',service:'swap',service_data:request},65000);choice=null;message='Saved to Groobarbs. Contents and allowance updated.'}
-   catch(error){choice=null;message='Could not confirm the change. '+(error?.message||'Check Groobarbs before trying again.')}
+  const restore=choice.replacement?.reset===true;
+  const needsUpdate=restore&&!a.resets_enabled;
+  const review=addText(panel,'div','');review.className='groo-review';
+  addText(review,'strong',choice.replacement?c.title+' → '+choice.replacement.title:'Choose a replacement above');
+  addText(review,'small',needsUpdate?'Restore on Groobarbs until the Home Assistant integration is updated.':
+   restore?'Restores your original item and frees one swap.':item.bespoke?'Bespoke surcharge already included.':'This makes your box bespoke: £1 extra.');
+  const save=button(panel,saving?'Saving…':needsUpdate?'Open Groobarbs to restore':restore?'Restore original item':'Save swap to Groobarbs',async()=>{
+   if(!choice?.replacement||saving)return;
+   if(needsUpdate){detail.close();grooWebsite.click();return}
+   const request={order_id:a.order_id,item_id:item.id,content_id:c.id,revision:a.revision};
+   if(!restore)request.replacement_id=choice.replacement.id;
+   saving=true;renderDetail();
+   try{
+    const reply=await eufyWsCommand({type:'call_service',domain:'groobarbs',service:restore?'reset':'swap',service_data:request},65000);
+    if(!reply.success)throw Error(reply.error?.message||'Groobarbs did not confirm the change.');
+    choice=null;
+    message=restore?'Original item restored.':'Swap saved to Groobarbs.';
+   }catch(error){choice=null;message='Could not confirm the change. '+(error?.message||'Check Groobarbs before trying again.')}
    finally{saving=false;renderDetail()}
   });save.className='groo-save';save.disabled=saving||!choice.replacement;
  }

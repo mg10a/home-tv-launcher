@@ -35,17 +35,22 @@ def public_preview(page):
             'replacements':[{k:r.get(k) for k in ('id','title','category_ids')} for r in run.get('replacements',[])]}
 
 
-def validate_swap(preview, item_id, content_id, replacement_id):
+def editable_content(preview, item_id, content_id):
     if not preview['editable']: raise GroobarbsError('Delivery changes are closed')
     item = next((i for i in preview['items'] if i['id'] == item_id), None)
     if not item or not item['contents_can_change']: raise GroobarbsError('Box cannot be changed')
     content = next((c for c in item['contents'] if c['id'] == content_id), None)
     if not content: raise GroobarbsError('Content is no longer in the box')
+    return item, content
+
+
+def validate_swap(preview, item_id, content_id, replacement_id):
+    item, content = editable_content(preview, item_id, content_id)
     if not content['replaced_product_id'] and item['max_swaps'] and item['swap_count'] >= item['max_swaps']:
         raise GroobarbsError('Swap allowance exhausted')
     replacement = next((r for r in preview['replacements'] if r['id'] == replacement_id), None)
-    excluded = content['replaced_product_id'] or content['product_id']
-    if not replacement or replacement_id == excluded or not set(replacement['category_ids'] or []) & set(content['category_ids'] or []):
+    excluded = (content['replaced_product_id'], content['product_id'])
+    if not replacement or replacement_id in excluded or not set(replacement['category_ids'] or []) & set(content['category_ids'] or []):
         raise GroobarbsError('Replacement is not available for this item')
 
 
@@ -88,4 +93,22 @@ class Client:
         item=next((i for i in updated['items'] if i['id']==item_id),{})
         content=next((c for c in item.get('contents',[]) if c['id']==content_id),{})
         if content.get('product_id') != replacement_id: raise GroobarbsError('Result uncertain; refresh before trying again')
+        return updated
+
+    async def reset(self, order_id, item_id, content_id, expected):
+        current = await self.read()
+        if current != expected or current['order_id'] != order_id:
+            raise GroobarbsError('Box changed; refresh and review again')
+        _, content = editable_content(current, item_id, content_id)
+        original = content['replaced_product_id']
+        if not original:
+            raise GroobarbsError('This item is already the original')
+        if any(type(value) is not int or value < 1 for value in (order_id, item_id, content_id)):
+            raise GroobarbsError('Invalid identifier')
+        page = await self.request('DELETE', f'/orders/{order_id}/items/{item_id}/content/{content_id}/swap')
+        updated = public_preview(page)
+        item = next((i for i in updated['items'] if i['id'] == item_id), {})
+        result = next((c for c in item.get('contents', []) if c['id'] == content_id), {})
+        if updated['order_id'] != order_id or result.get('product_id') != original or result.get('replaced_product_id'):
+            raise GroobarbsError('Result uncertain; refresh before trying again')
         return updated

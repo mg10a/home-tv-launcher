@@ -63,27 +63,63 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
   await page.locator('#historyPage').evaluate(el=>el.classList.add('hidden'));
   if(!nativeInsets){
    await page.clock.setFixedTime(new Date('2026-11-07T12:00:00Z'));
+   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aQ1sAAAAASUVORK5CYII=','base64');
+   await page.route(/https:\/\/(groobox-marketing\.transforms\.svdcdn\.com|media\.riverford\.co\.uk|thumb\.wikimedia\.org)\//,route=>route.fulfill({contentType:'image/png',body:png}));
+   let photoLookups=0;
+   await page.route('https://en.wikipedia.org/w/api.php?**',route=>{
+    photoLookups++;
+    assert.equal(new URL(route.request().url()).searchParams.get('titles'),'kohlrabi');
+    return route.fulfill({headers:{'Access-Control-Allow-Origin':'*'},json:{query:{pages:[{
+     pageimage:'Kohlrabi.jpg',thumbnail:{source:'https://thumb.wikimedia.org/wikipedia/commons/thumb/Kohlrabi.jpg'},
+     terms:{description:['cultivar of cabbage, used as a vegetable']}
+    }]}}});
+   });
    await page.evaluate(()=>{
     haVerified=true;
     haStates['sensor.groobarbs_next_delivery']={entity_id:'sensor.groobarbs_next_delivery',state:'2026-11-10',attributes:{
-     date:'2026-11-10',deadline:'2026-11-09T11:00:00Z',editable:true,swaps_enabled:true,
+     date:'2026-11-10',deadline:'2026-11-09T11:00:00Z',editable:true,swaps_enabled:true,resets_enabled:true,order_id:10,revision:'reviewed',
      items:[{id:1,title:'Veg box',contents_can_change:true,contents:[{id:2,product_id:1,title:'Potatoes',category_ids:[1]}]}],
-     replacements:Array.from({length:18},(_,i)=>({id:i+3,title:i===0?'Uchiki Kuri Squash':'Produce '+(i+1),category_ids:[1]}))
+     replacements:Array.from({length:18},(_,i)=>({id:i+3,title:['Uchiki Kuri Squash','Kohlrabi'][i]||'Produce '+(i+1),category_ids:[1]}))
     }};
     openGroobarbsDetails();
    });
-   await page.route('https://groobox-marketing.transforms.svdcdn.com/**',route=>route.fulfill({
-    contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aQ1sAAAAASUVORK5CYII=','base64')
-   }));
+   await page.locator('.groo-tile img:not([hidden])').waitFor();
    await page.getByRole('button',{name:'Swap Potatoes'}).click();
    const choices=page.locator('.groo-options');
-   assert.equal(await choices.getByRole('button').count(),18);
-   assert(await choices.evaluate(el=>el.scrollHeight<=el.clientHeight+1),'All 18 swaps must fit one landscape grid');
-   assert.equal(await choices.locator('img[referrerpolicy="no-referrer"]').count(),1);
+   assert.equal(await choices.getByRole('button').count(),19);
+   assert(await choices.evaluate(el=>el.scrollHeight<=el.clientHeight+1),'All 18 swaps and Keep must fit one landscape grid');
+   await choices.getByRole('button',{name:'Kohlrabi'}).locator('img:not([hidden])').waitFor();
+   await choices.getByRole('button',{name:'Keep Potatoes'}).click();
+   assert.equal(await choices.count(),0,'keeping the existing item closes the picker');
+   await page.getByRole('button',{name:'Swap Potatoes'}).click();
+   await choices.getByRole('button',{name:'Kohlrabi'}).locator('img:not([hidden])').waitFor();
+   assert.equal(photoLookups,1,'new produce lookup is reused when the picker reopens');
    const close=page.locator('.groo-picker header').getByRole('button',{name:'Close',exact:true});
    assert.equal(await close.textContent(),'×');
    await close.click();
-   assert.equal(await page.locator('.groobarbs-detail').evaluate(el=>el.open),false);
+   await page.evaluate(()=>{
+    const data=haStates['sensor.groobarbs_next_delivery'].attributes, item=data.items[0], content=item.contents[0];
+    Object.assign(content,{product_id:30,title:'Red Cabbage',replaced_product_id:1,replaced_title:'Potatoes'});
+    item.swap_count=1;
+    window.restoreRequests=[];
+    window.eufyWsCommand=async request=>{
+     restoreRequests.push(request);
+     Object.assign(content,{product_id:1,title:'Potatoes',replaced_product_id:null,replaced_title:null});
+     item.swap_count=0;
+     return {success:true};
+    };
+    openGroobarbsDetails();
+   });
+   await page.locator('.groo-tile img[src*="red-cabbage"]:not([hidden])').waitFor();
+   await page.getByRole('button',{name:'Change Red Cabbage'}).click();
+   await choices.getByRole('button',{name:'Keep Potatoes'}).click();
+   await page.getByRole('button',{name:'Restore original item'}).click();
+   await page.getByText('Original item restored.').waitFor();
+   const requests=await page.evaluate(()=>restoreRequests);
+   assert.deepEqual(requests,[{type:'call_service',domain:'groobarbs',service:'reset',service_data:{order_id:10,item_id:1,content_id:2,revision:'reviewed'}}]);
+   await page.locator('.groo-tile img[src*="2018-34"]:not([hidden])').waitFor();
+   await page.getByText('0 of 4 used · 4 remaining').waitFor();
+   await page.locator('.groobarbs-detail').evaluate(el=>el.close());
    await page.evaluate(()=>{
     haVerified=false;
     petActivity.maia={state:'on',t:Date.parse('2026-11-07T11:37:00Z')};
@@ -93,6 +129,16 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
    });
    assert.match(await page.locator('#petEventMaia').textContent(),/Came in · .*11:37/);
    assert.equal(await page.locator('#petEventSolo').textContent(),'No last event recorded');
+   const pet=page.locator('.pet-portrait-card[data-pet-portrait="Maia"]');
+   await pet.locator('img').evaluate((image,data)=>{
+    image.src=data;
+    image.hidden=false;
+   },'data:image/png;base64,'+png.toString('base64'));
+   const photoBox=await pet.locator('img').boundingBox();
+   const eventBox=await pet.locator('#petEventMaia').boundingBox();
+   const cardBox=await pet.boundingBox();
+   assert(photoBox.height>80,'landscape portrait has enough unobstructed height');
+   assert(eventBox.y>=photoBox.y+photoBox.height-1&&eventBox.y+eventBox.height<=cardBox.y+cardBox.height+1,'last event fits beneath the photo');
    await page.locator('#petOverlay').evaluate(el=>el.classList.add('hidden'));
    assert.equal(await page.locator('.salus-target-controls > button').count(),2);
    assert.equal(await page.locator('.salus-target-controls > #salusCurrent').count(),1);

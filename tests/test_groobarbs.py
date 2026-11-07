@@ -22,8 +22,6 @@ class Tests(unittest.TestCase):
  def test_html(self):
   parser=m.PageParser();parser.feed('<div id="app" data-page="{&quot;component&quot;:&quot;My/Dashboard&quot;}"></div>')
   self.assertEqual(parser.page['component'],'My/Dashboard')
-if __name__=='__main__':unittest.main()
-
 class MutationTests(unittest.IsolatedAsyncioTestCase):
  async def test_stale_snapshot_never_posts(self):
   client=object.__new__(m.Client)
@@ -38,3 +36,46 @@ class MutationTests(unittest.IsolatedAsyncioTestCase):
   client.read=read;client.request=request
   with self.assertRaises(TimeoutError):await client.swap(9,1,2,4,p)
   self.assertEqual(len(posts),1)
+
+ def reset_fixture(self, *, editable=True, original=3, returned=3):
+  current=Tests().fixture()
+  current.update(order_id=9,editable=editable)
+  current['items'][0]['contents'][0].update(product_id=4,replaced_product_id=original)
+  response={'props':{'deliveryPreview':{'order':{
+   'id':9,'items':[{'id':1,'swap_count':2,'contents':[
+    {'id':2,'product_id':returned,'replaced_product_id':None}]}]
+  }}}}
+  calls=[]
+  client=object.__new__(m.Client)
+  async def read(): return current
+  async def request(*args):
+   calls.append(args)
+   return response
+  client.read=read
+  client.request=request
+  return client,current,calls
+
+ async def test_restore_uses_delete_and_verifies_returned_product(self):
+  client,current,calls=self.reset_fixture()
+  result=await client.reset(9,1,2,current)
+  self.assertEqual(calls,[('DELETE','/orders/9/items/1/content/2/swap')])
+  self.assertEqual(result['items'][0]['contents'][0]['product_id'],3)
+  self.assertEqual(result['items'][0]['swap_count'],2)
+
+ async def test_restore_rejects_closed_or_unchanged_items_without_writing(self):
+  for options in ({'editable':False},{'original':None}):
+   client,current,calls=self.reset_fixture(**options)
+   with self.assertRaises(m.GroobarbsError):await client.reset(9,1,2,current)
+   self.assertEqual(calls,[])
+
+ async def test_restore_rejects_stale_review_without_writing(self):
+  client,_,calls=self.reset_fixture()
+  with self.assertRaises(m.GroobarbsError):await client.reset(9,1,2,{})
+  self.assertEqual(calls,[])
+
+ async def test_restore_does_not_repeat_an_uncertain_change(self):
+  client,current,calls=self.reset_fixture(returned=4)
+  with self.assertRaisesRegex(m.GroobarbsError,'Result uncertain'):await client.reset(9,1,2,current)
+  self.assertEqual(len(calls),1)
+
+if __name__=='__main__':unittest.main()
