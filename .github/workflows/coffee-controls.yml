@@ -13,6 +13,8 @@ on:
       - 'home-screens.css'
       - 'viewport-fit.css'
       - 'tests/viewport-fit.test.cjs'
+      - 'pet-timeline.js'
+      - 'tests/pet-timeline.test.cjs'
       - 'tests/coffee-layout.test.cjs'
       - 'room-controls.js'
       - 'tests/coffee-controls.test.mjs'
@@ -38,5 +40,6 @@ jobs:
       - run: node tests/coffee-confirmation.test.mjs
       - run: npx playwright install --with-deps chromium
       - run: node tests/coffee-layout.test.cjs
+      - run: node --test tests/pet-timeline.test.cjs
       - run: node tests/viewport-fit.test.cjs
       - run: node tests/room-controls.test.mjs

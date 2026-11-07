@@ -158,6 +158,13 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
    await page.evaluate(()=>{
     haVerified=false;
     petActivity.maia={state:'on',t:Date.parse('2026-11-07T11:37:00Z')};
+    petHistoryThrough=Date.parse('2026-11-07T12:00:00Z');
+    petDailyHistory.maia=[
+     {state:'on',t:Date.parse('2026-11-06T00:00:00Z')},
+     {state:'off',t:Date.parse('2026-11-07T06:00:00Z')},
+     {state:'on',t:Date.parse('2026-11-07T11:37:00Z')}
+    ];
+    petDailyHistory.solo=[{state:'on',t:Date.parse('2026-11-07T08:00:00Z')}];
     haStates['binary_sensor.maia']={entity_id:'binary_sensor.maia',state:'on'};
     document.getElementById('petOverlay').classList.remove('hidden');
     renderPets();
@@ -181,6 +188,18 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
     const box=await lock.boundingBox();
     assert(box&&box.y+box.height<=modalBox.y+modalBox.height+1,'lock-mode button fits inside the modal');
    }
+   const timeline=page.getByRole('region',{name:'Daily cat activity'});
+   const picker=timeline.getByRole('combobox',{name:'Cat activity day'});
+   assert.equal(await picker.locator('option').count(),8);
+   assert.equal(await picker.inputValue(),'2026-11-07');
+   assert.match(await timeline.getByRole('img',{name:/Maia:/}).getAttribute('aria-label'),/Outside 06:00–11:37/);
+   assert.match(await timeline.getByRole('img',{name:/Solo:/}).getAttribute('aria-label'),/No record 00:00–08:00/);
+   await timeline.locator('.is-off.pet-timeline-segment').click();
+   assert.match(await timeline.locator('.pet-timeline-detail').textContent(),/Maia · Outside 06:00–11:37/);
+   await picker.selectOption('2026-11-06');
+   assert.match(await timeline.getByRole('img',{name:/Maia:/}).getAttribute('aria-label'),/Inside 00:00–24:00/);
+   const timelineBox=await timeline.boundingBox();
+   assert(timelineBox.y+timelineBox.height<=modalBox.y+modalBox.height+1,'timeline fits under the portraits');
    await page.locator('#petOverlay').evaluate(el=>el.classList.add('hidden'));
    assert.equal(await page.locator('.salus-target-controls > button').count(),2);
    assert.equal(await page.locator('.salus-target-controls > #salusCurrent').count(),1);
