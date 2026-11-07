@@ -56,7 +56,7 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
   for(const [key,screen] of [['launcher','main.shell'],['home','#dashboardPage'],['family','#dashboardPage']]){
    await page.evaluate(key=>navigateHome(key),key);
    const padding=await page.locator(screen).evaluate(el=>[parseFloat(getComputedStyle(el).paddingLeft),parseFloat(getComputedStyle(el).paddingRight)]);
-   assert(padding[0]>=left&&padding[1]>=right,key+' does not reserve both edges');
+   assert(padding[0]>=left&&padding[1]>=right,key+' does not reserve both edges: '+padding.join(', '));
   }
   await page.locator('#historyPage').evaluate(el=>el.classList.remove('hidden'));
   await fits('#historyPage');

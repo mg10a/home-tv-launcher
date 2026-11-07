@@ -15,6 +15,7 @@
  padding-left:max(6px, var(--halo-safe-left));
  padding-right:max(6px, var(--halo-safe-right));
 }
+body[data-home-screen] #dashboardPage,
 body[data-home-screen] .dashboard-page,
 body[data-home-screen] main.shell {
  padding-left:max(8px, var(--halo-safe-left))!important;
