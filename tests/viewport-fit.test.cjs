@@ -88,10 +88,12 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
     haVerified=false;
     petActivity.maia={state:'on',t:Date.parse('2026-11-07T11:37:00Z')};
     haStates['binary_sensor.maia']={entity_id:'binary_sensor.maia',state:'on'};
+    document.getElementById('petOverlay').classList.remove('hidden');
     renderPets();
    });
    assert.match(await page.locator('#petEventMaia').textContent(),/Came in · .*11:37/);
    assert.equal(await page.locator('#petEventSolo').textContent(),'No last event recorded');
+   await page.locator('#petOverlay').evaluate(el=>el.classList.add('hidden'));
    assert.equal(await page.locator('.salus-target-controls > button').count(),2);
    assert.equal(await page.locator('.salus-target-controls > #salusCurrent').count(),1);
    assert.equal(await page.locator('.salus-setpoint-row > button').count(),0);
