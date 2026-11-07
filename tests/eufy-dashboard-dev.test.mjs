@@ -59,6 +59,7 @@ vm.runInContext('eufyStopLive()',context);
 assert.equal(pendingRetry,null,'Closing cancels recovery timer');
 
 // Exercise the actual recording loader against mocked existing-API responses.
+const helper=script.slice(script.indexOf('function eufyRecordingCommandUnavailable('),script.indexOf('async function eufySelectRecording(){'));
 const a=script.indexOf('async function loadEufyRecordings(){');
 const b=script.indexOf('function closeEufyPlayer(){',a);
 assert.ok(a>=0&&b>a);
@@ -73,11 +74,11 @@ const recDocument={
 };
 const rec={document:recDocument,eufyAbort:null,eufyRecords:[],eufyStopLive(){},closeEufyPlayer(){},
  eufyClearThumbs(){},eufyRecordingCamera:()=> 'camera.front_door',eufyThumbUrls:[],
- AbortController,Error,Array,encodeURIComponent,
+ AbortController,Error,Array,URLSearchParams,encodeURIComponent,
  eufyRecordingError:e=>e.message,
  eufyWsCommand:async command=>{paths.push(command);return {success:true,result:{complete:true,recordings:[{id:recordId,start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10',thumbnail:false}]}}},
  playEufyRecording(){},eufyRenderClips(){},eufySelectRecording(){}};
-vm.createContext(rec);vm.runInContext(loader,rec);
+vm.createContext(rec);vm.runInContext(helper+loader,rec);
 await vm.runInContext('loadEufyRecordings()',rec);
 assert.equal(paths[0].type,'eufy_viewer/launcher_events');
 assert.equal(paths[0].entity_id,'camera.front_door');
@@ -96,3 +97,27 @@ assert.match(note.textContent,/Camera access denied/);
 rec.eufyWsCommand=async()=>({success:true,result:{complete:true,recordings:[{id:recordId,entity_id:'camera.other',start:'2026-10-25T07:00:00',end:'2026-10-25T07:00:10'}]}});
 await vm.runInContext('loadEufyRecordings()',rec);
 assert.equal(grid.children.length,0,'Never show another camera recording');
+
+const httpRequests=[];
+rec.eufyApi=async (path,{signal})=>{
+ httpRequests.push({path,signal});
+ return {ok:true,status:200,json:async()=>({complete:true,recordings:[
+  {id:recordId,entity_id:'camera.front_door',start:'2026-10-25T08:00:00',end:'2026-10-25T08:00:10'}
+ ]})};
+};
+rec.eufyWsCommand=async()=>({success:false,error:{code:'unknown_command',message:'Unknown command.'}});
+await vm.runInContext('loadEufyRecordings()',rec);
+assert.equal(httpRequests[0].path,'/api/eufy_viewer/events?entities=camera.front_door&date=2026-10-25');
+assert.equal(httpRequests[0].signal,rec.eufyAbort.signal);
+assert.equal(grid.children.length,1);
+assert.match(grid.children[0].textContent,/08:00:00/);
+rec.eufyWsCommand=async()=>({success:false,error:{code:'unauthorized',message:'Camera access denied'}});
+await vm.runInContext('loadEufyRecordings()',rec);
+assert.equal(httpRequests.length,1,'An access denial does not trigger the fallback');
+assert.equal(httpRequests[0].signal.aborted,true);
+assert.match(note.textContent,/Camera access denied/);
+rec.eufyWsCommand=async()=>({success:false,error:{code:'unknown_command',message:'Unknown command.'}});
+rec.eufyApi=async()=>({ok:false,status:404});
+await vm.runInContext('loadEufyRecordings()',rec);
+assert.equal(grid.children.length,0);
+assert.match(note.textContent,/Recording list unavailable: The Eufy Viewer recording endpoint is unavailable/);
