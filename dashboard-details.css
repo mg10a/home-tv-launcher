@@ -50,13 +50,16 @@ button.halo-close {
 
 .pet-portraits {
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
- grid-template-rows:minmax(0,1fr) auto;gap:5px;
+ grid-template-rows:auto auto;align-content:start;gap:5px;
 }
 .pet-portrait-card {
- display:grid;grid-template-rows:minmax(0,1fr) auto auto;
+ display:grid;grid-template-rows:auto auto auto;
  min-height:0;border-radius:8px;overflow:hidden;background:#14263a;
 }
-.pet-portrait-card img {grid-row:1;display:block;width:100%;height:100%;min-height:0;object-fit:contain}
+.pet-portrait-card img {
+ grid-row:1;display:block;width:100%;height:clamp(84px,30dvh,142px);
+ object-fit:contain;
+}
 .pet-portrait-caption {grid-row:2;padding:6px;background:#102030}
 .pet-portrait-caption p {margin:2px 0!important}
 .pet-portrait-caption small {display:block;overflow-wrap:anywhere}
@@ -67,15 +70,15 @@ button.halo-close {
 .pet-mini-portrait img {width:23px;height:23px;flex:none;object-fit:cover;border-radius:6px}
 [data-pet-portrait] img[hidden] {display:none}
 @media (orientation:landscape) {
- .pet-overlay .pet-dialog {height:min(94dvh,600px)}
  .pet-dialog .pet-grid {
-  grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
-  grid-template-rows:auto minmax(min-content,1fr) auto!important;
+  flex:0 1 auto;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+  grid-template-rows:repeat(3,auto)!important;
   overflow:auto;
  }
- .pet-dialog .pet-portraits {grid-column:1;grid-row:1/4;min-height:180px}
+ .pet-dialog .pet-portraits {grid-column:1;grid-row:1/4}
  .pet-dialog .pet-block:not(.pet-portraits) {grid-column:2}
 }
 @media (orientation:portrait) {
- .pet-portrait-card {height:clamp(145px,27dvh,250px)}
+ .pet-portrait-card img {height:clamp(96px,18dvh,142px)}
 }

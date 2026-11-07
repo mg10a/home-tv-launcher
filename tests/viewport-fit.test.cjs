@@ -2,6 +2,31 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {chromium}=require('playwright');
 
+async function checkMealWeek(page) {
+ await page.evaluate(()=>{
+  navigateHome('family');
+  showFamilyList('meal');
+  const target=document.querySelector('#familyMealPanel .family-meals');
+  haStates['sensor.samsung_food_meal_plan']={entity_id:'sensor.samsung_food_meal_plan',state:'ok',attributes:{
+   days:Array.from({length:7},(_,i)=>({date:'2026-11-0'+(i+2),meals:i===0?[]:[{
+    title:'A long recipe name that should not make the remaining days disappear'
+   }]}))
+  }};
+  renderSamsungFoodMeals(target,'2026-11-02');
+ });
+ const layout=await page.locator('#familyMealPanel .family-meals').evaluate(week=>{
+  const card=week.closest('.tasks-card').getBoundingClientRect();
+  return [...week.querySelectorAll('.family-meal-day')].map(row=>{
+   const bounds=row.getBoundingClientRect();
+   const day=row.querySelector('strong');
+   const label=day.getBoundingClientRect();
+   return {day:day.textContent,visible:bounds.top>=card.top-1&&bounds.bottom<=card.bottom+1&&label.top>=bounds.top-1&&label.bottom<=bounds.bottom+1};
+  });
+ });
+ assert.deepEqual(layout.map(row=>row.day),['Mon','Tue','Wed','Thu','Fri','Sat','Sun']);
+ assert(layout.every(row=>row.visible),'all seven meal days must fit in the overview: '+JSON.stringify(layout));
+}
+
 async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width=780}={}) {
  const page=await browser.newPage({
   viewport:{width,height:360},hasTouch:true,isMobile:true,serviceWorkers:'block',
@@ -63,6 +88,16 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
   await page.locator('#historyPage').evaluate(el=>el.classList.add('hidden'));
   if(!nativeInsets){
    await page.clock.setFixedTime(new Date('2026-11-07T12:00:00Z'));
+   await checkMealWeek(page);
+   await page.evaluate(()=>navigateHome('home'));
+   const rooms=await page.locator('#homeRoomGrid').boundingBox();
+   const camera=await page.locator('.doorbell-slot .compact-eufy').boundingBox();
+   const heating=await page.locator('.home-compact-stack .salus-strip').boundingBox();
+   const pets=await page.locator('.home-compact-stack .compact-pets').boundingBox();
+   const car=await page.locator('.home-security .kia-placeholder').boundingBox();
+   assert(Math.abs(camera.y-rooms.y)<=1&&Math.abs(heating.y-camera.y)<=1,'top cards align with the room grid');
+   assert(Math.abs(pets.y+pets.height-camera.y-camera.height)<=1,'cat flap and doorbell end on the same row');
+   assert(Math.abs(car.y+car.height-rooms.y-rooms.height)<=1,'the right-hand card grid reaches the same bottom edge');
    const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aQ1sAAAAASUVORK5CYII=','base64');
    await page.route(/https:\/\/(groobox-marketing\.transforms\.svdcdn\.com|media\.riverford\.co\.uk|thumb\.wikimedia\.org)\//,route=>route.fulfill({contentType:'image/png',body:png}));
    let photoLookups=0;
@@ -137,8 +172,15 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
    const photoBox=await pet.locator('img').boundingBox();
    const eventBox=await pet.locator('#petEventMaia').boundingBox();
    const cardBox=await pet.boundingBox();
-   assert(photoBox.height>80,'landscape portrait has enough unobstructed height');
+   assert(photoBox.height>80&&photoBox.height<125,'landscape portrait leaves room for the flap controls');
    assert(eventBox.y>=photoBox.y+photoBox.height-1&&eventBox.y+eventBox.height<=cardBox.y+cardBox.height+1,'last event fits beneath the photo');
+   const modalBox=await page.locator('.pet-dialog').boundingBox();
+   const locks=await page.locator('#petOverlay .pet-lock-actions button').all();
+   assert.equal(locks.length,4);
+   for(const lock of locks){
+    const box=await lock.boundingBox();
+    assert(box&&box.y+box.height<=modalBox.y+modalBox.height+1,'lock-mode button fits inside the modal');
+   }
    await page.locator('#petOverlay').evaluate(el=>el.classList.add('hidden'));
    assert.equal(await page.locator('.salus-target-controls > button').count(),2);
    assert.equal(await page.locator('.salus-target-controls > #salusCurrent').count(),1);
@@ -154,6 +196,7 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
  if(!nativeInsets){
   await page.setViewportSize({width:360,height:780});
   assert.equal(await page.locator('html').evaluate(root=>getComputedStyle(root).getPropertyValue('--halo-safe-right').trim()),'0px');
+  if(path==='index.html')await checkMealWeek(page);
  }
  await page.close();
 }

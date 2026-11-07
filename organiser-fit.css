@@ -19,11 +19,10 @@
 /* One full-height household section with three interchangeable views. */
 #dashboardPage .family-sections>.family-section.tasks-card{grid-row:1/4!important;gap:8px;overflow:hidden}
 #dashboardPage .tasks-card>.family-section.meal-plan{padding:0!important;border:0;background:none;border-radius:0!important;min-height:0!important}
-#dashboardPage .tasks-card #familyMealPanel:not([hidden]){display:flex;flex-direction:column;gap:10px}
+#dashboardPage .tasks-card #familyMealPanel:not([hidden]){display:flex;flex:1;flex-direction:column;gap:4px}
 #dashboardPage .tasks-card #familyMealPanel[hidden]{display:none!important}
-#dashboardPage .tasks-card .meal-days{flex:1;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:auto}
-#dashboardPage .tasks-card .meal-days>button{flex:1;min-height:38px;white-space:normal!important}
-#dashboardPage .tasks-card .meal-days b{white-space:normal!important}
+#dashboardPage .tasks-card .meal-days.family-meals{min-height:0;overflow:hidden}
+#dashboardPage .tasks-card .family-meal-day{min-height:0;line-height:1.15}
 #dashboardPage .family-task-tabs button{min-height:32px;font-size:clamp(10px,1.4vw,14px)}
 #dashboardPage .family-task-tabs button:focus-visible{outline:2px solid #d3e7ff;outline-offset:-3px}
 @media(orientation:portrait){#dashboardPage .family-sections>.family-section.tasks-card{grid-row:2/5!important;grid-column:1!important}}
