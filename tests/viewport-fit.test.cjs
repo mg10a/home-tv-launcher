@@ -61,6 +61,41 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
   await page.locator('#historyPage').evaluate(el=>el.classList.remove('hidden'));
   await fits('#historyPage');
   await page.locator('#historyPage').evaluate(el=>el.classList.add('hidden'));
+  if(!nativeInsets){
+   await page.clock.setFixedTime(new Date('2026-11-07T12:00:00Z'));
+   await page.evaluate(()=>{
+    haVerified=true;
+    haStates['sensor.groobarbs_next_delivery']={state:'2026-11-10',attributes:{
+     date:'2026-11-10',deadline:'2026-11-09T11:00:00Z',editable:true,swaps_enabled:true,
+     items:[{id:1,title:'Veg box',contents_can_change:true,contents:[{id:2,product_id:1,title:'Potatoes',category_ids:[1]}]}],
+     replacements:Array.from({length:18},(_,i)=>({id:i+3,title:i===0?'Uchiki Kuri Squash':'Produce '+(i+1),category_ids:[1]}))
+    }};
+    openGroobarbsDetails();
+   });
+   await page.route('https://groobox-marketing.transforms.svdcdn.com/**',route=>route.fulfill({
+    contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aQ1sAAAAASUVORK5CYII=','base64')
+   }));
+   await page.getByRole('button',{name:'Swap Potatoes'}).click();
+   const choices=page.locator('.groo-options');
+   assert.equal(await choices.getByRole('button').count(),18);
+   assert(await choices.evaluate(el=>el.scrollHeight<=el.clientHeight+1),'All 18 swaps must fit one landscape grid');
+   assert.equal(await choices.locator('img[referrerpolicy="no-referrer"]').count(),1);
+   const close=page.locator('.groo-picker header').getByRole('button',{name:'Close',exact:true});
+   assert.equal(await close.textContent(),'×');
+   await close.click();
+   assert.equal(await page.locator('.groobarbs-detail').evaluate(el=>el.open),false);
+   await page.evaluate(()=>{
+    haVerified=false;
+    petActivity.maia={state:'on',t:Date.parse('2026-11-07T11:37:00Z')};
+    haStates['binary_sensor.maia']={entity_id:'binary_sensor.maia',state:'on'};
+    renderPets();
+   });
+   assert.match(await page.locator('#petEventMaia').textContent(),/Came in · .*11:37/);
+   assert.equal(await page.locator('#petEventSolo').textContent(),'No last event recorded');
+   assert.equal(await page.locator('.salus-target-controls > button').count(),2);
+   assert.equal(await page.locator('.salus-target-controls > #salusCurrent').count(),1);
+   assert.equal(await page.locator('.salus-setpoint-row > button').count(),0);
+  }
  }
  for(const dialog of await page.locator('dialog').all()){
   await dialog.evaluate(el=>el.showModal());

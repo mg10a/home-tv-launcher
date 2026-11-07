@@ -84,7 +84,7 @@ function renderDetail(){
   const badge=addText(meta,'span',used+' of '+limit+' used · '+remaining+' remaining');badge.className='groo-allowance';badge.setAttribute('role','status');
   const grid=addText(section,'div','');grid.className='groo-produce';
   for(const c of item.contents||[]){const tile=addText(grid,'div','');tile.className='groo-tile'+(c.replaced_product_id?' is-swapped':'');const text=addText(tile,'div','');addText(text,'strong',c.title);if(c.replaced_title)addText(text,'small','Instead of '+c.replaced_title);
-   if(a.swaps_enabled&&editable){const b=button(tile,c.replaced_product_id?'Change':'Swap',()=>{choice={itemId:item.id,contentId:c.id,replacement:null,page:0};message='';renderDetail()});b.disabled=saving||(!c.replaced_product_id&&remaining===0);b.setAttribute('aria-label',(c.replaced_product_id?'Change ':'Swap ')+c.title)}
+   if(a.swaps_enabled&&editable){const b=button(tile,c.replaced_product_id?'Change':'Swap',()=>{choice={itemId:item.id,contentId:c.id,replacement:null};message='';renderDetail()});b.disabled=saving||(!c.replaced_product_id&&remaining===0);b.setAttribute('aria-label',(c.replaced_product_id?'Change ':'Swap ')+c.title)}
   }
  }
  if(extras.length){const extra=addText(detail,'div','Extras: '+extras.map(i=>i.title+' × '+i.qty).join(' · '));extra.className='groo-extras'}
@@ -93,13 +93,36 @@ function renderDetail(){
   const item=boxes.find(i=>i.id===choice.itemId),c=item?.contents?.find(c=>c.id===choice.contentId);
   if(!item||!c||!editable){choice=null;return}
   const panel=addText(detail,'section','');panel.className='groo-picker';panel.setAttribute('aria-label','Choose replacement');
-  const bar=addText(panel,'header','');button(bar,'Back',()=>{if(!saving){choice=null;renderDetail()}});addText(bar,'h3','Replace '+c.title);
+  for(const sibling of detail.children)if(sibling!==panel)sibling.inert=true;
+  const bar=addText(panel,'header','');
+  button(bar,'Back',()=>{if(!saving){choice=null;renderDetail()}}).disabled=saving;
+  addText(bar,'h3','Replace '+c.title);
+  button(bar,'Close',()=>detail.close());
   const options=(a.replacements||[]).filter(r=>r.id!==(c.replaced_product_id||c.product_id)&&r.id!==c.product_id&&(r.category_ids||[]).some(id=>(c.category_ids||[]).includes(id)));
-  const choices=addText(panel,'div','');choices.className='groo-options';
-  const pages=Math.max(1,Math.ceil(options.length/6));choice.page=Math.min(choice.page,pages-1);
-  for(const r of options.slice(choice.page*6,choice.page*6+6)){const b=button(choices,r.title,()=>{choice.replacement=r;renderDetail()});b.setAttribute('aria-pressed',String(choice.replacement?.id===r.id));b.disabled=saving}
+  if(choice.replacement&&!options.some(r=>r.id===choice.replacement.id))choice.replacement=null;
+  const choices=addText(panel,'div','');
+  choices.className='groo-options';
+  const columns=Math.min(options.length||1,Math.max(3,Math.ceil(Math.sqrt(options.length*1.7))));
+  choices.style.setProperty('--groo-columns',columns);
+  choices.style.setProperty('--groo-portrait-columns',Math.min(columns,3));
+  for(const r of options){
+   const b=button(choices,'',()=>{
+    choice.replacement=r;
+    renderDetail();
+    detail.querySelector('.groo-options [aria-pressed="true"]')?.focus({preventScroll:true});
+   });
+   const photo=window.haloGrooboxImages?.[String(r.title).trim().toLowerCase()];
+   if(photo){
+    const image=document.createElement('img');
+    image.alt='';image.src=photo;image.referrerPolicy='no-referrer';image.decoding='async';
+    image.addEventListener('error',()=>image.remove(),{once:true});
+    b.append(image);
+   }
+   addText(b,'span',r.title);
+   b.setAttribute('aria-pressed',String(choice.replacement?.id===r.id));
+   b.disabled=saving;
+  }
   if(!options.length)addText(choices,'p','No replacements available.');
-  if(pages>1){const pager=addText(panel,'div','');pager.className='groo-pages';button(pager,'Previous',()=>{choice.page=Math.max(0,choice.page-1);renderDetail()}).disabled=saving||choice.page===0;addText(pager,'span',(choice.page+1)+' / '+pages);button(pager,'Next',()=>{choice.page=Math.min(pages-1,choice.page+1);renderDetail()}).disabled=saving||choice.page===pages-1}
   const review=addText(panel,'div','');review.className='groo-review';addText(review,'strong',choice.replacement?c.title+' → '+choice.replacement.title:'Choose a replacement above');addText(review,'small',item.bespoke?'Bespoke surcharge already included.':'This makes your box bespoke: £1 extra.');
   const save=button(panel,saving?'Saving…':'Save swap to Groobarbs',async()=>{
    if(!choice?.replacement||saving)return;const request={order_id:a.order_id,item_id:item.id,content_id:c.id,replacement_id:choice.replacement.id,revision:a.revision};saving=true;renderDetail();

@@ -1,0 +1,61 @@
+/* Shared dismissal controls keep their individual click and keyboard behavior. */
+button.halo-close {
+ display:grid!important;place-items:center;box-sizing:border-box;
+ flex:0 0 32px;width:32px!important;height:32px!important;min-height:32px!important;
+ padding:0!important;margin-inline-start:auto;border:1px solid #607b98;
+ border-radius:8px;background:#243b55;color:#eef5ff;
+ font:normal 24px/1 system-ui!important;align-self:flex-start;justify-self:end;
+}
+.ha-setup-panel {position:relative}
+.ha-setup-panel>h2,.groobarbs-link-help>h2,.sf-link-help>h2 {padding-right:38px}
+.ha-setup-panel>.halo-close,.groobarbs-link-help>.halo-close,.sf-link-help>.halo-close {
+ position:absolute;top:10px;right:10px;margin:0;
+}
+
+.groobarbs-detail .groo-picker {gap:6px;padding:10px}
+.groo-picker header h3 {flex:1;min-width:0;font-size:clamp(13px,2.8vh,19px)}
+.groo-picker .groo-options {
+ grid-template-columns:repeat(var(--groo-columns,1),minmax(0,1fr));
+ grid-auto-rows:minmax(42px,1fr);gap:5px;overflow:auto;
+}
+.groo-picker .groo-options button {
+ position:relative;isolation:isolate;overflow:hidden;min-width:0;
+ display:flex;align-items:flex-end;justify-content:center;
+ padding:0!important;font-size:clamp(10px,1.3vw,14px);line-height:1.15;
+}
+.groo-options button img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1}
+.groo-options button span {width:100%;padding:4px 2px;background:#102030e8;color:#fff;overflow-wrap:anywhere}
+.groo-options button:not(:has(img)) {align-items:center}
+.groo-options button:not(:has(img)) span {background:none}
+.groo-options button[aria-pressed=true] span {background:#225b46}
+.groo-picker .groo-review {gap:2px;flex:none}
+.groo-picker .groo-save {flex:none}
+@media (orientation:portrait) {
+ .groo-picker .groo-options {grid-template-columns:repeat(var(--groo-portrait-columns,1),minmax(0,1fr))}
+}
+
+.salus-target-controls {
+ display:grid;grid-template-columns:32px auto 32px;
+ gap:8px;align-items:center;justify-items:center;
+}
+.salus-target-controls button {
+ pointer-events:auto;width:32px;height:32px;padding:0;
+ border:1px solid #607b98;border-radius:8px;background:#243b55;
+ color:#eef5ff;font:normal 21px/1 system-ui;
+}
+.salus-target-controls button:disabled {opacity:.45}
+
+.pet-portraits {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.pet-portrait-card {
+ position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;
+ min-height:90px;overflow:hidden;border-radius:8px;background:#14263a;
+}
+.pet-portrait-card img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%;z-index:-1}
+.pet-portrait-caption {padding:4px;background:#102030e8}
+.pet-portrait-caption p {margin:2px 0!important}
+.pet-portrait-card button {padding:3px;font-size:10px;background:#294969;border:0}
+#petPhotoStatus {grid-column:1/-1}
+#petPhotoStatus:empty {display:none}
+.pet-mini-portrait {display:flex;align-items:center;gap:4px;min-width:0}
+.pet-mini-portrait img {width:23px;height:23px;flex:none;object-fit:cover;border-radius:6px}
+[data-pet-portrait] img[hidden] {display:none}
