@@ -180,7 +180,7 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
    const eventBox=await pet.locator('#petEventMaia').boundingBox();
    const cardBox=await pet.boundingBox();
    assert(photoBox.height>80&&photoBox.height<125,'landscape portrait leaves room for the flap controls');
-   assert(eventBox.y>=photoBox.y+photoBox.height-1&&eventBox.y+eventBox.height<=cardBox.y+cardBox.height+1,'last event fits beneath the photo');
+   assert(eventBox.y>=photoBox.y+photoBox.height-1&&eventBox.y+eventBox.height<=cardBox.y+cardBox.height+1,'last event fits beneath the photo: '+JSON.stringify({photoBox,eventBox,cardBox}));
    const modalBox=await page.locator('.pet-dialog').boundingBox();
    const locks=await page.locator('#petOverlay .pet-lock-actions button').all();
    assert.equal(locks.length,4);
