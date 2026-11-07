@@ -10,6 +10,8 @@ on:
       - 'tests/location-map.test.mjs'
       - 'tests/kia-controls.test.mjs'
       - 'coffee-controls.js'
+      - 'home-screens.css'
+      - 'tests/coffee-layout.test.cjs'
       - 'room-controls.js'
       - 'tests/coffee-controls.test.mjs'
       - 'tests/coffee-confirmation.test.mjs'
@@ -24,7 +26,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-save --ignore-scripts happy-dom@21.0.4
+      - run: npm install --no-save --ignore-scripts happy-dom@21.0.4 playwright@1.62.1
       - run: node tests/kia-refresh.test.mjs
       - run: node tests/location-map.test.mjs
       - run: node --check kia-controls.js
@@ -32,4 +34,6 @@ jobs:
       - run: node --check coffee-controls.js
       - run: node tests/coffee-controls.test.mjs
       - run: node tests/coffee-confirmation.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/coffee-layout.test.cjs
       - run: node tests/room-controls.test.mjs
