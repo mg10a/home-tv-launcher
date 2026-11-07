@@ -57,9 +57,23 @@ const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.cla
 const panel=el('section','pet-timeline');
 panel.setAttribute('aria-label','Daily cat activity');
 const head=el('div','pet-timeline-head');
-const select=el('select');
-select.setAttribute('aria-label','Cat activity day');
-head.append(el('strong','','Daily timeline'),select);
+const button=(text,action,cls='')=>{const b=el('button',cls,text);b.type='button';b.onclick=action;return b};
+const trigger=button('Today ▾',openPicker);
+trigger.disabled=true;
+trigger.setAttribute('aria-haspopup','dialog');
+trigger.setAttribute('aria-expanded','false');
+trigger.setAttribute('aria-controls','petDayPicker');
+head.append(el('strong','','Daily timeline'),trigger);
+const picker=el('dialog','pet-day-picker');
+picker.id='petDayPicker';
+picker.setAttribute('aria-label','Choose timeline day');
+const pickerHead=el('header');
+const close=button('×',()=>picker.close(),'halo-close');
+close.setAttribute('aria-label','Close day picker');
+pickerHead.append(el('strong','','Choose timeline day'),close);
+const options=el('div','room-picker-options');
+picker.append(pickerHead,options);
+document.body.append(picker);
 const chart=el('div','pet-timeline-chart');
 const legend=el('div','pet-timeline-legend');
 for(const state of Object.keys(labels))legend.append(el('span','pet-timeline-key is-'+state,labels[state]));
@@ -68,18 +82,48 @@ detail.setAttribute('aria-live','polite');
 panel.append(head,chart,legend,detail);
 portraits.insertBefore(panel,document.getElementById('petPhotoStatus'));
 let selection='',latest,previousDay='',signature='',selectedDetail='';
+const dayLabel=(day,today)=>day===today?'Today':dayFormat.format(atHour(day,12));
+function openPicker(){
+ const dates=Array.from({length:lookback+1},(_,i)=>shift(previousDay,-i));
+ options.replaceChildren(...dates.map(day=>{
+  const option=button(dayLabel(day,previousDay),()=>{
+   selection=day===previousDay?'':day;
+   selectedDetail='';
+   picker.close();
+   render(latest);
+  });
+  option.setAttribute('aria-pressed',String(day===(selection||previousDay)));
+  return option;
+ }));
+ picker.showModal();
+ trigger.setAttribute('aria-expanded','true');
+ options.querySelector('[aria-pressed="true"]').focus();
+}
+picker.addEventListener('close',()=>{
+ trigger.setAttribute('aria-expanded','false');
+ if(trigger.getClientRects().length)trigger.focus({preventScroll:true});
+});
+picker.addEventListener('keydown',event=>{
+ if(event.key==='BrowserBack'){event.preventDefault();picker.close();return}
+ const step={ArrowLeft:-1,ArrowRight:1,ArrowUp:-2,ArrowDown:2}[event.key];
+ const buttons=[...options.children],index=buttons.indexOf(event.target);
+ if(!step||index<0)return;
+ event.preventDefault();
+ buttons[Math.max(0,Math.min(buttons.length-1,index+step))].focus();
+});
 function render(data){
  latest=data;
  const now=data.now,today=dateFormat.format(now);
  if(previousDay!==today){
   selectedDetail='';
   previousDay=today;
-  const dates=Array.from({length:lookback+1},(_,i)=>shift(today,-i));
-  select.replaceChildren(...dates.map(day=>new Option(day===today?'Today':dayFormat.format(atHour(day,12)),day)));
-  if(!dates.includes(selection))selection='';
+  if(selection<shift(today,-lookback)||selection>=today)selection='';
+  if(picker.open)picker.close();
  }
- select.value=selection||today;
- const day=select.value;
+ const day=selection||today,label=dayLabel(day,today);
+ trigger.disabled=false;
+ trigger.textContent=label+' ▾';
+ trigger.setAttribute('aria-label','Cat activity day: '+label);
  const week=Object.entries(names).map(([key,name])=>({name,...timelineDay(day,{
   now,history:data.history[key],through:data.through,live:data.live[key],current:data.current[key]
  })}));
@@ -116,6 +160,5 @@ function render(data){
  const recorded=week.some(cat=>cat.parts.some(p=>p.state!=='unknown'));
  detail.textContent=selectedDetail||(recorded?'Tap a section for its time range.':data.loading?'Loading Home Assistant history…':'No recorded activity for this day.');
 }
-select.onchange=()=>{selection=select.value===previousDay?'':select.value;selectedDetail='';render(latest)};
-window.petTimeline={render,historyStart,reset:()=>{selection='';signature='';selectedDetail=''}};
+window.petTimeline={render,historyStart,reset:()=>{if(picker.open)picker.close();selection='';signature='';selectedDetail=''}};
 })();
