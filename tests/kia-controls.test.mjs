@@ -1,9 +1,14 @@
 const {Window}=await import(process.env.HAPPY_DOM_MODULE||'happy-dom');
 import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 const code=readFileSync(new URL('../kia-controls.js',import.meta.url),'utf8');
-async function setup({climate=true,fail=false,multiple=false}={}){const w=new Window({url:'https://example.com'});w.haSocket={};let connected=true;const calls=[],states={},registry=[];const put=(id,state,attributes={},device_id='sorento')=>{states[id]={entity_id:id,state,attributes:{friendly_name:'Sorento '+id.split('.').at(-1).replaceAll('_',' '),...attributes}};registry.push({entity_id:id,device_id,platform:'kia_uvo'})};put('sensor.range','230',{unit_of_measurement:'mi',friendly_name:'Sorento Total driving range'});put('sensor.fuel_level','46',{unit_of_measurement:'%'});put('lock.sorento','locked',{friendly_name:'Sorento Door lock'});put('button.close_all_windows','unknown');put('button.force_refresh','unknown');put('binary_sensor.rear_door','off',{device_class:'door'});put('sensor.last_updated_at','2026-11-03T07:00:00Z',{device_class:'timestamp'});put('sensor.car_battery','65',{unit_of_measurement:'%'});put('sensor.secret_vin','REDACTED',{friendly_name:'Vehicle identification number'});if(climate)put('climate.sorento','off',{min_temp:14,max_temp:30,target_temp_step:0.5,temperature:21});put('sensor.other','999',{friendly_name:'EV6 fuel level'},'other');
+async function setup({climate=true,fail=false,multiple=false,cloudStates}={}){const w=new Window({url:'https://example.com'});w.haSocket={};let connected=true;const calls=[],states={},registry=[];const put=(id,state,attributes={},device_id='sorento')=>{states[id]={entity_id:id,state,attributes:{friendly_name:'Sorento '+id.split('.').at(-1).replaceAll('_',' '),...attributes}};registry.push({entity_id:id,device_id,platform:'kia_uvo'})};put('sensor.range','230',{unit_of_measurement:'mi',friendly_name:'Sorento Total driving range'});put('sensor.fuel_level','46',{unit_of_measurement:'%'});put('lock.sorento','locked',{friendly_name:'Sorento Door lock'});put('button.close_all_windows','unknown');put('button.force_refresh','unknown');put('binary_sensor.rear_door','off',{device_class:'door'});put('sensor.last_updated_at','2026-11-03T07:00:00Z',{device_class:'timestamp'});put('sensor.car_battery','65',{unit_of_measurement:'%'});put('sensor.secret_vin','REDACTED',{friendly_name:'Vehicle identification number'});if(climate)put('climate.sorento','off',{min_temp:14,max_temp:30,target_temp_step:0.5,temperature:21});put('sensor.other','999',{friendly_name:'EV6 fuel level'},'other');
 const devices=[{id:'sorento',name:multiple?'First car':'Sorento',model:multiple?'Car':'Sorento'},{id:'other',name:'EV6'}];const services={kia_uvo:{start_climate:{fields:{device_id:{},climate:{},temperature:{selector:{number:{min:16,max:85}}},heating:{selector:{select:{options:[{label:'Off',value:'0'},{label:'Rear only',value:'2'}]}}},defrost:{},duration:{selector:{number:{min:1,max:30}}}}},stop_climate:{}}};
-const request=async c=>{calls.push(c);if(c.type==='config/entity_registry/list')return registry;if(c.type==='config/device_registry/list')return devices;if(c.type==='get_services')return services;if(c.type==='get_config')return {unit_system:{temperature:'°C'}};if(c.type==='get_states')return Object.values(states);if(fail)throw Error('Unsupported vehicle command');return {}};w.eval(readFileSync(new URL('../kia-refresh.js',import.meta.url),'utf8'));w.eval(code);const card=w.document.createElement('section');w.document.body.append(card);const api=w.createKiaPanel({card,request,states:()=>states,connected:()=>connected});await new Promise(r=>setTimeout(r,10));api.open();const d=w.document.querySelector('.kia-detail');const click=t=>{const b=[...d.querySelectorAll('button')].find(b=>b.textContent===t);assert(b,'Missing '+t);b.click()};return {w,calls,states,registry,api,d,click,disconnect:()=>{connected=false;api.update()}}}
+let cloudResult;
+if(cloudStates){put('device_tracker.sorento','home',{latitude:52,longitude:-2});services.kia_uvo.update={};w.Date.now=()=>Date.parse('2026-11-07T12:00:00Z');states['lock.sorento'].state='unlocked';states['sensor.last_updated_at'].state='2026-11-07T11:56:00Z'}
+const request=async c=>{calls.push(c);if(c.type==='config/entity_registry/list')return registry;if(c.type==='config/device_registry/list')return devices;if(c.type==='get_services')return services;if(c.type==='get_config')return {unit_system:{temperature:'°C'}};if(c.type==='get_states')return Object.values(cloudResult||states);if(c.domain==='kia_uvo'&&c.service==='update')cloudResult=cloudStates(states);if(fail)throw Error('Unsupported vehicle command');return {}};w.eval(readFileSync(new URL('../kia-refresh.js',import.meta.url),'utf8'));let refresh;
+const createRefresh=w.createKiaRefresh;
+w.createKiaRefresh=options=>refresh=createRefresh(options);
+w.eval(code);const card=w.document.createElement('section');w.document.body.append(card);const api=w.createKiaPanel({card,request,states:()=>states,connected:()=>connected});await new Promise(r=>setTimeout(r,10));api.open();const d=w.document.querySelector('.kia-detail');const click=t=>{const b=[...d.querySelectorAll('button')].find(b=>b.textContent===t);assert(b,'Missing '+t);b.click()};return {w,calls,states,registry,api,d,click,refresh,card,disconnect:()=>{connected=false;api.update()}}}
 const tick=()=>new Promise(r=>setTimeout(r,5));
 {
 const {w,calls,states,api,d,click}=await setup();assert(d.textContent.includes('230 mi'));assert(!d.textContent.includes('999'));assert.equal(calls.filter(c=>c.type==='call_service').length,0);click('Climate');const input=d.querySelector('input[aria-label="Target temperature"]');assert.equal(input.min,'16');assert.equal(input.max,'30');input.focus();input.value='23.5';input.dispatchEvent(new w.Event('input'));api.update();assert.equal(d.querySelector('input[aria-label="Target temperature"]'),input);input.blur();click('Front defrost off');click('Review climate request');assert.equal(calls.filter(c=>c.type==='call_service').length,0);click('Send request');await tick();const command=calls.at(-1);assert.equal(command.service,'start_climate');assert.equal(command.service_data.climate,true);assert.equal(command.service_data.defrost,true);assert.equal(command.service_data.temperature,23.5);assert.equal(command.service_data.device_id,'sorento');assert(d.textContent.includes('Request accepted by HA'));assert.equal(states['climate.sorento'].state,'off','service acceptance does not invent vehicle state');click('Stop climate');click('Send request');await tick();assert.equal(calls.filter(c=>c.type==='call_service').length,1,'cooldown blocks duplicate requests');await w.happyDOM.close();
@@ -38,3 +43,25 @@ click('Climate');assert(!d.textContent.includes('Off °C'));assert(d.querySelect
 const {w,calls,click}=await setup();click('Warm cabin');click('Send request');await tick();assert.equal(calls.at(-1).service_data.temperature,21);assert.equal(calls.at(-1).service_data.defrost,false);assert.equal(calls.at(-1).service_data.heating,'0');await w.happyDOM.close();
 }
 console.log('Compact readings, visible alerts, formatted mileage and staged warm/defrost presets passed.');
+
+{
+ const {w,calls,states,d,refresh,card}=await setup({cloudStates:states=>({
+  ...states,
+  'lock.sorento':{...states['lock.sorento'],state:'locked'},
+  'sensor.fuel_level':{...states['sensor.fuel_level'],state:'42'},
+  'sensor.last_updated_at':{...states['sensor.last_updated_at'],state:'2026-11-07T12:00:00Z'},
+  'device_tracker.sorento':{entity_id:'device_tracker.sorento',state:'not_home',attributes:{latitude:53,longitude:-2}},
+  'sensor.other':{...states['sensor.other'],state:'888'}
+ })});
+ assert.match(card.textContent,/1 active alert/);
+ await refresh.check();
+ assert.deepEqual(JSON.parse(JSON.stringify(calls.filter(c=>c.type==='call_service'))),[
+  {type:'call_service',domain:'kia_uvo',service:'update',service_data:{device_id:'sorento'}}
+ ]);
+ assert.equal(states['sensor.other'].state,'999','other vehicles are excluded from the snapshot');
+ assert.equal(w.getKiaMapState().tracker.attributes.latitude,53);
+ assert.match(d.textContent,/42 %/);
+ assert.match(d.textContent,/No active alerts in last report/);
+ assert.doesNotMatch(card.textContent,/active alert/);
+ await w.happyDOM.close();
+}

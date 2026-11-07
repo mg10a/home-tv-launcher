@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Build;
 import android.webkit.*;
 import android.widget.*;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.graphics.Color;
 import android.util.Base64;
 import org.json.JSONObject;
@@ -20,12 +23,11 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.1";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.2";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
-    web.setPadding(0,0,0,0);
-    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+    fitWebViewsToWindow();
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setMediaPlaybackRequiresUserGesture(false);
     web.addJavascriptInterface(new Bridge(),"HomeTVNative");
     web.addJavascriptInterface(new LauncherBridge(),"AndroidLauncher");
@@ -50,6 +52,29 @@ public final class MainActivity extends Activity {
     // Fetch current HTML on a cold launch without clearing sign-in or album preferences.
     // Versioned CSS/JS can still use the normal resource cache.
     web.loadUrl(LAUNCHER+"&launch="+UUID.randomUUID(),Collections.singletonMap("Cache-Control","no-cache"));
+  }
+
+  private void fitWebViewsToWindow() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+      return;
+    }
+
+    // Android 15 draws behind the system bars. Size the WebView inside their
+    // insets so viewport units and fixed dialogs use the available screen.
+    getWindow().setDecorFitsSystemWindows(false);
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    var controller=getWindow().getInsetsController();
+    if(controller!=null)controller.hide(WindowInsets.Type.statusBars());
+    View content=findViewById(android.R.id.content);
+    content.setBackgroundColor(Color.BLACK);
+    content.setOnApplyWindowInsetsListener((view, insets) -> {
+      android.graphics.Insets safe=insets.getInsets(WindowInsets.Type.systemBars()
+        | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
+      view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+      return WindowInsets.CONSUMED;
+    });
+    content.requestApplyInsets();
   }
 
   public final class LauncherBridge {

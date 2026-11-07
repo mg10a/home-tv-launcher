@@ -27,7 +27,7 @@ test('recordings use installed authenticated WebSocket metadata and HTTP signed 
 });
 
 
-function harness(dev=false){
+function harness(dev=false,entity='camera.driveway',friendly_name){
  const sent=[],elements={};
  let now=100000,heartbeat=null,retryTimer=null;
  class Clock extends Date{static now(){return now}}
@@ -43,7 +43,7 @@ function harness(dev=false){
  const document={getElementById(id){assert.ok(elements[id],id);return elements[id]},hidden:false};
  const haSocket={readyState:1,send(s){sent.push(JSON.parse(s))}};
  const WebSocket={OPEN:1};
- const haStates={'camera.front_door':{attributes:{viewer_webrtc:true,viewer_dev_bridge:dev}}};
+ const haStates={[entity]:{attributes:{viewer_webrtc:true,viewer_dev_bridge:dev,friendly_name}}};
  class Peer{constructor(){this.connectionState='new';Peer.last=this}addTransceiver(){}
   async createOffer(){return {sdp:'offer-test'}}
   async setLocalDescription(x){this.localDescription=x}
@@ -52,7 +52,7 @@ function harness(dev=false){
   close(){this.closed=true}}
  class MediaStream{constructor(){this.tracks=[]}addTrack(t){this.tracks.push(t)}getTracks(){return this.tracks}}
  const deps={document,WebSocket,haSocket,haStates,eufyWsPending:new Map(),haVerified:true,
-  RTCPeerConnection:Peer,MediaStream,eufyCameraEntity:()=> 'camera.front_door',
+  RTCPeerConnection:Peer,MediaStream,eufyCameraEntity:()=>entity,
   eufyBattery:()=> '46%',eufyStopJpeg:()=>{},
   eufyWsCommand:async x=>{sent.push(x);return {success:true,result:{accepted:true}}},
   setInterval:fn=>{heartbeat=fn;return 1},clearInterval:()=>{heartbeat=null},
@@ -161,6 +161,17 @@ test('DEV dashboard can choose a second HA Eufy camera without changing the orig
  selection.value='camera.front_door_2';api.changed();
  assert.equal(api.selected(),'camera.front_door_2');
  assert.equal(restarted,1,'switch initiates only the chosen camera session');
+});
+
+test('regular doorbell stays on JPEG even when it advertises WebRTC',()=>{
+ for(const [entity,name] of [['camera.doorbell'],['camera.front_door'],['camera.entry','Doorbell']]){
+  const {api,sent,advance,fireRetry}=harness(false,entity,name);
+  api.start();
+  advance(25001);
+  fireRetry();
+  assert.deepEqual(sent.filter(x=>x.type==='eufy_viewer/watch').map(x=>[x.entity_id,x.transport]),[[entity,'jpeg'],[entity,'jpeg']]);
+  api.stop();
+ }
 });
 
 test('DEV camera starts authenticated live JPEG and releases its lease',()=>{const {api,sent,elements}=harness(true);api.start();assert.equal(sent[0].transport,'jpeg');api.event({event:{type:'frame',jpeg:'/9j/',sequence:1}});elements.eufyStill.onload();assert.match(elements.eufyMeta.textContent,/Live JPEG/);api.stop();assert.ok(sent.some(x=>x.type==='unsubscribe_events'));});

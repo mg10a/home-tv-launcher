@@ -1899,10 +1899,10 @@ function eufyStartLive(retry=false){
  if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){
   meta.textContent='Home Assistant camera is disconnected. Reconnect Home Assistant to view live video.';return;
  }
- // DEV WebRTC paints grey frames on the phone despite advancing callbacks.
- // Prefer the verified live JPEG transport for the isolated DEV camera.
- const devCamera=haStates[entity]?.attributes?.viewer_dev_bridge===true||entity==='camera.doorbell_dev';
- const canWebrtc=!devCamera&&haStates[entity]?.attributes?.viewer_webrtc===true&&typeof RTCPeerConnection==='function';
+ // The doorbell can decode grey WebRTC frames even while callbacks advance.
+ const attributes=haStates[entity]?.attributes;
+ const useJpeg=attributes?.viewer_dev_bridge===true||/doorbell|front[ ._-]*door/i.test(entity+' '+(attributes?.friendly_name||''));
+ const canWebrtc=!useJpeg&&attributes?.viewer_webrtc===true&&typeof RTCPeerConnection==='function';
  eufyLiveMode=canWebrtc?'webrtc':'jpeg';eufyRtcFallbackSupported=false;eufyRtcFallbackRequested=false;
  const id=haRequestId++;eufyLiveSubscription=id;eufyLiveActive=true;
  eufyLiveFrames=0;eufyLiveLastSequence=0;eufyLiveLastFrame=Date.now();
@@ -2221,6 +2221,6 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./home-screens.js?v=15"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=1"></script><script src="./family-calendar.js?v=11"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=1"></script><script src="./kia-controls.js?v=6"></script><script src="./room-controls.js?v=8"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=3"><script src="./family-shopping.js?v=1"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./home-screens.js?v=15"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=1"></script><script src="./family-calendar.js?v=11"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=2"></script><script src="./kia-controls.js?v=7"></script><script src="./room-controls.js?v=8"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=3"><script src="./family-shopping.js?v=1"></script></body></html>
 
 

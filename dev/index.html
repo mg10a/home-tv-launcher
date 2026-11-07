@@ -1896,10 +1896,10 @@ function eufyStartLive(retry=false){
  if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){
   meta.textContent='Home Assistant camera is disconnected. Reconnect Home Assistant to view live video.';return;
  }
- // DEV WebRTC paints grey frames on the phone despite advancing callbacks.
- // Prefer the verified live JPEG transport for the isolated DEV camera.
- const devCamera=haStates[entity]?.attributes?.viewer_dev_bridge===true||entity==='camera.doorbell_dev';
- const canWebrtc=!devCamera&&haStates[entity]?.attributes?.viewer_webrtc===true&&typeof RTCPeerConnection==='function';
+ // The doorbell can decode grey WebRTC frames even while callbacks advance.
+ const attributes=haStates[entity]?.attributes;
+ const useJpeg=attributes?.viewer_dev_bridge===true||/doorbell|front[ ._-]*door/i.test(entity+' '+(attributes?.friendly_name||''));
+ const canWebrtc=!useJpeg&&attributes?.viewer_webrtc===true&&typeof RTCPeerConnection==='function';
  eufyLiveMode=canWebrtc?'webrtc':'jpeg';eufyRtcFallbackSupported=false;eufyRtcFallbackRequested=false;
  const id=haRequestId++;eufyLiveSubscription=id;eufyLiveActive=true;
  eufyLiveFrames=0;eufyLiveLastSequence=0;eufyLiveLastFrame=Date.now();
