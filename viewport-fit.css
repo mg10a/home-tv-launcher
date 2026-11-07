@@ -1,0 +1,48 @@
+/* Share the horizontal safe area between normal screens and both modal types. */
+:root {
+ --halo-safe-left:env(safe-area-inset-left, 0px);
+ --halo-safe-right:env(safe-area-inset-right, 0px);
+}
+@media (orientation:landscape) and (max-height:600px) and (pointer:coarse) {
+ /* Older Android wrappers can report zero even with a visible three-button bar. */
+ :root.halo-legacy-android {
+  --halo-safe-left:max(56px, env(safe-area-inset-left, 0px));
+  --halo-safe-right:max(56px, env(safe-area-inset-right, 0px));
+ }
+}
+
+#homeScreenNav {
+ padding-left:max(6px, var(--halo-safe-left));
+ padding-right:max(6px, var(--halo-safe-right));
+}
+body[data-home-screen] .dashboard-page,
+body[data-home-screen] main.shell {
+ padding-left:max(8px, var(--halo-safe-left))!important;
+ padding-right:max(8px, var(--halo-safe-right))!important;
+}
+#historyPage:not(.hidden) {
+ left:calc(3vw + var(--halo-safe-left))!important;
+ right:calc(3vw + var(--halo-safe-right))!important;
+}
+
+dialog:modal {
+ left:var(--halo-safe-left);
+ right:var(--halo-safe-right);
+ max-width:calc(100% - var(--halo-safe-left) - var(--halo-safe-right) - 16px)!important;
+}
+:is(.eufy-overlay, .salus-overlay, .pet-overlay, .calendar-overlay, .ha-setup) {
+ border-left:var(--halo-safe-left) solid transparent;
+ border-right:var(--halo-safe-right) solid transparent;
+}
+:is(.eufy-dialog, .salus-dialog, .pet-dialog, .calendar-dialog) {
+ max-width:100%;
+}
+
+#eufyLiveFrame.eufy-expanded .eufy-exit-fullscreen,
+#eufyLiveFrame:fullscreen .eufy-exit-fullscreen {
+ right:calc(15px + var(--halo-safe-right));
+}
+.photo-stage:is(.photo-fullscreen, :fullscreen) .photo-caption {
+ padding-left:calc(18px + var(--halo-safe-left));
+ padding-right:calc(18px + var(--halo-safe-right));
+}

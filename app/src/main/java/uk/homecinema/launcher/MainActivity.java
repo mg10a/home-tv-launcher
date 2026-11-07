@@ -4,12 +4,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Build;
 import android.webkit.*;
 import android.widget.*;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.graphics.Color;
 import android.util.Base64;
@@ -23,11 +25,12 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.2";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.3";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
     fitWebViewsToWindow();
+    updateSystemBars(getResources().getConfiguration());
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setMediaPlaybackRequiresUserGesture(false);
     web.addJavascriptInterface(new Bridge(),"HomeTVNative");
     web.addJavascriptInterface(new LauncherBridge(),"AndroidLauncher");
@@ -55,17 +58,12 @@ public final class MainActivity extends Activity {
   }
 
   private void fitWebViewsToWindow() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-      getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
-      return;
-    }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return;
 
     // Android 15 draws behind the system bars. Size the WebView inside their
     // insets so viewport units and fixed dialogs use the available screen.
     getWindow().setDecorFitsSystemWindows(false);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-    var controller=getWindow().getInsetsController();
-    if(controller!=null)controller.hide(WindowInsets.Type.statusBars());
     View content=findViewById(android.R.id.content);
     content.setBackgroundColor(Color.BLACK);
     content.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -77,7 +75,38 @@ public final class MainActivity extends Activity {
     content.requestApplyInsets();
   }
 
+  private void updateSystemBars(Configuration config) {
+    boolean immersive=authWeb==null&&config.orientation==Configuration.ORIENTATION_LANDSCAPE
+      &&config.smallestScreenWidthDp<600
+      &&getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN);
+    if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+      WindowInsetsController controller=getWindow().getInsetsController();
+      if(controller==null)return;
+      controller.setSystemBarsBehavior(immersive
+        ?WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        :WindowInsetsController.BEHAVIOR_DEFAULT);
+      controller.hide(WindowInsets.Type.statusBars());
+      if(immersive)controller.hide(WindowInsets.Type.navigationBars());
+      else controller.show(WindowInsets.Type.navigationBars());
+      return;
+    }
+    int flags=View.SYSTEM_UI_FLAG_FULLSCREEN;
+    if(immersive)flags|=View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+    getWindow().getDecorView().setSystemUiVisibility(flags);
+  }
+
+  @Override public void onConfigurationChanged(Configuration config) {
+    super.onConfigurationChanged(config);
+    updateSystemBars(config);
+  }
+
+  @Override public void onWindowFocusChanged(boolean hasFocus) {
+    super.onWindowFocusChanged(hasFocus);
+    if(hasFocus)updateSystemBars(getResources().getConfiguration());
+  }
+
   public final class LauncherBridge {
+    @JavascriptInterface public boolean managesViewportInsets(){return true;}
     @JavascriptInterface public void openSamsungFood(String url){runOnUiThread(()->{
       android.net.Uri uri=android.net.Uri.parse(url);
       if(!isSamsungFood(uri))return;
@@ -143,7 +172,7 @@ public final class MainActivity extends Activity {
       &&("/home-tv-launcher/".equals(uri.getPath())||"/home-tv-launcher/index.html".equals(uri.getPath()));
   }
   private void closeAuth(){
-    if(authWeb!=null){WebView old=authWeb;authWeb=null;setContentView(web);old.destroy();}
+    if(authWeb!=null){WebView old=authWeb;authWeb=null;setContentView(web);old.destroy();updateSystemBars(getResources().getConfiguration());}
   }
   private void beginAuth(String url){
     android.net.Uri uri=android.net.Uri.parse(url);
@@ -175,7 +204,7 @@ public final class MainActivity extends Activity {
           ||next.getUserInfo()!=null||(next.getPort()!=-1&&next.getPort()!=443);
       }
     });
-    setContentView(authWeb);authWeb.loadUrl(url);
+    setContentView(authWeb);updateSystemBars(getResources().getConfiguration());authWeb.loadUrl(url);
   }
 
   private volatile String webBase,webToken;
