@@ -65,7 +65,7 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
    await page.clock.setFixedTime(new Date('2026-11-07T12:00:00Z'));
    await page.evaluate(()=>{
     haVerified=true;
-    haStates['sensor.groobarbs_next_delivery']={state:'2026-11-10',attributes:{
+    haStates['sensor.groobarbs_next_delivery']={entity_id:'sensor.groobarbs_next_delivery',state:'2026-11-10',attributes:{
      date:'2026-11-10',deadline:'2026-11-09T11:00:00Z',editable:true,swaps_enabled:true,
      items:[{id:1,title:'Veg box',contents_can_change:true,contents:[{id:2,product_id:1,title:'Potatoes',category_ids:[1]}]}],
      replacements:Array.from({length:18},(_,i)=>({id:i+3,title:i===0?'Uchiki Kuri Squash':'Produce '+(i+1),category_ids:[1]}))
@@ -110,6 +110,40 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
  await page.close();
 }
 
+async function checkPrivatePortrait(browser) {
+ const page=await browser.newPage();
+ await page.setContent('<article class="pet-portrait-card" data-pet-portrait="Maia"><img hidden></article><p id="petPhotoStatus"></p>');
+ await page.evaluate(()=>{
+  window.haVerified=true;
+  window.haSocket={readyState:1};
+  window.portraitCommands=[];
+  window.eufyWsCommand=async command=>{portraitCommands.push(command);return {success:true,result:{value:null}}};
+ });
+ await page.addScriptTag({path:'pet-portraits.js'});
+ const jpeg=await page.evaluate(()=>{
+  const canvas=document.createElement('canvas');
+  canvas.width=300;canvas.height=400;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#222222';ctx.fillRect(0,0,300,400);
+  ctx.fillStyle='#ff8800';ctx.fillRect(126,123,84,84);
+  return canvas.toDataURL('image/jpeg').split(',')[1];
+ });
+ await page.locator('input[type=file]').setInputFiles({name:'maia.jpg',mimeType:'image/jpeg',buffer:Buffer.from(jpeg,'base64')});
+ await page.getByText(/photo saved for this Home Assistant user/).waitFor();
+ const portrait=await page.evaluate(async()=>{
+  const image=document.querySelector('article img');
+  await image.decode();
+  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  ctx.drawImage(image,0,0);
+  return {size:image.naturalWidth,red:ctx.getImageData(128,128,1,1).data[0],commands:portraitCommands.map(c=>[c.type,c.key])};
+ });
+ assert.equal(portrait.size,256);
+ assert(portrait.red>200,'portrait crop is centred on the face region');
+ assert.deepEqual(portrait.commands.map(c=>c[0]),['frontend/get_user_data','frontend/get_user_data','frontend/set_user_data']);
+ assert.equal(portrait.commands.at(-1)[1],'halo_pet_portrait_v1_maia');
+ await page.close();
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.HALO_CHROMIUM,args:['--no-sandbox']});
  try{
@@ -118,6 +152,7 @@ async function checkPage(browser,path,{nativeInsets=false,left=56,right=56,width
   await checkPage(browser,'index.html',{nativeInsets:true,left:0,right:48});
   await checkPage(browser,'index.html',{nativeInsets:true,left:48,right:0});
   await checkPage(browser,'index.html',{nativeInsets:true,left:0,right:0});
+  await checkPrivatePortrait(browser);
   console.log('Landscape safe widths passed for all overlays, dialogs and main screens, with bars on either side and with no bars.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
