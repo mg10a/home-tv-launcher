@@ -26,12 +26,12 @@ function birthdayDistance(start,today){return Math.round((Date.parse(eventDay(st
 if(typeof module!=='undefined')module.exports={dayKey,addDays,monday,midnight,onDay,period,monthDays,shiftMonth,normalize,restoreMealSource,birthdayBucket,columnEvents,birthdayOccurrence,birthdayDistance};
 if(typeof document==='undefined')return;
 const card=document.querySelector('.family-sections>.family-section'),overlay=document.getElementById('calendarOverlay');if(!card||!overlay)return;
-let config=null,settingsError='',socket=null,loadingSettings=false,requestEpoch=0,cursor=dayKey(Date.now()),miniCursor=monday(dayKey(Date.now())),mode='month',busy=false,lastFetch=0,loadedRange='',data=new Map(),errors=new Set(),pending=new Map(),inventory='',birthdayChecks={},checksReady=false,checksQueue=Promise.resolve();
+let config=null,settingsError='',socket=null,loadingSettings=false,requestEpoch=0,cursor=dayKey(Date.now()),miniCursor=monday(dayKey(Date.now())),mode='month',busy=false,lastFetch=0,loadedRange='',data=new Map(),errors=new Map(),activeRefresh=null,pending=new Map(),inventory='',birthdayChecks={},checksReady=false,checksQueue=Promise.resolve();
 try{const saved=JSON.parse(localStorage.getItem('home-calendar-view')||'{}');if(['month','family'].includes(saved.mode))mode=saved.mode;if(/^\d{4}-\d{2}-01$/.test(saved.cursor))cursor=saved.cursor}catch{}
 const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
 const button=(text,action,cls='')=>{const b=make('button',cls,text);b.type='button';b.onclick=action;return b};
 const dateLabel=(day,options)=>new Date(day+'T12:00:00Z').toLocaleDateString('en-GB',{timeZone:zone,...options});
-const ready=()=>typeof haVerified!=='undefined'&&haVerified&&typeof haSocket!=='undefined'&&haSocket?.readyState===1;
+const ready=()=>typeof haVerified!=='undefined'&&haVerified&&typeof haSocket!=='undefined'&&haSocket?.readyState===1&&(typeof haStatesReady==='undefined'||haStatesReady);
 const persistView=()=>{try{localStorage.setItem('home-calendar-view',JSON.stringify({mode,cursor:cursor.slice(0,7)+'-01'}))}catch{}};
 card.classList.add('calendar-card');card.replaceChildren();
 const heading=make('div','family-title');heading.append(make('strong','','📅 Calendar'),button('⛶',()=>openCalendar(),'calendar-expand'));heading.lastChild.setAttribute('aria-label','Expand calendar');card.append(heading);
@@ -81,13 +81,13 @@ async function showBirthdays(focusEvent){
  const all=[...groups.past].reverse().concat(groups.today,groups.upcoming),rows=[...detailBody.querySelectorAll('.birthday-item')];const index=focusEvent?all.findIndex(e=>birthdayOccurrence(e)===birthdayOccurrence(focusEvent)):-1;
  requestAnimationFrame(()=>{const target=index>=0?rows[index]:anchor;const inset=index>=0?65:Math.max(70,Math.min(280,detail.clientHeight*.35));if(target)detail.scrollTop=Math.max(0,detail.scrollTop+target.getBoundingClientRect().top-detail.getBoundingClientRect().top-inset)});
 }
-const requests=(command)=>new Promise((resolve,reject)=>{if(!ready()||haSocket!==socket)return reject(Error('Home Assistant disconnected'));const id=haRequestId++;const timer=setTimeout(()=>{pending.delete(id);reject(Error('Request timed out'))},25000);pending.set(id,{resolve,reject,timer});try{socket.send(JSON.stringify({id,...command}))}catch(e){clearTimeout(timer);pending.delete(id);reject(e)}});
+const requests=(command)=>new Promise((resolve,reject)=>{if(!ready()||haSocket!==socket)return reject(Error('Home Assistant disconnected'));const id=haRequestId++;const timer=setTimeout(()=>{pending.delete(id);reject(Object.assign(Error('Request timed out'),{code:'timeout'}))},25000);pending.set(id,{resolve,reject,timer});try{socket.send(JSON.stringify({id,...command}))}catch(e){clearTimeout(timer);pending.delete(id);reject(e)}});
 function rejectPending(){for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error('Home Assistant disconnected'))}pending.clear()}
-function message(e){let msg;try{msg=JSON.parse(e.data)}catch{return}const p=pending.get(msg.id);if(msg.type!=='result'||!p)return;clearTimeout(p.timer);pending.delete(msg.id);msg.success?p.resolve(msg.result):p.reject(Error(msg.error?.message||'Request failed'))}
+function message(e){let msg;try{msg=JSON.parse(e.data)}catch{return}const p=pending.get(msg.id);if(msg.type!=='result'||!p)return;clearTimeout(p.timer);pending.delete(msg.id);msg.success?p.resolve(msg.result):p.reject(Object.assign(Error(msg.error?.message||'Request failed'),{code:msg.error?.code}))}
 async function connect(){
- if(!ready()){if(socket){socket.removeEventListener('message',message);socket=null;rejectPending();requestEpoch++;config=null;birthdayChecks={};checksReady=false;data.clear();errors.clear();loadedRange='';busy=false;loadingSettings=false}draw();return}
+ if(!ready()){if(socket){socket.removeEventListener('message',message);socket=null;rejectPending();requestEpoch++;activeRefresh=null;config=null;birthdayChecks={};checksReady=false;data.clear();errors.clear();loadedRange='';busy=false;loadingSettings=false}draw();return}
  const ids=Object.values(haStates).filter(s=>s.entity_id.startsWith('calendar.')).map(s=>s.entity_id+'|'+s.state).join(';');if(socket===haSocket){if(ids!==inventory){inventory=ids;if(config)refresh(true)}else if(config&&Date.now()-lastFetch>300000)refresh();return}inventory=ids;
- if(socket)socket.removeEventListener('message',message);rejectPending();socket=haSocket;socket.addEventListener('message',message);const active=socket;requestEpoch++;config=null;data.clear();errors.clear();loadedRange='';busy=false;loadingSettings=true;settingsError='';draw();
+ if(socket)socket.removeEventListener('message',message);rejectPending();socket=haSocket;socket.addEventListener('message',message);const active=socket;requestEpoch++;activeRefresh=null;config=null;data.clear();errors.clear();loadedRange='';busy=false;loadingSettings=true;settingsError='';draw();
  try{const result=await requests({type:'frontend/get_user_data',key});if(socket!==active)return;config=restoreMealSource(result?.value,haStates);}
  catch(e){if(socket===active)settingsError='Could not load your calendar choices. Try Refresh.'}
  finally{if(socket===active){loadingSettings=false;draw();if(config)refresh(true)}}
@@ -106,7 +106,7 @@ function drawSettings(){
 }
 settings.addEventListener('toggle',()=>{if(settings.open)drawSettings()});
 function draw(){
- const today=dayKey(Date.now()),week=monday(today),connected=ready();const msg=!connected?'Connect Home Assistant':loadingSettings?'Loading calendars…':settingsError||(!config?.calendars.length?'Choose calendars in the expanded view':busy?'Loading…':errors.size?'Could not load: '+config.calendars.filter(c=>errors.has(c.id)).map(c=>c.label).join(', '):'');status.textContent=msg;foot.textContent=msg||'UK time · Tap a date or cell for all events';
+ const today=dayKey(Date.now()),week=monday(today),connected=ready();const msg=!connected?'Connect Home Assistant':loadingSettings?'Loading calendars…':settingsError||(!config?.calendars.length?'Choose calendars in the expanded view':busy?'Loading…':errors.size?'Could not load: '+config.calendars.filter(c=>errors.has(c.id)).map(c=>c.label).join(', '):'');status.textContent=msg;foot.textContent=errors.size?msg+' · '+[...new Set(errors.values())].join(' '):msg||'UK time · Tap a date or cell for all events';
  const badge=document.querySelector('.family-panel .offline-pill');if(badge)badge.textContent=!connected?'Not connected':errors.size?'Calendar issue':config?.calendars.length?'Calendars connected':'Choose calendars';
  const label=dateLabel(cursor,{month:'long',year:'numeric'});miniPeriod.textContent=dateLabel(miniCursor,{day:'numeric',month:'short'})+' – '+dateLabel(addDays(miniCursor,13),{day:'numeric',month:'short'});miniPeriod.title='14 days · expand for full month';document.getElementById('calendarPeriodLabel').textContent=label;monthButton.setAttribute('aria-pressed',String(mode==='month'));familyButton.setAttribute('aria-pressed',String(mode==='family'));viewSelect.value=mode;
  const events=connected&&!busy?allEvents():[],monthEvents=events.filter(e=>e.calendar.calendarVisible!==false&&['agenda','person'].includes(e.calendar.role)),plannerEvents=events.filter(e=>e.calendar.calendarVisible!==false&&['agenda','person','birthday'].includes(e.calendar.role));
@@ -114,16 +114,38 @@ function draw(){
  legend.replaceChildren();for(const c of config?.calendars.filter(c=>c.calendarVisible!==false&&['agenda','person'].includes(c.role))||[]){const item=make('span','',c.label);item.style.setProperty('--calendar-color',c.color);legend.append(item)}for(const name of config?.placeholders||[])legend.append(make('span','calendar-placeholder',name+' · not connected'));
  if(!window.renderSamsungFoodMeals?.(mealBox,week)){ mealBox.replaceChildren();const meals=events.filter(e=>e.calendar.mealCard),mealSources=config?.calendars.filter(c=>c.mealCard)||[];for(let i=0;i<7;i++){const day=addDays(week,i),row=button('',()=>showDay(day,meals.filter(e=>onDay(e,day)),'Meals'),'family-meal-day');row.append(make('strong','',dateLabel(day,{weekday:'short'})),make('span','',!connected?'Not connected':busy?'Loading…':!mealSources.length?'Choose calendar':mealSources.some(c=>errors.has(c.id))?'Could not load':meals.filter(e=>onDay(e,day)).map(e=>e.summary||'Untitled meal').join(' · ')||'Not planned'));mealBox.append(row)}}
 
- birthdayList.replaceChildren();const birthdaySources=config?.calendars.filter(c=>c.birthdayCard)||[];if(!connected||busy||!birthdaySources.length||birthdaySources.some(c=>errors.has(c.id))){birthdayList.append(make('p','',!connected?'Connect Home Assistant':busy?'Loading…':!birthdaySources.length?'Choose a birthday calendar':'Birthdays could not load'));return}
+ birthdayHeading.querySelector('button').textContent='All';birthdayList.replaceChildren();const birthdaySources=config?.calendars.filter(c=>c.birthdayCard)||[];if(!connected||busy||!birthdaySources.length||birthdaySources.some(c=>errors.has(c.id))){birthdayList.append(make('p','',!connected?'Connect Home Assistant':busy?'Loading…':!birthdaySources.length?'Choose a birthday calendar':'Birthdays could not load'));return}
  const groups=birthdayGroups();const items=[...groups.past.slice(0,2).reverse(),...groups.today,...groups.upcoming];items.forEach(e=>birthdayList.append(birthdayRow(e)));if(!items.length)birthdayList.append(make('p','','No birthdays in this window'));
  birthdayHeading.querySelector('button').textContent='All ('+(groups.past.length+groups.today.length+groups.upcoming.length)+')';
 }
 async function refresh(force=false){
  if(!ready())return connect();if(!config){if(!loadingSettings){socket?.removeEventListener('message',message);socket=null;return connect()}return}
- const range=period(cursor,'month'),today=dayKey(Date.now()),week=monday(today);const start=[range.start,miniCursor,week,addDays(today,-14)].sort()[0],end=[range.end,addDays(miniCursor,14),addDays(week,7),addDays(today,29)].sort().at(-1);const signature=JSON.stringify([start,end,config.calendars.map(c=>c.id)]);if(!force&&signature===loadedRange&&Date.now()-lastFetch<300000)return;
- const epoch=++requestEpoch;busy=true;data.clear();errors.clear();draw();const active=socket;
- await Promise.all(config.calendars.map(async c=>{try{if(!haStates[c.id]||haStates[c.id].state==='unavailable')throw Error('Unavailable');const result=await requests({type:'call_service',domain:'calendar',service:'get_events',target:{entity_id:c.id},service_data:{start_date_time:midnight(start),end_date_time:midnight(end)},return_response:true});const events=result?.response?.[c.id]?.events;if(!Array.isArray(events))throw Error('No calendar response');if(epoch===requestEpoch&&socket===active)data.set(c.id,events.filter(e=>e.start&&e.end))}catch(e){if(epoch===requestEpoch&&socket===active)errors.add(c.id)}}));
- if(epoch!==requestEpoch||socket!==active)return;busy=false;lastFetch=Date.now();loadedRange=signature;draw();
+ const range=period(cursor,'month'),today=dayKey(Date.now()),week=monday(today);const start=[range.start,miniCursor,week,addDays(today,-14)].sort()[0],end=[range.end,addDays(miniCursor,14),addDays(week,7),addDays(today,29)].sort().at(-1);const signature=JSON.stringify([start,end,config.calendars.map(c=>c.id)]);
+ if(activeRefresh?.signature===signature)return activeRefresh.promise;
+ if(!force&&signature===loadedRange&&Date.now()-lastFetch<300000)return;
+ const epoch=++requestEpoch,active=socket;
+ busy=true;data.clear();errors.clear();draw();
+ const promise=Promise.all(config.calendars.map(async c=>{
+  try{
+   if(!haStates[c.id]||haStates[c.id].state==='unavailable')throw Object.assign(Error(),{code:'unavailable'});
+   const result=await requests({type:'call_service',domain:'calendar',service:'get_events',target:{entity_id:c.id},service_data:{start_date_time:midnight(start),end_date_time:midnight(end)},return_response:true});
+   const events=result?.response?.[c.id]?.events;
+   if(!Array.isArray(events))throw Error('No calendar response');
+   if(epoch===requestEpoch&&socket===active)data.set(c.id,events.filter(e=>e.start&&e.end));
+  }catch(error){
+   if(epoch!==requestEpoch||socket!==active)return;
+   const message=error.code==='unavailable'?'Calendar unavailable in Home Assistant.':
+    error.code==='timeout'?'Home Assistant did not return calendar events in time.':
+    error.code==='unauthorized'?'This Home Assistant account cannot access the calendar.':
+    'Check the calendar integration in Home Assistant.';
+   errors.set(c.id,message);
+  }
+ })).then(()=>{
+  if(epoch!==requestEpoch||socket!==active)return;
+  activeRefresh=null;busy=false;lastFetch=Date.now();loadedRange=signature;draw();
+ });
+ activeRefresh={signature,promise};
+ return promise;
 }
 window.renderCalendar=()=>{draw();refresh()};window.openCalendar=()=>{cursor=miniCursor;overlay.classList.remove('hidden');draw();refresh();overlay.querySelector('.calendar-dialog-head button').focus()};window.closeCalendar=()=>{overlay.classList.add('hidden');card.querySelector('.calendar-expand').focus()};window.moveCalendar=n=>{cursor=shiftMonth(cursor,n);persistView();draw();refresh()};window.resetCalendar=()=>{cursor=dayKey(Date.now());persistView();draw();refresh()};window.changeCalendarView=value=>{mode=value==='family'?'family':'month';persistView();draw();refresh()};
 // Native form editing and modal focus stay separate from screen navigation.

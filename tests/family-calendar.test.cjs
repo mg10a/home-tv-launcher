@@ -15,3 +15,33 @@ test('birthday source survives exclusion and is independent of calendar visibili
 test('checklist identifies yearly occurrences and separate sources without display-name dependence',()=>{const a={calendar:{id:'calendar.b',label:'Birthdays'},summary:'Alex',uid:'stable',start:'2026-11-02'};assert.equal(c.birthdayOccurrence(a),c.birthdayOccurrence({...a,summary:'Alex renamed'}));assert.notEqual(c.birthdayOccurrence(a),c.birthdayOccurrence({...a,start:'2027-11-02'}));assert.notEqual(c.birthdayOccurrence(a),c.birthdayOccurrence({...a,calendar:{id:'calendar.c'}}));assert.equal(c.birthdayDistance('2026-11-01','2026-11-02'),-1);assert.equal(c.birthdayDistance('2026-11-05','2026-11-02'),3)});
 
 test('meal card survives calendar exclusion and legacy source is restored uniquely',()=>{const value={calendars:[{id:'calendar.meals',role:'excluded',mealCard:true,calendarVisible:false}]};assert.equal(c.normalize(value).calendars[0].mealCard,true);const states={'calendar.meals':{entity_id:'calendar.meals',attributes:{friendly_name:'Meal Planner'}}};assert.equal(c.restoreMealSource({calendars:[]},states).calendars[0].mealCard,true);assert.equal(c.restoreMealSource({calendars:[{id:'calendar.meals',role:'excluded',mealCard:false}]},states).calendars[0].mealCard,false);});
+
+test('calendar refresh reuses an in-flight read during repeated HA updates', async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs');
+ const source=readFileSync(require.resolve('../family-calendar.js'),'utf8');
+ const start=source.indexOf('async function refresh(force=false)');
+ const code=source.slice(start,source.indexOf('window.renderCalendar=',start));
+ const events=[{start:'2026-11-08',end:'2026-11-09',summary:'Birthday'}],requests=[];
+ const context={...c,dayKey:()=> '2026-11-08',cursor:'2026-11-08',miniCursor:'2026-11-02',
+  config:{calendars:[{id:'calendar.birthday'}]},haStates:{'calendar.birthday':{state:'off'}},
+  activeRefresh:null,loadedRange:'',lastFetch:0,requestEpoch:0,socket:{},busy:false,
+  errors:new Map(),data:new Map(),ready:()=>true,draw(){},
+  requests:command=>new Promise(resolve=>requests.push({command,resolve}))
+ };
+ vm.createContext(context);
+ vm.runInContext(code,context);
+ const first=context.refresh(true);
+ const repeated=[context.refresh(),context.refresh(true),context.refresh()];
+ assert.equal(requests.length,1);
+ assert.equal(requests[0].command.target.entity_id,'calendar.birthday');
+ requests[0].resolve({response:{'calendar.birthday':{events}}});
+ await Promise.all([first,...repeated]);
+ assert.deepEqual(context.data.get('calendar.birthday'),events);
+ assert.equal(context.busy,false);
+ assert.equal(context.activeRefresh,null);
+
+ context.haStates['calendar.birthday'].state='unavailable';
+ await context.refresh(true);
+ assert.equal(requests.length,1);
+ assert.equal(context.errors.get('calendar.birthday'),'Calendar unavailable in Home Assistant.');
+});

@@ -10,7 +10,15 @@ function preferredWeek(settings,date=new Date()){
  const weekday=(new Date(day+'T12:00:00Z').getUTCDay()+6)%7;
  return settings?.enabled&&(weekday>settings.weekday||(weekday===settings.weekday&&parts.hour+':'+parts.minute>=settings.time))?shift(start,7):start;
 }
-if(typeof module!=='undefined')module.exports={localDate,shift,monday,preferredWeek};
+function mealWeekSync(week,status,now=Date.now()){
+ const hasDays=Array.isArray(week?.days)&&week.days.length>0;
+ if(status==='login_required')return {cached:hasDays,message:'Samsung Food sign-in needs attention in Home Assistant.'};
+ if(!hasDays)return {cached:false,message:'This week has not synced yet. Select Refresh from Samsung Food.'};
+ const stamp=Date.parse(week.last_success||'');
+ if(!Number.isFinite(stamp)||now-stamp>35*60000)return {cached:true,message:'Showing the last available meal plan. Select Refresh from Samsung Food for the latest.'};
+ return {cached:false,message:''};
+}
+if(typeof module!=='undefined')module.exports={localDate,shift,monday,preferredWeek,mealWeekSync};
 if(typeof document==='undefined')return;
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
 const button=(label,fn)=>{const b=el('button',label);b.type='button';b.onclick=fn;return b};
@@ -51,10 +59,12 @@ function open(){selectedWeek=selectedWeek||preferredWeek(controls().settings);re
 window.openSamsungMealPlanner=open;
 function renderCompact(){
  if(!target)return;
- const current=state(mealEntity),all=weeks(),week=preferredWeek(controls().settings),data=all[week]||(week===monday(localDate())?{days:current?.attributes?.days}:null);
- if(!current)return;
- target.replaceChildren();target.title='Samsung Food · tap to plan meals';
- const title=target.parentElement.querySelector('.family-title');if(title){title.replaceChildren(el('span','🍽 Weekly meal plan'),el('span',week===monday(localDate())?'This week':'Next week'))}
+ const current=state(mealEntity);if(!current)return;
+ const week=preferredWeek(controls().settings),thisWeek=monday(localDate()),data=weeks()[week]||(week===thisWeek?current.attributes:null);
+ const sync=mealWeekSync(data,current.state),period=week===thisWeek?'This week':'Next week';
+ target.replaceChildren();target.title=label(week)+' – '+label(shift(week,6))+' · '+(sync.message||'Tap a day to plan meals');
+ const title=target.parentElement.querySelector('.family-title');
+ if(title)title.replaceChildren(el('span','🍽 Weekly meal plan'),el('span',period+(sync.cached?' · cached':'')));
  for(let i=0;i<7;i++){
   const date=shift(week,i),entry=data?.days?.find(d=>d.date===date),row=button('',()=>{selectedWeek=week;open()});row.className='family-meal-day';
   row.append(el('strong',new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'short',timeZone:'UTC'})),el('span',entry?entry.meals.map(m=>m.title).join(' · ')||'Not planned':'Not synced'));
@@ -70,12 +80,16 @@ function render(){
  const refresh=button('Refresh from Samsung Food',()=>send('refresh'));refresh.disabled=busy;nav.append(refresh);
  const settings=button('Weekly reset',()=>{showSettings=!showSettings;draftSettings={enabled:true,weekday:6,time:'13:00',...controls().settings};render()});settings.disabled=busy;nav.append(settings);dialog.append(nav);
  if(showSettings){renderSettings();return}
- const week=weeks()[selectedWeek],catalogue=recipes();
+ const week=weeks()[selectedWeek],catalogue=recipes(),sync=mealWeekSync(week,state(mealEntity)?.state);
  const summary=el('div',undefined,'sf-week-summary');summary.append(el('strong',label(selectedWeek)+' – '+label(shift(selectedWeek,6))));
  if(week?.last_success)summary.append(el('small','Synced '+new Date(week.last_success).toLocaleString('en-GB',{timeZone:'Europe/London',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})));
  dialog.append(summary);
- if(!connected()||!controls().version||!week){dialog.append(el('p',!connected()?'Connect Home Assistant to plan meals.':!controls().version?'Two-way controls are waiting for the Home Assistant bridge update.':'This week has not been read yet. Select Refresh from Samsung Food.'));}
+ if(!connected()||!controls().version||!week?.days?.length){
+  dialog.append(el('p',!connected()?'Connect Home Assistant to plan meals.':!controls().version?'Two-way controls are waiting for the Home Assistant bridge update.':sync.message));
+  const links=el('div',undefined,'sf-toolbar');link(links,'Open in Samsung Food','/meal-plan');dialog.append(links);
+ }
  else{
+  if(sync.message)dialog.append(el('p',sync.message,'sf-status'));
   const search=el('input');search.type='search';search.placeholder='Filter your saved recipes';search.setAttribute('aria-label','Filter saved recipes');search.value=query;search.oninput=()=>{query=search.value;renderDays(list,week,catalogue)};dialog.append(search);
   const list=el('section',undefined,'sf-days');dialog.append(list);renderDays(list,week,catalogue);
   const actions=el('footer',undefined,'sf-toolbar');
@@ -116,7 +130,7 @@ function renderSettings(){
  if(controls().last_reset)box.append(el('small','Last reset week: '+controls().last_reset));box.append(el('p',notice,'sf-status'));dialog.append(box);
 }
 function update(){
- const signature=JSON.stringify([connected(),state(mealEntity)?.attributes?.weeks,controls(),state('sensor.samsung_food_saved_recipes')?.attributes?.last_success]);
+ const signature=JSON.stringify([connected(),state(mealEntity)?.state,state(mealEntity)?.attributes,controls(),state('sensor.samsung_food_saved_recipes')?.attributes?.last_success]);
  if(signature===lastSignature)return;lastSignature=signature;renderCompact();if(dialog.open&&!showSettings)render();
 }
 window.addEventListener('home-states-updated',update);setInterval(renderCompact,60000);
