@@ -39,19 +39,18 @@
     0x404:'session response',0x407:'channel data out',0x408:'channel data in',
     0x417:'close out',0x418:'close in',0x427:'keepalive out',0x428:'keepalive in'};
   function header(payload) {
-    if(payload.length<16 || payload.length>2048) return null;
+    if(payload.length<16) return {type:'unrecognized packet',reason:'shorter than protocol header',bytes:payload.length};
     if(u16(payload,0)===0xcc51) return {type:'connect record'};
     let h=payload.subarray(0,16), scrambled=false;
     if(u16(h,0)!==0x204) { h=unscramble(h); scrambled=true; }
-    if(u16(h,0)!==0x204 || !names[u16(h,8)]) return null;
+    if(u16(h,0)!==0x204) return {type:'unrecognized packet',reason:'protocol signature not recognized',bytes:payload.length};
     const body=u16(h,4);
-    if(body+16!==payload.length) return null;
     const op=u16(h,8);
-    const result={type:names[op],opcode:'0x'+op.toString(16),version:h[2],
-      flags:h[3],bytes:payload.length,wire:scrambled?'scrambled':'plain'};
+    const result={type:names[op]||'unrecognized opcode',opcode:'0x'+op.toString(16),version:h[2],
+      flags:h[3],bytes:payload.length,declaredBytes:body+16,lengthStatus:body+16===payload.length?'exact':body+16<payload.length?'trailing bytes':'incomplete',wire:scrambled?'scrambled':'plain'};
     if(op===0x602) {
       result.replyForm=body>=0xb8?'long':body>=0x24?'short':'unrecognized';
-      if(result.replyForm==='long' && payload.length>0xc4) {
+      if(result.replyForm==='long' && payload.length>0xc4 && payload.length<=2048 && body+16===payload.length) {
         // Partial scrambling leaves this offset unchanged. Never export body bytes.
         const p=scrambled && !(h[3]&1)?unscramble(payload):payload;
         result.replyResult=p[0xc4];
@@ -94,17 +93,22 @@
     const a=new Uint8Array(buffer), d=new DataView(buffer);
     if(a.length<12)throw Error('This is not a complete PCAP file.');
     const groups=new Map(), endpoint=new Map();let packets=0,localUDP=0,recognized=0,skippedLink=0;
-    const firstHandshake=[];
+    const firstHandshake=[],unrecognized=[];const skippedReasons={};let rejectedLocal=0,otherPackets=0,groupsOmitted=0;
     const label=ip=>{if(!endpoint.has(ip))endpoint.set(ip,'Endpoint '+(endpoint.size+1));return endpoint.get(ip);};
     function packet(bytes,link) {
       packets++;
       if(![1,101,113,228,229].includes(link)){skippedLink++;return;}
-      const n=network(bytes,link);if(!n)return;localUDP++;
-      const h=header(n.payload);if(!h)return;recognized++;
+      const n=network(bytes,link);if(!n){otherPackets++;return;}localUDP++;
+      const h=header(n.payload);
+      if(h.type==='unrecognized packet'){rejectedLocal++;skippedReasons[h.reason]=(skippedReasons[h.reason]||0)+1;if(unrecognized.length<20)unrecognized.push({packetIndex:packets,bytes:h.bytes,reason:h.reason});return;}
+      recognized++;
       const v={from:label(n.src),to:label(n.dst),...h};
-      const id=JSON.stringify(v); if(!groups.has(id)&&groups.size>=256)return;
+      const data=['channel data out','channel data in','keepalive out','keepalive in'].includes(h.type);
+      if(!data&&firstHandshake.length<60)firstHandshake.push({packetIndex:packets,...v});
+      // Coalesce routine traffic so the report focuses on connection setup.
+      const group={...v};if(data){delete group.bytes;delete group.declaredBytes;}
+      const id=JSON.stringify(group);if(!groups.has(id)&&groups.size>=128){groupsOmitted++;return;}
       groups.set(id,(groups.get(id)||0)+1);
-      if(!['channel data out','channel data in','keepalive out','keepalive in'].includes(h.type)&&firstHandshake.length<60)firstHandshake.push(v);
     }
     let format;
     const magic=d.getUint32(0,false);
@@ -136,8 +140,8 @@
         at+=n;
       }
     } else throw Error('Choose a PCAP or PCAPNG capture, not a screenshot or ZIP.');
-    return {diagnostic:'VTech local handshake summary v1',format,packets,localUDP,recognized,skippedLink,
-      limitation:'Only recognized IOTC headers in private-to-private UDP traffic. No media, credentials, addresses, domains, timestamps, ports, filenames or raw bytes included. Missing packets or unknown formats do not prove absence of a protocol.',
+    return {diagnostic:'VTech local handshake summary v2',format,packets,localUDP,recognized,skippedLink,otherPackets,rejectedLocal,skippedReasons,unrecognized,groupsOmitted,
+      limitation:'IOTC header metadata and rejection counts in private-to-private UDP traffic. Unknown payloads are not exported. Packet indices describe order, not time. No media, credentials, addresses, domains, timestamps, ports, filenames or raw bytes included. Missing packets or unknown formats do not prove absence of a protocol.',
       groups:Array.from(groups,([v,count])=>({...JSON.parse(v),count})),firstHandshake};
   }
   const api={analyze};

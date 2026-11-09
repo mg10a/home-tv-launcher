@@ -43,7 +43,7 @@ textarea{display:block;width:100%;height:320px;border:1px solid #7993ac;backgrou
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}#status{min-height:3em}label{font-weight:650}a{color:#a6d5ff}
 </style></head><body><main>
 <span class="badge">Runs on your device</span>
-<h1>Private VTech diagnostic</h1>
+<h1>Private VTech diagnostic · v2</h1>
 <p>Inspect a saved camera capture without uploading it. This page has no upload function, analytics, external scripts or storage. Its security policy blocks network connections.</p>
 <section class="card"><h2>Keep the capture at home</h2><ol>
 <li>Once this page is open, switch on <strong>airplane mode</strong> and turn <strong>Wi-Fi off</strong>.</li>
@@ -56,7 +56,7 @@ textarea{display:block;width:100%;height:320px;border:1px solid #7993ac;backgrou
 <section class="card"><h2>Summary to share</h2><textarea id="report" readonly aria-label="Redacted diagnostic summary" placeholder="Your summary will appear here."></textarea>
 <div class="actions"><button id="select">Select summary</button><button id="clear" class="secondary">Clear summary</button></div>
 <p class="muted">After selecting the summary, use your phone’s Copy action. Clearing removes the displayed report; closing the tab releases the page. Nothing is saved by this page.</p></section>
-<p class="muted">Experimental diagnostic v1. Supports classic PCAP and PCAPNG enhanced packet blocks; Ethernet, raw IP and Linux cooked v1. Unsupported traffic is skipped. A missing handshake is not proof that the camera lacks a feature.</p>
+<p class="muted">Experimental diagnostic v2. Supports classic PCAP and PCAPNG enhanced packet blocks; Ethernet, raw IP and Linux cooked v1. Unsupported traffic is skipped. A missing handshake is not proof that the camera lacks a feature.</p>
 </main><script>SCRIPT</script></body></html>'''
 page=page.replace('DIGEST',digest).replace('SCRIPT',script)
 (root/'vtech-local.html').write_text(page)
