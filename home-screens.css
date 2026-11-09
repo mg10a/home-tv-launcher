@@ -367,3 +367,23 @@ body[data-home-screen="family"] #dashboardPage:not(.hidden),body[data-home-scree
 .coffee-choices{flex:none;grid-template-rows:none;grid-auto-rows:minmax(46px,auto)}
 @media(max-width:480px){.coffee-detail{padding:10px}.coffee-detail h2{font-size:19px}.coffee-options,.coffee-care-list{grid-template-columns:minmax(0,1fr)}.coffee-field{padding:10px}.coffee-recipe button{max-width:100%}}
 @media(orientation:landscape){.coffee-panel-footer{grid-template-columns:minmax(0,2fr) minmax(100px,1fr)}.coffee-panel-footer p{grid-column:1/-1}.coffee-options,.coffee-care-list{grid-auto-rows:minmax(90px,auto)}}
+
+/* Two camera tiles beside four equally spaced device cards. */
+#dashboardPage .home-security.with-baby-camera{grid-template-rows:repeat(2,minmax(0,1fr))!important}
+#dashboardPage .home-security.with-baby-camera>.home-compact-stack{grid-column:2;grid-row:1/3;grid-template-rows:repeat(4,minmax(0,1fr))}
+#dashboardPage .home-security.with-baby-camera>.doorbell-slot{grid-column:1;grid-row:1}
+#dashboardPage .home-security.with-baby-camera>.baby-camera-card{grid-column:1;grid-row:2}
+.baby-camera-card{display:flex;flex-direction:column;gap:5px;min-width:0;min-height:0;padding:7px;border:1px solid #38516e;border-radius:13px;background:#142239;color:#eef5ff;font:inherit;text-align:left;overflow:hidden}
+.baby-camera-preview{display:grid;place-items:center;flex:1;min-height:0;background:#0c1727;border-radius:8px;color:#a5bad4;font-size:12px}
+.baby-camera-card small{font-size:11px;color:#bcd1e6}
+.with-baby-camera .home-compact-stack>.kia-placeholder{gap:2px}
+.with-baby-camera .home-compact-stack>.coffee-card{gap:3px;padding:5px 8px!important;align-content:center}
+.with-baby-camera .coffee-card button{padding:4px;min-height:28px}
+.baby-camera-dialog{box-sizing:border-box;width:min(900px,92vw);max-width:calc(100dvw - env(safe-area-inset-left) - env(safe-area-inset-right) - 24px);height:min(620px,88dvh);max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);padding:14px;border:1px solid #607b98;border-radius:18px;background:#172b43;color:#eef5ff;overflow:auto}
+.baby-camera-dialog[open]{display:flex;flex-direction:column;gap:10px}
+.baby-camera-dialog::backdrop{background:#0009}
+.baby-camera-dialog header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.baby-camera-dialog img{flex:1;min-height:0;width:100%;object-fit:contain;background:#0c1727}
+.baby-camera-dialog img[hidden]{display:none}
+.baby-camera-dialog p{margin:0}.baby-camera-dialog small{color:#bcd1e6}
+.baby-refresh{align-self:center;border:1px solid #607b98;background:#243b55;color:inherit;border-radius:8px;padding:8px 12px;font:inherit}
