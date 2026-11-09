@@ -1,0 +1,460 @@
+"""One authenticated session to one camera: connect, request/reply, pushes, liveness, teardown.
+
+Authority: docs/vtech-lan-kit/docs/90-ha-runtime.md §2–5 (sessions, threading, errors, teardown),
+20-ioctrl-framework.md (per-session prep), 30-opcode-reference.md (payloads, via `ops`).
+
+`SessionBase` holds everything above the wire; `LinkSession` drives `_vtech_link`, the Rust protocol
+library (`link.py`), which owns sockets, request matching, crypto and pacing itself.
+
+Threading model:
+- `connect()`, `request()`, `send()` and `close()` block; call them from executor threads, never an
+  event loop. `request()`/`send()` may be called from any thread concurrently.
+- A dedicated reader thread takes the camera's pushes and hands them to `on_push`.
+- A keepalive thread GETs 0x733 every `keepalive_s`; `keepalive_misses` missed replies in a row mark
+  the session lost. Its replies are also delivered to `on_push` as `Push(0x734, Params)`.
+- `on_push` / `on_lost` run on those internal threads, possibly concurrently: keep them short and
+  thread-safe (e.g. `loop.call_soon_threadsafe`). `on_lost` fires at most once.
+
+A session is single-use: after it is lost or closed, `close()` it and build a new one to reconnect.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import logging
+import threading
+import time
+from typing import Any, Callable, NamedTuple
+
+from . import ops
+from .errors import ProtocolError, RequestTimeout, SessionGone, VtechError, from_link, is_panic
+
+_LOG = logging.getLogger(__name__)
+
+
+class Push(NamedTuple):
+    """A decoded camera push (opcode + value from `ops.PUSH_DECODERS`), or a keepalive params read."""
+    code: int
+    value: Any
+
+
+PARAMS_UPDATE = ops.GET_PARAMS.reply     # Push code used for keepalive 0x734 reads
+
+
+class SessionBase:
+    """Everything above the wire: the public surface, push decoding, the keepalive, the typed helpers.
+    A subclass supplies the transport: `_open`, `_close_transport`, `_send_raw`, `_transact`,
+    `_read_loop`, `connection_mode`, `media_source` and `uplink`."""
+
+    backend = ""
+
+    def __init__(
+        self,
+        uid: str,
+        authkey: str,
+        password: str,
+        account: str = "admin",
+        *,
+        name: str = "camera",
+        on_push: Callable[[Push], None] | None = None,
+        on_lost: Callable[[VtechError], None] | None = None,
+        connect_timeout_s: int = 15,
+        av_timeout_s: int = 30,
+        request_timeout_s: float = 5.0,
+        recv_timeout_ms: int = 1000,
+        keepalive_s: float = 60.0,
+        keepalive_misses: int = 3,
+    ):
+        self._uid, self._authkey, self._password, self._account = uid, authkey, password, account
+        self.name = name
+        self.on_push, self.on_lost = on_push, on_lost
+        self.connect_timeout_s, self.av_timeout_s = connect_timeout_s, av_timeout_s
+        self.request_timeout_s, self.recv_timeout_ms = request_timeout_s, recv_timeout_ms
+        self.keepalive_s, self.keepalive_misses = keepalive_s, keepalive_misses
+
+        self.devinfo: ops.DevInfo | None = None
+
+        self._lock = threading.Lock()                       # guards the fields below
+        self._lost: VtechError | None = None
+        self._open_ok = False
+        self._used = self._closed = False
+        self._stop = threading.Event()
+        self._threads: list[threading.Thread] = []
+        self._rmw_lock = threading.Lock()                   # serialises read-modify-write SETs
+
+    # ── Lifecycle ────────────────────────────────────────────────────────────
+    def connect(self) -> ops.DevInfo:
+        """Connect, start the AV channel, run the per-session prep. Returns the device info.
+
+        Raises Unreachable, AuthFailed, CapacityExceeded, RequestTimeout or VtechError.
+        """
+        with self._lock:
+            if self._used:
+                raise RuntimeError("Session objects are single-use; build a new one to reconnect")
+            self._used = True
+        self._open()
+        self._open_ok = True
+        self._start_thread("reader", self._read_loop)
+        try:
+            self._after_open()
+            self.devinfo = self.request(ops.DEVINFO)      # required before the VTech GETs reply and streaming
+        except BaseException:
+            self.close()
+            raise
+        if self.keepalive_s > 0:
+            self._start_thread("keepalive", self._keepalive_loop)
+        _LOG.debug("%s: connected (%s) %s", self.name, self.backend, self.devinfo)
+        return self.devinfo
+
+    def _open(self) -> None:
+        raise NotImplementedError
+
+    def _after_open(self) -> None:
+        """Anything the transport sends before the per-session prep."""
+
+    def _close_transport(self) -> None:
+        raise NotImplementedError
+
+    def close(self) -> None:
+        """Stop the threads, then close the transport. Idempotent; safe from callbacks."""
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        self._stop.set()
+        me = threading.current_thread()
+        for t in self._threads:
+            if t is not me:
+                t.join(timeout=self.recv_timeout_ms / 1000 + self.request_timeout_s + 1)
+        if self._open_ok:
+            self._close_transport()
+        _LOG.debug("%s: closed", self.name)
+
+    def connection_mode(self) -> str | None:
+        """How the camera was reached: "lan", "p2p" or "relay" (None if unknown)."""
+        raise NotImplementedError
+
+    def media_source(self) -> Any:
+        """A fresh source of decrypted live-view frames (`media.py`)."""
+        raise NotImplementedError
+
+    def uplink(self) -> Any:
+        """A fresh talk-back uplink (`talkback.py`)."""
+        raise NotImplementedError
+
+    @property
+    def connected(self) -> bool:
+        return self._open_ok and self._lost is None and not self._closed
+
+    def _check_open(self, name: str) -> None:
+        if not self._open_ok or self._lost is not None or self._closed:
+            raise SessionGone(f"{name}: session is not connected", call=name)
+
+    # ── Messaging ────────────────────────────────────────────────────────────
+    def send(self, op: ops.Op, *args: Any) -> None:
+        """Encode and send an op without waiting for a reply."""
+        self._send_raw(op.code, op.encode(*args), op.name)
+
+    def request(self, op: ops.Op, *args: Any, timeout: float | None = None) -> Any:
+        """Send and wait for the op's reply. Checks the ack (ProtocolError on failure) and returns the
+        decoded value, or the raw reply bytes if the op has no decoder."""
+        if op.reply is None:
+            raise ValueError(f"{op.name} has no reply; use send()")
+        (raw,) = self._transact(op, args, timeout, lambda _r: True)
+        if op.ok is not None and not op.ok(raw):
+            raise ProtocolError(f"{op.name}: camera reported failure (ack {raw.hex()})", call=op.name)
+        return op.dec(raw) if op.dec else raw
+
+    def _transact(self, op: ops.Op, args: tuple, timeout: float | None,
+                  done: Callable[[bytes], bool]) -> list[bytes]:
+        """Send `op` and collect replies until `done(reply)` is true."""
+        raise NotImplementedError
+
+    def _send_raw(self, code: int, payload: bytes, name: str) -> None:
+        raise NotImplementedError
+
+    # ── Threads ──────────────────────────────────────────────────────────────
+    def _start_thread(self, role: str, target: Callable[[], None]) -> None:
+        t = threading.Thread(target=target, name=f"vtech-{self.name}-{role}", daemon=True)
+        self._threads.append(t)
+        t.start()
+
+    def _read_loop(self) -> None:
+        raise NotImplementedError
+
+    def _dispatch(self, code: int, payload: bytes) -> None:
+        dec = ops.PUSH_DECODERS.get(code)
+        if dec is None:
+            _LOG.debug("%s: unhandled IOCtrl 0x%x len=%d %s", self.name, code, len(payload), payload[:32].hex())
+            return
+        try:
+            value = dec(payload)
+        except ProtocolError as e:
+            _LOG.warning("%s: bad push 0x%x: %s", self.name, code, e)
+            return
+        self._emit(Push(code, value))
+
+    def _keepalive_loop(self) -> None:
+        misses = 0
+        while not self._stop.wait(self.keepalive_s):
+            try:
+                params = self.request(ops.GET_PARAMS)
+            except RequestTimeout:
+                misses += 1
+                _LOG.debug("%s: keepalive miss %d/%d", self.name, misses, self.keepalive_misses)
+                if misses >= self.keepalive_misses:
+                    self._lose(SessionGone(f"no reply to {misses} keepalives", call="keepalive"))
+                    return
+                continue
+            except SessionGone:
+                return
+            except VtechError as e:
+                _LOG.warning("%s: keepalive failed: %s", self.name, e)
+                continue
+            misses = 0
+            self._emit(Push(PARAMS_UPDATE, params))
+
+    def _emit(self, push: Push) -> None:
+        if self.on_push is None:
+            return
+        try:
+            self.on_push(push)
+        except Exception:               # noqa: BLE001 — a callback bug must not kill the reader
+            _LOG.exception("%s: on_push callback failed", self.name)
+
+    def _lose(self, err: VtechError) -> None:
+        with self._lock:
+            if self._lost is not None or self._closed:
+                return
+            self._lost = err
+        self._stop.set()
+        _LOG.info("%s: session lost: %s", self.name, err)
+        if self.on_lost is not None:
+            try:
+                self.on_lost(err)
+            except Exception:           # noqa: BLE001
+                _LOG.exception("%s: on_lost callback failed", self.name)
+
+    # ── Typed helpers: reads ─────────────────────────────────────────────────
+    def get_params(self) -> ops.Params:
+        return self.request(ops.GET_PARAMS)
+
+    def get_night_light(self) -> ops.NightLight | int:
+        return _enum(ops.NightLight, self.request(ops.GET_NIGHT_LIGHT))
+
+    def get_status_led(self) -> bool:
+        """True = the status LED is on."""
+        return not self.request(ops.GET_STATUS_LED)
+
+    def get_night_vision(self) -> ops.NightVisionMode | int:
+        return _enum(ops.NightVisionMode, self.request(ops.GET_NIGHT_VISION))
+
+    def get_quality(self) -> ops.Quality | int:
+        return _enum(ops.Quality, self.request(ops.GET_STREAM_CTRL))
+
+    def get_temp_alert(self) -> ops.TempAlert:
+        return self.request(ops.GET_TEMP_ALERT)
+
+    def get_motion(self) -> ops.MotionSetting:
+        return self.request(ops.GET_MOTION)
+
+    def get_sound_detect(self) -> bool:
+        return self.request(ops.GET_SOUND)
+
+    def get_notify_interval(self) -> ops.NotifyInterval | int:
+        return _enum(ops.NotifyInterval, self.request(ops.GET_NOTIFY_INTERVAL))
+
+    def get_parent_active(self) -> bool:
+        return self.request(ops.GET_PARENT_ACTIVE)
+
+    def get_timezone(self) -> ops.Timezone:
+        return self.request(ops.GET_TIMEZONE)
+
+    def get_dst(self) -> bool:
+        return self.request(ops.GET_DST)
+
+    def get_audio_out_format(self) -> ops.AudioFormat:
+        return self.request(ops.GET_AUDIO_OUT_FORMAT)
+
+    def list_events(self, start: dt.datetime, end: dt.datetime, timeout: float = 15.0) -> list[ops.StoredEvent]:
+        """The stored (motion-only) event list between two times, all pages, newest first (camera order)."""
+        pages = self._transact(ops.LIST_EVENTS, (start, end), timeout, lambda r: ops.dec_event_page(r).end)
+        return [rec for raw in pages for rec in ops.dec_event_page(raw).records]
+
+    # ── Typed helpers: writes (each raises ProtocolError if the camera acks a failure) ──
+    def set_night_light(self, preset: ops.NightLight) -> None:
+        self.request(ops.SET_NIGHT_LIGHT, ops.NightLight(preset))
+
+    def set_status_led(self, on: bool) -> None:
+        self.request(ops.SET_STATUS_LED, not on)
+
+    def set_night_vision(self, mode: ops.NightVisionMode) -> None:
+        """Note: applying a mode briefly drops video (~6–8 s) while the IR cut reconfigures."""
+        self.request(ops.SET_NIGHT_VISION, ops.NightVisionMode(mode))
+
+    def set_quality(self, quality: ops.Quality) -> ops.Quality | int:
+        """Request a resolution, then return what the camera actually applied (it keeps 720p while
+        the parent handset is active)."""
+        self.request(ops.SET_STREAM_CTRL, ops.Quality(quality))
+        return self.get_quality()
+
+    def set_sound_detect(self, on: bool) -> None:
+        self.request(ops.SET_SOUND, on)
+
+    def set_motion_sensitivity(self, sensitivity: ops.MotionSensitivity) -> None:
+        """Keeps the camera's current video-record flag."""
+        with self._rmw_lock:
+            cur = self.get_motion()
+            self.request(ops.SET_MOTION, ops.MotionSensitivity(sensitivity), cur.record)
+
+    def set_temp_alert(self, enabled: bool | None = None, max_c: float | None = None,
+                       min_c: float | None = None) -> None:
+        """Change any of enable / max / min, keeping the others."""
+        with self._rmw_lock:
+            cur = self.get_temp_alert()
+            self.request(ops.SET_TEMP_ALERT, cur.enabled if enabled is None else enabled,
+                         cur.max_c if max_c is None else max_c, cur.min_c if min_c is None else min_c)
+
+    def set_notify_interval(self, index: ops.NotifyInterval) -> ops.NotifyInterval | int:
+        """The SET's ack is undocumented, so it is sent fire-and-forget and confirmed by a re-read."""
+        self.send(ops.SET_NOTIFY_INTERVAL, ops.NotifyInterval(index))
+        return self.get_notify_interval()
+
+    def update_params(self, *, lullaby_timer_s: int | None = None, volume: int | None = None,
+                      motion_sensitivity: int | None = None) -> None:
+        """0x731 read-modify-write. Sound sensitivity is not writable (the camera ignores it), and the
+        opaque @28 field is echoed back unchanged."""
+        with self._rmw_lock:
+            cur = self.get_params()
+            self.request(
+                ops.SET_PARAMS,
+                cur.lullaby_timer_s if lullaby_timer_s is None else lullaby_timer_s,
+                cur.volume if volume is None else volume,
+                cur.sound_sensitivity,
+                cur.motion_sensitivity if motion_sensitivity is None else motion_sensitivity,
+                cur.p28,
+            )
+
+    def play_lullaby(self, track: ops.LullabyTrack) -> None:
+        """Audible in the room: only with the owner present."""
+        self.request(ops.LULLABY, ops.LullabyTrack(track))
+
+    def stop_lullaby(self) -> None:
+        self.request(ops.LULLABY, ops.LullabyTrack.STOP)
+
+
+def _enum(cls: type, value: int):
+    """The enum member for `value`, or the raw int if the camera sent something undocumented."""
+    try:
+        return cls(value)
+    except ValueError:
+        return value
+
+
+class LinkSession(SessionBase):
+    """A session over `_vtech_link` (`link.py`). The module matches replies, keeps the transport alive,
+    runs the live-view key exchange and decrypts and paces media itself; this class keeps the opcode
+    layer and the application keepalive."""
+
+    backend = "link"
+
+    def __init__(self, module: Any, uid: str, authkey: str, password: str, account: str = "admin", *,
+                 peer_hint: str | None = None, **kw: Any):
+        super().__init__(uid, authkey, password, account, **kw)
+        self._module = module
+        self._peer_hint = peer_hint
+        self.link: Any = None
+
+    def _call(self, name: str, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Call into the module, raising its LinkError as the matching VtechError. A lost link is lost,
+        and so is one that panicked: it is never used again."""
+        try:
+            return fn(*args, **kwargs)
+        except self._module.LinkError as e:
+            err = from_link(e, name)
+            if isinstance(err, SessionGone):
+                self._lose(err)
+            raise err from None
+        except BaseException as e:
+            if not is_panic(e):
+                raise
+            _LOG.error("%s: vtech-link panicked in %s: %s", self.name, name, e)
+            err = SessionGone(f"{name} failed (vtech-link panicked)", call=name)
+            self._lose(err)
+            raise err from e
+
+    def _open(self) -> None:
+        try:
+            self.link = self._module.connect(
+                self._uid, self._authkey, self._password, self._account,
+                connect_timeout=float(self.connect_timeout_s), av_timeout=float(self.av_timeout_s),
+                peer_hint=self._peer_hint)
+        except self._module.LinkError as e:
+            raise from_link(e, "connect") from None
+        except BaseException as e:
+            if not is_panic(e):
+                raise
+            _LOG.error("%s: vtech-link panicked in connect: %s", self.name, e)
+            raise VtechError("connect failed (vtech-link panicked)", call="connect") from e
+
+    def _close_transport(self) -> None:
+        if self.link is not None:
+            try:
+                self._call("close", self.link.close)
+            except VtechError:
+                pass
+
+    def connection_mode(self) -> str | None:
+        return "lan" if self.link is not None else None
+
+    def info(self) -> dict[str, Any]:
+        """The link's peer, ports, versions and DTLS suite, for diagnostics."""
+        return self._call("info", self.link.info) if self.link is not None else {}
+
+    def stats(self) -> dict[str, Any]:
+        """The link's transport counters, for diagnostics."""
+        return self._call("stats", self.link.stats) if self.link is not None else {}
+
+    def _send_raw(self, code: int, payload: bytes, name: str) -> None:
+        self._check_open(name)
+        self._call(name, self.link.send, code, payload, timeout=self.request_timeout_s)
+
+    def _transact(self, op: ops.Op, args: tuple, timeout: float | None,
+                  done: Callable[[bytes], bool]) -> list[bytes]:
+        """The module matches replies to requests: collect them until `done(reply)` is true."""
+        self._check_open(op.name)
+        limit = timeout or self.request_timeout_s
+        deadline = time.monotonic() + limit
+        ex = self._call(op.name, self.link.exchange, op.code, op.encode(*args), op.reply, timeout=limit)
+        out: list[bytes] = []
+        try:
+            while True:
+                left = deadline - time.monotonic()
+                page = self._call(op.name, ex.next, max(0.0, left)) if left > 0 else None
+                if page is None:
+                    raise RequestTimeout(f"{op.name}: no 0x{op.reply:x} reply", call=op.name)
+                out.append(page)
+                if done(page):
+                    return out
+        finally:
+            ex.close()
+
+    def _read_loop(self) -> None:
+        while not self._stop.is_set():
+            try:
+                push = self._call("next_push", self.link.next_push, self.recv_timeout_ms / 1000)
+            except VtechError as e:
+                if not self._stop.is_set():
+                    self._lose(e)
+                return
+            if push is not None:
+                self._dispatch(*push)
+
+    def media_source(self) -> Any:
+        from .media import LinkMediaSource                  # noqa: PLC0415
+
+        return LinkMediaSource(self)
+
+    def uplink(self) -> Any:
+        from .talkback import LinkUplink                    # noqa: PLC0415
+
+        return LinkUplink(self)
