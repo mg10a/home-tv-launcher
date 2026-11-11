@@ -1,0 +1,20 @@
+{
+  "name": "Halo VTech RM7767 - Experimental Installer",
+  "version": "0.1.0",
+  "slug": "halo_vtech_installer",
+  "description": "One-time, local-only VTech component installer with backup and rollback; no QR or footage handled.",
+  "url": "https://github.com/mg10a/home-tv-launcher/pull/5",
+  "arch": ["amd64", "aarch64"],
+  "startup": "once",
+  "boot": "manual_only",
+  "stage": "experimental",
+  "map": [
+    {
+      "type": "homeassistant_config",
+      "read_only": false,
+      "path": "/homeassistant"
+    }
+  ],
+  "options": {"action": "install"},
+  "schema": {"action": "list(install|rollback)"}
+}
