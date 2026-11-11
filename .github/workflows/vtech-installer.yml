@@ -1,0 +1,25 @@
+name: Verify VTech one-time installer
+on:
+  push:
+    paths:
+      - 'vtech_installer/**'
+      - '.github/workflows/vtech-installer.yml'
+  pull_request:
+    paths:
+      - 'vtech_installer/**'
+      - '.github/workflows/vtech-installer.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m json.tool vtech_installer/config.json > /dev/null
+      - run: sh -n vtech_installer/run.sh && sh -n vtech_installer/test-run.sh
+      - run: sh vtech_installer/test-run.sh
+      - run: docker build -t halo-vtech-one-time-installer vtech_installer
+      - name: Verify packaged integration
+        run: |
+          docker run --rm --entrypoint /bin/sh halo-vtech-one-time-installer \
+            -c "test -f /opt/vtech_baby/vtech_lan/profile.py && test -f /opt/vtech_baby/LICENSE && jq -e '.domain == \"vtech_baby\" and .version == \"0.3.1\"' /opt/vtech_baby/manifest.json"
