@@ -20,6 +20,7 @@ public final class MainActivity extends Activity {
   private WebView web;
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
   private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/dev/?v=3.89";
+  private static final String VTECH_PACKAGE="com.cams.vtech.mvb.pro";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -48,21 +49,48 @@ public final class MainActivity extends Activity {
   }
 
   public final class LauncherBridge {
+    @JavascriptInterface public boolean supportsBabyMonitorApp() { return true; }
+    @JavascriptInterface public boolean babyMonitorInstalled() {
+      PackageManager pm=getPackageManager();
+      return pm.getLaunchIntentForPackage(VTECH_PACKAGE)!=null
+        ||pm.getLeanbackLaunchIntentForPackage(VTECH_PACKAGE)!=null;
+    }
+    // Expose only the installed app's public icon; never camera data or credentials.
+    @JavascriptInterface public String babyMonitorIcon() {
+      try {
+        android.graphics.drawable.Drawable icon=getPackageManager().getApplicationIcon(VTECH_PACKAGE);
+        android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(144,144,android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);
+        icon.setBounds(0,0,144,144);
+        icon.draw(canvas);
+        ByteArrayOutputStream out=new ByteArrayOutputStream();
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);
+        bitmap.recycle();
+        return "data:image/png;base64,"+Base64.encodeToString(out.toByteArray(),Base64.NO_WRAP);
+      } catch(PackageManager.NameNotFoundException|SecurityException e) { return ""; }
+    }
     @JavascriptInterface public void openApp(String name) {
       runOnUiThread(() -> launchEntertainment(name));
     }
   }
   private void launchEntertainment(String name) {
-    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN"};
+    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN","MyVTech Baby Pro"};
     if(!Arrays.asList(names).contains(name))return;
     PackageManager pm=getPackageManager();
+    if("MyVTech Baby Pro".equals(name)) {
+      Intent launch=pm.getLaunchIntentForPackage(VTECH_PACKAGE);
+      if(launch==null)launch=pm.getLeanbackLaunchIntentForPackage(VTECH_PACKAGE);
+      if(launch!=null){try{startActivity(launch);return;}catch(android.content.ActivityNotFoundException|SecurityException ignored){}}
+    }
     // Query both TV and phone launchers so the installed platform variant is used.
     for(String category:new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER,Intent.CATEGORY_LAUNCHER}) {
       Intent query=new Intent(Intent.ACTION_MAIN).addCategory(category);
       for(ResolveInfo match:pm.queryIntentActivities(query,0)) {
         if(match.activityInfo==null)continue;
         String label=match.loadLabel(pm).toString().trim();
-        boolean same=label.equalsIgnoreCase(name)
+        boolean same="MyVTech Baby Pro".equals(name)
+          ?VTECH_PACKAGE.equals(match.activityInfo.packageName)
+          :label.equalsIgnoreCase(name)
           || ("Prime Video".equals(name)&&label.equalsIgnoreCase("Amazon Prime Video"))
           || ("BBC iPlayer".equals(name)&&label.equalsIgnoreCase("iPlayer"))
           || ("NOW".equals(name)&&(match.activityInfo.packageName.equals("com.nowtv.ie")
