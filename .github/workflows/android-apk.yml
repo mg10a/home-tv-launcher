@@ -32,3 +32,14 @@ jobs:
         with:
           name: Halo-4.1.4-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Build safe side-by-side VTech preview APK
+        run: gradle -Pandroid.useAndroidX=true -PhaloPreview=true :app:assembleDebug --no-daemon
+      - name: Verify preview has a separate Android application ID
+        run: |
+          AAPT="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name aapt -type f | sort -V | tail -1)"
+          test -x "$AAPT"
+          "$AAPT" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "package: name='uk.homecinema.launcher.vtechpreview'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Halo-VTech-Preview-4.1.4-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
