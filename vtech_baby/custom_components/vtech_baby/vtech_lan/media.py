@@ -1,0 +1,357 @@
+"""On-demand live view for one camera: START → receive → decrypt → MPEG-TS → subscribers, and snapshots.
+
+Protocol: docs/vtech-lan-kit/docs/40, 50.
+
+- One dedicated thread per camera (`vtech-media-…`) owns the media path. It starts when the first
+  subscriber arrives and stops `grace_s` after the last one leaves (go2rtc drops and reopens its
+  connection; snapshots come and go), so short gaps don't restart the camera's stream.
+- Start: the session's media source resets the receive buffers (so the first frame is a keyframe);
+  `_vtech_link` runs the live-view key exchange once per session. Then AUDIOSTART (unless `audio_held()`: a
+  talk-back has camera audio stopped and restarts it itself), full-rate, START. Stop: STOP, AUDIOSTOP.
+  The control session is untouched; its reader thread keeps taking IOCtrls while this thread reads
+  frames.
+- The source (`LinkMediaSource`) yields `MediaFrame`s that `_vtech_link` has already decrypted.
+- Subscribers get MPEG-TS bytes (`avmux`) through a callback run on the media thread, which must not
+  block. A new subscriber starts at the next keyframe. `None` means end of stream: the session went
+  away or the stream is shut down; reconnecting is the subscriber's business.
+- A subscriber arriving while the thread is tearing down is picked up by the same thread, which starts
+  again, so start/stop never overlap on the channel.
+"""
+from __future__ import annotations
+
+import logging
+import threading
+import time
+from collections.abc import Callable
+from typing import Any, NamedTuple
+
+from . import ops
+from .errors import SessionGone, VtechError
+
+_LOG = logging.getLogger(__name__)
+
+GRACE_S = 5.0                 # keep streaming this long after the last subscriber leaves
+FIRST_KEYFRAME_S = 10.0       # give up a start that produces no keyframe in this time
+SNAPSHOT_MAX_AGE_S = 60.0     # when idle, reuse a snapshot this recent instead of starting the stream
+RECV_STATS_S = 30.0           # how often the receive counters are refreshed while streaming
+LINK_WAIT_S = 0.2             # how long one `LinkMediaSource.poll` waits for a frame
+
+OnData = Callable[[bytes | None], None]
+
+
+def has_nal(access_unit: bytes) -> bool:
+    """True if an Annex-B access unit holds anything besides start codes and zero bytes. go2rtc crashes
+    on an empty video packet."""
+    return any(access_unit.replace(b"\x00\x00\x01", b""))
+
+
+def is_keyframe(access_unit: bytes) -> bool:
+    """True if an Annex-B access unit holds an IDR slice (NAL type 5)."""
+    i = 0
+    while (i := access_unit.find(b"\x00\x00\x01", i)) != -1 and i + 3 < len(access_unit):
+        if access_unit[i + 3] & 0x1F == 5:
+            return True
+        i += 3
+    return False
+
+
+class MediaFrame(NamedTuple):
+    video: bool
+    data: bytes | None            # decrypted (Annex-B access unit or A-law); None: damaged or undecryptable
+    arrived: float                # time.monotonic() when it arrived
+    lost_before: int = 0          # frames of this stream lost just before it
+
+
+class LinkMediaSource:
+    """Live-view frames from `_vtech_link`, which decrypts them and keeps them in order."""
+
+    def __init__(self, session: Any):
+        self._session = session
+        self._rx: Any = None
+
+    def start(self) -> None:
+        self._rx = self._session._call("media", self._session.link.media)   # noqa: SLF001
+        self._session._call("media start", self._rx.start, 5.0)        # noqa: SLF001
+        self._session._call("media reset", self._rx.reset, 2.0)        # noqa: SLF001
+
+    def poll(self) -> list[MediaFrame]:
+        f = self._session._call("media", self._rx.next, LINK_WAIT_S)   # noqa: SLF001
+        if f is None:
+            return []
+        return [MediaFrame(f.kind == "video", f.data, f.arrived, f.lost_before)]
+
+    def stats(self) -> dict[str, int] | None:
+        """The module's receive counters by name."""
+        try:
+            m = self._session._call("media stats", self._rx.stats)     # noqa: SLF001
+        except VtechError as e:
+            _LOG.debug("receive counters: %s", e)
+            return None
+        out = {
+            "packets_requested": m["packets_requested"], "packets_recovered": m["packets_recovered"],
+            "video_given_up": m["video"]["given_up"], "video_late": m["video"]["late"],
+            "video_overflow": m["video_overflow"], "audio_given_up": m["audio"]["given_up"],
+            "audio_late": m["audio"]["late"], "audio_overflow": m["audio_overflow"],
+        }
+        for k in ("packets_duplicate", "packets_stale", "fragments_dropped", "gaps_skipped", "fragments_behind",
+                  "decrypt_failed_video", "decrypt_failed_audio"):
+            out[k] = m[k]
+        return out
+
+    def close(self) -> None:
+        if self._rx is not None:
+            try:
+                self._session._call("media close", self._rx.close)       # noqa: SLF001
+            except VtechError:
+                pass
+
+
+class Subscription:
+    def __init__(self, stream: LiveStream, on_data: OnData):
+        self._stream, self.on_data = stream, on_data
+        self.started = False                       # has received its first (keyframe) chunk
+
+    def close(self) -> None:
+        self._stream._remove(self)
+
+
+class LiveStream:
+    """The live view of one camera. `get_session` returns the manager's current session (or None)."""
+
+    def __init__(self, get_session: Callable[[], Any], name: str = "",
+                 grace_s: float = GRACE_S, first_keyframe_s: float = FIRST_KEYFRAME_S,
+                 on_running: Callable[[bool], None] | None = None,
+                 audio_held: Callable[[], bool] = lambda: False):
+        """`on_running(bool)` is called on the media thread when the camera's stream starts and stops."""
+        self._get_session, self.name = get_session, name
+        self._on_running, self._audio_held = on_running, audio_held
+        self._grace_s, self._first_keyframe_s = grace_s, first_keyframe_s
+        self._lock = threading.Condition()
+        self._subs: list[Subscription] = []
+        self._thread: threading.Thread | None = None
+        self._closed = False
+        self._keyframe: tuple[float, bytes] | None = None      # (time, access unit) of the newest
+        self._jpeg: tuple[float, bytes, tuple] | None = None    # (time, JPEG, size args) of the last snapshot
+        self.stats: dict[str, Any] = {"starts": 0, "running": False, "last_error": None}
+
+    # ── Subscribers ──────────────────────────────────────────────────────────
+    def subscribe(self, on_data: OnData) -> Subscription:
+        """Start receiving MPEG-TS. Raises SessionGone if the camera isn't connected."""
+        if self._get_session() is None:
+            raise SessionGone(f"{self.name}: camera not connected", call="live view")
+        sub = Subscription(self, on_data)
+        with self._lock:
+            if self._closed:
+                raise SessionGone(f"{self.name}: live view closed", call="live view")
+            self._subs.append(sub)
+            self._lock.notify_all()
+            if self._thread is None:
+                self._thread = threading.Thread(target=self._run, name=f"vtech-media-{self.name}",
+                                                daemon=True)
+                self._thread.start()
+        return sub
+
+    def _remove(self, sub: Subscription) -> None:
+        with self._lock:
+            if sub in self._subs:
+                self._subs.remove(sub)
+
+    @property
+    def running(self) -> bool:
+        return bool(self.stats["running"])
+
+    def _set_running(self, running: bool) -> None:
+        self.stats["running"] = running
+        if self._on_running is not None:
+            try:
+                self._on_running(running)
+            except Exception:                                   # noqa: BLE001
+                _LOG.exception("%s: on_running callback failed", self.name)
+
+    @property
+    def subscribers(self) -> int:
+        with self._lock:
+            return len(self._subs)
+
+    def close(self, timeout: float = 10.0) -> None:
+        """Stop for good (entry unload): end every subscriber and wait for the media thread."""
+        with self._lock:
+            self._closed = True
+            self._lock.notify_all()
+            thread = self._thread
+        if thread is not None:
+            thread.join(timeout)
+        self._end_all()
+
+    def _end_all(self) -> None:
+        with self._lock:
+            subs, self._subs = self._subs, []
+        for s in subs:
+            self._call(s, None)
+
+    def _call(self, sub: Subscription, data: bytes | None) -> None:
+        try:
+            sub.on_data(data)
+        except Exception:                                       # noqa: BLE001
+            _LOG.exception("%s: live-view subscriber failed", self.name)
+
+    # ── Snapshots ────────────────────────────────────────────────────────────
+    def snapshot(self, width: int | None = None, height: int | None = None, timeout: float = 10.0) -> bytes:
+        """A JPEG of the newest keyframe. Starts the stream briefly when no recent frame is at hand."""
+        from .avmux import keyframe_to_jpeg                     # noqa: PLC0415 - PyAV only when used
+
+        now = time.monotonic()
+        size = (width, height)
+        with self._lock:
+            jpeg, key = self._jpeg, self._keyframe
+        if jpeg and jpeg[2] == size and now - jpeg[0] < (2.5 if self.running else SNAPSHOT_MAX_AGE_S):
+            return jpeg[1]
+        if not (self.running and key and now - key[0] < 2.5):
+            sub = self.subscribe(lambda _d: None)               # keeps the stream up while we wait
+            try:
+                with self._lock:
+                    ok = self._lock.wait_for(lambda: self._keyframe and self._keyframe[0] > now
+                                             or self._closed or self._thread is None, timeout)
+                    key = self._keyframe
+                if not ok or key is None or key[0] <= now:
+                    raise VtechError(f"{self.name}: no keyframe within {timeout:.0f} s", call="snapshot")
+            finally:
+                sub.close()
+        out = keyframe_to_jpeg(key[1], width, height)
+        with self._lock:
+            self._jpeg = (time.monotonic(), out, size)
+        return out
+
+    # ── The media thread ─────────────────────────────────────────────────────
+    def _run(self) -> None:
+        try:
+            while True:
+                with self._lock:
+                    if self._closed or not self._subs:
+                        self._thread = None
+                        self._lock.notify_all()
+                        return
+                session = self._get_session()
+                if session is None:
+                    self._end_all()
+                    continue
+                try:
+                    self._stream(session)
+                except Exception as err:                        # noqa: BLE001
+                    self.stats["last_error"] = f"{type(err).__name__}: {err}"
+                    _LOG.warning("%s: live view stopped: %s", self.name, err)
+                    self._end_all()                             # subscribers reconnect on their own
+        finally:
+            with self._lock:
+                self._thread = None
+                self._lock.notify_all()
+
+    def _stream(self, session: Any) -> None:
+        from .avmux import AvTsMuxer, join_offset               # noqa: PLC0415
+
+        source = session.media_source()
+        source.start()
+        if not self._audio_held():
+            session.send(ops.AUDIO_START)
+        for op in (ops.VIDEO_FULLRATE, ops.START):
+            session.send(op)
+        st = self.stats
+        # The receive counters run for the life of the channel, so losses are counted from here.
+        st.update(starts=st["starts"] + 1, video=0, audio=0, bad=0, keyframes=0, bytes=0,
+                  receive=source.stats())
+        self._set_running(True)
+        started = t0 = time.monotonic()
+        idle_since: float | None = None
+        mux: AvTsMuxer | None = None
+        recv_at = started
+        _LOG.debug("%s: live view started", self.name)
+
+        def update_receive() -> None:
+            """Refresh the receive counters, logging frames given up on or dropped since the last."""
+            now = source.stats()
+            if now is None:
+                return
+            before = st.get("receive") or {}
+            lost = {k: now[k] - before.get(k, 0) for k in now
+                    if k.endswith(("given_up", "overflow")) and now[k] > before.get(k, 0)}
+            if lost:
+                _LOG.debug("%s: frames lost: %s (receive counters %s)", self.name, lost, now)
+            st["receive"] = now
+
+        def pts(arrived: float) -> int:
+            return int(max(0.0, arrived - t0) * 90_000)
+
+        def emit(chunk: bytes) -> None:
+            if not chunk:
+                return
+            st["bytes"] += len(chunk)
+            join: int | None = None
+            with self._lock:
+                subs = list(self._subs)
+            for s in subs:
+                data = chunk
+                if not s.started:
+                    if join is None:
+                        join = join_offset(chunk)
+                        join = -1 if join is None else join
+                    if join < 0:
+                        continue
+                    s.started, data = True, chunk[join:]
+                self._call(s, data)
+
+        try:
+            while True:
+                with self._lock:
+                    if self._closed:
+                        return
+                    if self._subs:
+                        idle_since = None
+                    elif idle_since is None:
+                        idle_since = time.monotonic()
+                    elif time.monotonic() - idle_since > self._grace_s:
+                        return
+                if time.monotonic() - recv_at >= RECV_STATS_S:
+                    recv_at = time.monotonic()
+                    update_receive()
+                if mux is None and time.monotonic() - started > self._first_keyframe_s:
+                    raise VtechError(f"no keyframe within {self._first_keyframe_s:.0f} s of START",
+                                     call="live view")
+                for f in source.poll():
+                    st["bad"] += f.lost_before
+                    if f.data is None:
+                        st["bad"] += 1
+                        continue
+                    if not f.video:
+                        st["audio"] += 1
+                        if mux is not None:
+                            emit(mux.audio(f.data, pts(f.arrived)))
+                        continue
+                    au = f.data
+                    if not has_nal(au):
+                        st["bad"] += 1
+                        _LOG.debug("%s: dropped an empty video frame (%d bytes)", self.name, len(au))
+                        continue
+                    st["video"] += 1
+                    key = is_keyframe(au)
+                    if key:
+                        st["keyframes"] += 1
+                        with self._lock:
+                            self._keyframe = (time.monotonic(), au)
+                            self._lock.notify_all()
+                    if mux is None and key:
+                        mux = AvTsMuxer(au)
+                    if mux is not None:
+                        emit(mux.video(au, pts(f.arrived), key))
+        finally:
+            update_receive()
+            for op in (ops.STOP, ops.AUDIO_STOP):
+                try:
+                    session.send(op)
+                except VtechError as err:
+                    _LOG.debug("%s: %s on stop: %s", self.name, op.name, err)
+            source.close()
+            if mux is not None:
+                mux.close()
+            self._set_running(False)
+            _LOG.debug("%s: live view stopped (%s)", self.name,
+                       {k: st[k] for k in ("video", "audio", "keyframes", "bad", "bytes", "receive")})
