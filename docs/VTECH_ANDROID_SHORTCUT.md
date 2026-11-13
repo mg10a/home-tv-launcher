@@ -25,21 +25,29 @@ pairing in Home Assistant.
 1. Install and sign in to **MyVTech Baby Pro** on the same Android device that
    runs Halo. Being installed on your phone does not make it installed on a
    separate Google TV / streamer.
-2. Open the GitHub Actions [Build Halo APK](https://github.com/mg10a/home-tv-launcher/actions/workflows/android-apk.yml)
-   workflow, open its latest successful run and download the
-   **Halo-4.1.4-APK** artifact. Unzip and install `app-debug.apk` over
-   your existing Halo Android app (application ID `uk.homecinema.launcher`).
-3. Tap the VTech Baby Pro card on Smart Home or the VTech icon on Launcher.
-   If it reports *not installed or launchable*, verify the VTech app is on
-   this same Android device and supports its form factor. The official app is
-   primarily distributed for phone/tablet.
-4. If Halo says it needs version 4.1.4, update the Halo APK. Updating the
-   hosted web dashboard alone cannot upgrade Android's native app allowlist.
+2. **Safest first test:** open the GitHub Actions [Build Halo APK](https://github.com/mg10a/home-tv-launcher/actions/workflows/android-apk.yml)
+   workflow, open its latest successful run, and download
+   **Halo-VTech-Preview-4.1.4-APK**. Unzip and install `app-debug.apk`.
+   This is a **separate Android app** called **Halo VTech Preview**
+   (`uk.homecinema.launcher.vtechpreview`); it will **not overwrite or delete
+   your existing Halo** or its WebView settings. It loads the same live
+   Halo website. You do not need to connect Home Assistant in the preview
+   just to try the VTech shortcut.
+3. Tap the VTech Baby Pro card on Smart Home or the VTech shortcut on
+   Launcher. The official VTech app opens if installed/launchable on that
+   same Android device. Android Back returns to the preview app.
+4. If it reports *not installed or launchable*, verify the VTech app is
+   installed on this device and supports its form factor. The official app
+   is primarily distributed for phone/tablet.
 
-The test APK is a debug build and Android may refuse an in-place install if
-the existing Halo was signed by another key. In that case, do **not** remove
-Halo before preserving its app-specific storage/settings. Ask for assistance
-rather than deleting a working installation.
+The workflow also provides **Halo-4.1.4-APK** using the existing production
+app ID (`uk.homecinema.launcher`). It may **not** be installable as an
+update if your current Halo was signed by a different debug key. Do not
+uninstall a working Halo to force the update without preserving its
+app-specific settings.
+
+A web dashboard update alone cannot upgrade the Android native bridge.
+If Halo says it needs version 4.1.4, use the separately installable preview.
 
 ## Rollback
 
