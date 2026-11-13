@@ -1,32 +1,93 @@
-/* Baby camera: authenticated, on-demand snapshots; no footage stored in browser storage. */
+/* Direct shortcut to the official installed VTech Android app.
+   No camera requests, pairing credentials, snapshots or cloud tokens touch Halo. */
 (()=>{
 'use strict';
-const security=document.querySelector('.home-security'),stack=security?.querySelector('.home-compact-stack');
+const APP='MyVTech Baby Pro';
+const security=document.querySelector('.home-security');
+const stack=security?.querySelector('.home-compact-stack');
 if(!security||!stack)return;
-for(const cls of ['kia-placeholder','coffee-card']){const card=security.querySelector('.'+cls);if(card)stack.append(card)}
-security.classList.add('with-baby-camera');
-const card=document.createElement('button');card.type='button';card.className='baby-camera-card';card.setAttribute('aria-label','Open baby camera');
-card.innerHTML='<strong>👶 Baby camera</strong><span class="baby-camera-preview">VTech RM7767HD</span><small class="baby-camera-status">Pairing required</small>';
-security.append(card);
-const dialog=document.createElement('dialog');dialog.className='baby-camera-dialog';dialog.setAttribute('aria-label','Baby camera');
-dialog.innerHTML='<header><strong>👶 Baby camera</strong><button type="button" class="halo-close" aria-label="Close baby camera">✕</button></header><p class="baby-status" role="status"></p><img hidden alt="Baby camera snapshot"><button type="button" class="baby-refresh">Refresh picture</button><small>Snapshots refresh while this window is open. No audio.</small>';
-document.body.append(dialog);
-let controller=null,timer=null,url=null,epoch=0;
-function entity(){const cameras=Object.values(typeof haStates==='undefined'?{}:haStates).filter(s=>s.entity_id?.startsWith('camera.')&&/vtech|rm7767/i.test(s.entity_id+' '+(s.attributes?.friendly_name||'')));return cameras.length===1?cameras[0]:null}
-function ready(){return typeof haVerified!=='undefined'&&haVerified}
-function update(){const cam=entity();card.querySelector('.baby-camera-status').textContent=!ready()?'Connect Home Assistant':!cam?'Pairing required':['unavailable','unknown'].includes(cam.state)?'Camera unavailable':'Open camera';}
-function stop(){epoch++;clearTimeout(timer);controller?.abort();controller=null;if(url){URL.revokeObjectURL(url);url=null}const img=dialog.querySelector('img');img.hidden=true;img.removeAttribute('src')}
-async function refresh(){
- clearTimeout(timer);controller?.abort();const current=++epoch,cam=entity(),status=dialog.querySelector('.baby-status');
- if(!dialog.open||document.hidden)return;
- if(!ready()||!cam){stop();status.textContent=!ready()?'Connect Home Assistant to view the camera.':'Complete VTech pairing in Home Assistant first.';return}
- if(['unavailable','unknown'].includes(cam.state)){stop();status.textContent='Camera unavailable. Check its connection in Home Assistant.';return}
- controller=new AbortController();const timeout=setTimeout(()=>controller?.abort(),12000);
- try{status.textContent='Getting picture…';const response=await eufyApi('/api/camera_proxy/'+encodeURIComponent(cam.entity_id),{signal:controller.signal});if(!response.ok)throw Error('Camera returned '+response.status);const blob=await response.blob();if(!blob.type.startsWith('image/'))throw Error('No camera picture received');if(current!==epoch||!dialog.open)return;const next=URL.createObjectURL(blob),img=dialog.querySelector('img');if(url)URL.revokeObjectURL(url);url=next;img.src=next;img.hidden=false;status.textContent='Picture updated '+new Date().toLocaleTimeString();}
- catch(error){if(current===epoch){const img=dialog.querySelector('img');img.hidden=true;status.textContent=error.name==='AbortError'?'Camera response timed out.':error.message}}
- finally{clearTimeout(timeout);if(current===epoch&&dialog.open&&!document.hidden)timer=setTimeout(refresh,3000)}
+for(const cls of ['kia-placeholder','coffee-card']){
+  const el=security.querySelector('.'+cls);
+  if(el)stack.append(el);
 }
-card.onclick=()=>{dialog.showModal();refresh()};dialog.querySelector('.halo-close').onclick=()=>dialog.close();dialog.querySelector('.baby-refresh').onclick=refresh;dialog.addEventListener('close',()=>{stop();card.focus()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(dialog.open)refresh()});
-window.addEventListener('home-states-updated',()=>{update();if(dialog.open&&!ready()){stop();dialog.querySelector('.baby-status').textContent='Home Assistant disconnected.'}});update();
+security.classList.add('with-baby-camera');
+
+function bridge(){
+  const native=window.AndroidLauncher;
+  if(!native||typeof native.openApp!=='function'||typeof native.supportsBabyMonitorApp!=='function')return null;
+  try{return native.supportsBabyMonitorApp()===true?native:null}catch{return null}
+}
+function installed(){
+  const native=bridge();
+  if(!native||typeof native.babyMonitorInstalled!=='function')return false;
+  try{return native.babyMonitorInstalled()===true}catch{return false}
+}
+function logo(){
+  const mark=document.createElement('span');
+  mark.className='vtech-app-logo';
+  mark.setAttribute('aria-hidden','true');
+  mark.textContent='👶';
+  const native=bridge();
+  if(native&&typeof native.babyMonitorIcon==='function'){
+    try{
+      const icon=native.babyMonitorIcon();
+      if(typeof icon==='string'&&icon.startsWith('data:image/png;base64,')&&icon.length<250000){
+        const image=document.createElement('img');
+        image.src=icon;
+        image.alt='';
+        image.onerror=()=>{image.remove();mark.textContent='👶'};
+        mark.replaceChildren(image);
+      }
+    }catch{}
+  }
+  return mark;
+}
+function feedback(message){
+  if(typeof window.notify==='function'){window.notify(message);return}
+  const note=document.getElementById('notice');
+  if(note){note.textContent=message;note.classList.remove('hidden');return}
+  window.alert(message);
+}
+function openVtech(){
+  const native=bridge();
+  if(!native){
+    feedback('To open VTech from Halo, install the updated Halo 4.1.4 Android app on this device.');
+    return;
+  }
+  if(!installed()){
+    feedback('MyVTech Baby Pro is not installed or launchable on this device. Install the official app from Google Play.');
+    return;
+  }
+  try{native.openApp(APP)}
+  catch{feedback('Could not open VTech. Check the installed app and try again.')}
+}
+const card=document.createElement('button');
+card.type='button';
+card.className='baby-camera-card vtech-app-card';
+card.setAttribute('aria-label','Open MyVTech Baby Pro app');
+card.append(logo());
+const copy=document.createElement('span');
+copy.className='vtech-app-copy';
+const title=document.createElement('strong');
+title.textContent='VTech Baby Pro';
+const status=document.createElement('small');
+status.className='baby-camera-status';
+status.textContent=bridge()?(installed()?'Open installed app':'Install app on this device'):'Open in Halo Android app 4.1.4';
+copy.append(title,status);
+card.append(copy);
+card.addEventListener('click',openVtech);
+security.append(card);
+
+const launcherHead=document.querySelector('.launcher-entertainment .section-head');
+if(launcherHead){
+  const quick=document.createElement('button');
+  quick.type='button';
+  quick.className='vtech-launcher-shortcut';
+  quick.setAttribute('aria-label','Open MyVTech Baby Pro app');
+  const label=document.createElement('span');
+  label.textContent='VTech Baby Pro';
+  quick.append(logo(),label);
+  quick.addEventListener('click',openVtech);
+  launcherHead.insertBefore(quick,launcherHead.querySelector('.launcher-link'));
+}
 })();
