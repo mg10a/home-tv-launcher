@@ -1,8 +1,17 @@
 plugins { id 'com.android.application' }
+// A separate APK for testing the VTech shortcut without replacing a signed Halo install.
+def haloPreview = providers.gradleProperty('haloPreview').map { it.toBoolean() }.orElse(false).get()
 android {
     namespace 'uk.homecinema.launcher'
     compileSdk 35
-    defaultConfig { applicationId 'uk.homecinema.launcher'; minSdk 26; targetSdk 35; versionCode 414; versionName '4.1.4' }
+    defaultConfig {
+        applicationId haloPreview ? 'uk.homecinema.launcher.vtechpreview' : 'uk.homecinema.launcher'
+        manifestPlaceholders = [haloAppLabel: haloPreview ? 'Halo VTech Preview' : 'Halo']
+        minSdk 26
+        targetSdk 35
+        versionCode 414
+        versionName '4.1.4'
+    }
     testOptions { unitTests { includeAndroidResources = true } }
     buildTypes { release { minifyEnabled false } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
