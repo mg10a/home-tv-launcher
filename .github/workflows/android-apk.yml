@@ -25,7 +25,7 @@ jobs:
         with:
           gradle-version: '8.10.2'
       - name: Check production dashboard
-        run: node --test tests/production-launcher.test.cjs
+        run: node --test tests/production-launcher.test.cjs tests/vtech-app-shortcut.test.cjs
       - name: Build debug APK
         run: gradle -Pandroid.useAndroidX=true :app:testDebugUnitTest :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
