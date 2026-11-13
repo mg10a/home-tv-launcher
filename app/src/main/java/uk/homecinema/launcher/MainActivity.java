@@ -25,7 +25,8 @@ public final class MainActivity extends Activity {
   private WebView web,authWeb;
   private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
   private final ExecutorService pool=Executors.newFixedThreadPool(3);
-  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.3";
+  private static final String LAUNCHER="https://mg10a.github.io/home-tv-launcher/?v=4.1.4";
+  private static final String VTECH_PACKAGE="com.cams.vtech.mvb.pro";
   @Override public void onCreate(Bundle b){super.onCreate(b);
     web=new WebView(this);setContentView(web);
     web.setBackgroundColor(Color.BLACK);
@@ -119,15 +120,36 @@ public final class MainActivity extends Activity {
     });}
     @JavascriptInterface public void openAuth(String url){runOnUiThread(()->beginAuth(url));}
     @JavascriptInterface public boolean supportsAudioApps() { return true; }
+    @JavascriptInterface public boolean supportsBabyMonitorApp() { return true; }
+    @JavascriptInterface public boolean babyMonitorInstalled() {
+      PackageManager pm=getPackageManager();
+      return pm.getLaunchIntentForPackage(VTECH_PACKAGE)!=null
+        ||pm.getLeanbackLaunchIntentForPackage(VTECH_PACKAGE)!=null;
+    }
+    // Expose only the installed app's public icon; never camera data or credentials.
+    @JavascriptInterface public String babyMonitorIcon() {
+      try {
+        android.graphics.drawable.Drawable icon=getPackageManager().getApplicationIcon(VTECH_PACKAGE);
+        android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(144,144,android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);
+        icon.setBounds(0,0,144,144);
+        icon.draw(canvas);
+        ByteArrayOutputStream out=new ByteArrayOutputStream();
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);
+        bitmap.recycle();
+        return "data:image/png;base64,"+Base64.encodeToString(out.toByteArray(),Base64.NO_WRAP);
+      } catch(PackageManager.NameNotFoundException|SecurityException e) { return ""; }
+    }
+
     @JavascriptInterface public void openApp(String name) {
       runOnUiThread(() -> launchEntertainment(name));
     }
   }
   private void launchEntertainment(String name) {
-    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN","Sonos","Yoto"};
+    String[] names={"NOW","Netflix","Disney+","YouTube","BBC iPlayer","ITVX","Prime Video","Apple TV","Spotify","JustWatch","NordVPN","Sonos","Yoto","MyVTech Baby Pro"};
     if(!Arrays.asList(names).contains(name))return;
     PackageManager pm=getPackageManager();
-    String[] packages="Yoto".equals(name)?new String[]{"com.yotoplay.yoto"}:"Sonos".equals(name)?new String[]{"com.sonos.acr2","com.sonos.acr"}:new String[0];
+    String[] packages="Yoto".equals(name)?new String[]{"com.yotoplay.yoto"}:"Sonos".equals(name)?new String[]{"com.sonos.acr2","com.sonos.acr"}:"MyVTech Baby Pro".equals(name)?new String[]{VTECH_PACKAGE}:new String[0];
     for(String pkg:packages){
       Intent launch=pm.getLaunchIntentForPackage(pkg);
       if(launch==null)launch=pm.getLeanbackLaunchIntentForPackage(pkg);
@@ -139,7 +161,9 @@ public final class MainActivity extends Activity {
       for(ResolveInfo match:pm.queryIntentActivities(query,0)) {
         if(match.activityInfo==null)continue;
         String label=match.loadLabel(pm).toString().trim();
-        boolean same=label.equalsIgnoreCase(name)
+        boolean same="MyVTech Baby Pro".equals(name)
+          ?VTECH_PACKAGE.equals(match.activityInfo.packageName)
+          :label.equalsIgnoreCase(name)
           || ("Prime Video".equals(name)&&label.equalsIgnoreCase("Amazon Prime Video"))
           || ("BBC iPlayer".equals(name)&&label.equalsIgnoreCase("iPlayer"))
           || ("NOW".equals(name)&&(match.activityInfo.packageName.equals("com.nowtv.ie")
