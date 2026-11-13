@@ -1,0 +1,37 @@
+/* Local Android app shortcut. Prefer the installed VTech app's exact icon. */
+#dashboardPage .baby-camera-card.vtech-app-card{
+  display:flex;flex-direction:row;align-items:center;justify-content:flex-start;
+  min-width:0;min-height:0;gap:clamp(5px,1vw,11px);
+  padding:clamp(5px,1vh,10px);
+  background:linear-gradient(110deg,#301d3d,#1d273f 72%);
+  border-color:#ad6aa2;cursor:pointer;
+}
+.vtech-app-logo{
+  flex:none;display:grid;place-items:center;overflow:hidden;
+  width:clamp(32px,5.5vh,66px);height:clamp(32px,5.5vh,66px);
+  border-radius:12px;background:linear-gradient(145deg,#f7a0bb,#ed328c);
+  color:white;font-size:clamp(16px,3vh,30px);box-shadow:0 3px 10px #0003;
+}
+.vtech-app-logo img{display:block;width:100%;height:100%;object-fit:cover}
+#dashboardPage .vtech-app-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+#dashboardPage .vtech-app-copy strong{
+  font-size:clamp(10px,1.55vh,15px);white-space:normal;line-height:1.15
+}
+#dashboardPage .vtech-app-copy small{
+  font-size:clamp(9px,1.25vh,12px);line-height:1.15;color:#e9cce1
+}
+.vtech-launcher-shortcut{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  flex:none;padding:4px 9px;border-radius:10px;border:1px solid #ad6aa2;
+  color:#fff;background:#38233e;font-size:clamp(10px,1.4vh,13px);
+  line-height:1.1;font-weight:650;cursor:pointer
+}
+.vtech-launcher-shortcut .vtech-app-logo{width:24px;height:24px;border-radius:6px;font-size:13px;box-shadow:none}
+.vtech-launcher-shortcut:hover,.vtech-app-card:hover{border-color:#f2a6ca!important;background-color:#58334b}
+.vtech-launcher-shortcut:focus-visible,.vtech-app-card:focus-visible{outline:3px solid #d8edff;outline-offset:2px}
+@media(max-height:550px){
+  #dashboardPage .baby-camera-card.vtech-app-card{gap:5px;padding:4px 6px}
+  #dashboardPage .baby-camera-card.vtech-app-card .vtech-app-logo{width:clamp(27px,6vh,42px);height:clamp(27px,6vh,42px);border-radius:8px}
+  .vtech-launcher-shortcut{padding:2px 6px;font-size:10px}
+  .vtech-launcher-shortcut .vtech-app-logo{width:18px;height:18px}
+}
