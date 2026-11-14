@@ -5,6 +5,9 @@ on:
     paths:
       - 'index.html'
       - 'home-screens.*'
+      - 'baby-camera.js'
+      - 'vtech-app.css'
+      - 'tests/vtech-app-shortcut.test.cjs'
       - 'family-calendar.*'
       - 'app/**'
       - 'build.gradle'

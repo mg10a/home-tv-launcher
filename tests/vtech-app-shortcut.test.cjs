@@ -5,6 +5,8 @@ const vm=require('node:vm');
 
 const source=readFileSync('baby-camera.js','utf8');
 const html=readFileSync('index.html','utf8');
+const layoutCSS=readFileSync('home-screens.css','utf8');
+const iconCSS=readFileSync('vtech-app.css','utf8');
 
 function mount(native){
   class Element {
@@ -39,13 +41,15 @@ function mount(native){
   return {security,stack,head,messages};
 }
 test('production loads the shortcut and never uses a camera API',()=>{
-  assert.match(html,/vtech-app\.css\?v=1/);
-  assert.match(html,/baby-camera\.js\?v=2/);
+  assert.match(html,/vtech-app\.css\?v=2/);
+  assert.match(html,/baby-camera\.js\?v=3/);
+  assert.doesNotMatch(source,/vtech-launcher-shortcut|launcher-entertainment/);
+  assert.doesNotMatch(iconCSS,/vtech-launcher-shortcut/);
   for(const bad of ['camera_proxy','eufyApi','haStates','haVerified','getUserMedia','localStorage']){
     assert.equal(source.includes(bad),false,'Unexpected private-camera or storage access: '+bad);
   }
 });
-test('clicking dashboard card and launcher logo opens only official VTech app',()=>{
+test('Smart Home VTech card opens official app without adding a TV-launcher button',()=>{
   const launched=[];
   const native={
     supportsBabyMonitorApp:()=>true,
@@ -56,12 +60,20 @@ test('clicking dashboard card and launcher logo opens only official VTech app',(
   const {security,stack,head}=mount(native);
   assert.equal(stack.children.length,2,'existing adjacent device controls remain in compact stack');
   const card=security.children.find(x=>x.className.includes('vtech-app-card'));
-  const quick=head.children.find(x=>x.className==='vtech-launcher-shortcut');
-  assert.ok(card&&quick,'both home and launcher shortcuts exist');
+  assert.ok(card,'Smart Home card remains present');
+  assert.equal(head.children.length,2,'TV Launcher retains only its original heading and App settings');
   assert.equal(card.attributes['aria-label'],'Open MyVTech Baby Pro app');
   assert.equal(card.children[0].children[0].src,'data:image/png;base64,AAAA');
-  card.handlers.click();quick.handlers.click();
-  assert.deepEqual(launched,['MyVTech Baby Pro','MyVTech Baby Pro']);
+  card.handlers.click();
+  assert.deepEqual(launched,['MyVTech Baby Pro']);
+});
+test('VTech occupies one Kia-sized grid row with the slot below unoccupied',()=>{
+  const rules=layoutCSS.slice(layoutCSS.indexOf('/* Shared four-row rhythm:'));
+  assert.match(rules,/#dashboardPage \.home-security\.with-baby-camera\{grid-template-rows:repeat\(4,minmax\(0,1fr\)\)!important;gap:6px\}/);
+  assert.match(rules,/\.home-compact-stack\{grid-column:2;grid-row:1\/5;grid-template-rows:repeat\(4,minmax\(0,1fr\)\);gap:6px\}/);
+  assert.match(rules,/\.doorbell-slot\{grid-column:1;grid-row:1\/3\}/);
+  assert.match(rules,/\.baby-camera-card\{grid-column:1;grid-row:3\/4\}/);
+  assert.doesNotMatch(source,/vtech-future-card|grid-row:4/);
 });
 test('an old Halo build shows upgrade message rather than silently doing nothing',()=>{
   const launched=[];

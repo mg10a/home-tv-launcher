@@ -78,16 +78,4 @@ card.append(copy);
 card.addEventListener('click',openVtech);
 security.append(card);
 
-const launcherHead=document.querySelector('.launcher-entertainment .section-head');
-if(launcherHead){
-  const quick=document.createElement('button');
-  quick.type='button';
-  quick.className='vtech-launcher-shortcut';
-  quick.setAttribute('aria-label','Open MyVTech Baby Pro app');
-  const label=document.createElement('span');
-  label.textContent='VTech Baby Pro';
-  quick.append(logo(),label);
-  quick.addEventListener('click',openVtech);
-  launcherHead.insertBefore(quick,launcherHead.querySelector('.launcher-link'));
-}
 })();
