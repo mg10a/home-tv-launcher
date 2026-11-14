@@ -1,16 +1,16 @@
 # MyVTech Baby Pro — Android shortcut in Halo
 
-The Smart Home **Baby camera** card now acts as a **VTech Baby Pro** app launcher,
-not a Home Assistant snapshot. A small matching shortcut also appears beside
-App settings on Halo's Launcher screen. These controls do not depend on VTech
-pairing in Home Assistant.
+The Smart Home **VTech Baby Pro** card opens the installed Android app, rather
+than a Home Assistant snapshot. No VTech shortcut is shown on the TV Launcher.
+The Smart Home card is the same height as the Kia Connect card, with the space
+beneath reserved for a future card. Pairing in Home Assistant is not required.
 
 ## How it works
 
 - The production Halo Android **4.1.4** app and DEV Android app recognise the
   official Google Play package `com.cams.vtech.mvb.pro`.
 - On a supported Android device, Halo gets the **installed app's actual icon**
-  via Android PackageManager, entirely locally, and displays it in the shortcuts.
+  via Android PackageManager, entirely locally, and displays it on the Smart Home card.
   If the app isn't installed, Halo uses a baby-symbol placeholder instead.
 - Tapping launches the package's main Android activity. Android's **Back** or
   recent-apps UI returns to Halo. The official VTech app handles video/audio
@@ -33,8 +33,8 @@ pairing in Home Assistant.
    your existing Halo** or its WebView settings. It loads the same live
    Halo website. You do not need to connect Home Assistant in the preview
    just to try the VTech shortcut.
-3. Tap the VTech Baby Pro card on Smart Home or the VTech shortcut on
-   Launcher. The official VTech app opens if installed/launchable on that
+3. Tap the VTech Baby Pro card on **Smart Home**. The official VTech app
+   opens if installed/launchable on that
    same Android device. Android Back returns to the preview app.
 4. If it reports *not installed or launchable*, verify the VTech app is
    installed on this device and supports its form factor. The official app
