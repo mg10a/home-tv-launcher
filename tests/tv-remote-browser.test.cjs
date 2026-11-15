@@ -95,3 +95,32 @@ test('Eufy X, pet, heating, calendar and standard app dialogs keep remote focus'
     await page.close();
   }finally{await browser.close()}
 });
+
+test('coffee, room, household and photo dialogs open and close without touchscreen', {timeout:120000},async()=>{
+  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  try{
+    const page=await open(browser);
+    const cases=[
+      {name:'Coffee',open:()=>document.querySelector('.coffee-details').click(),selector:'dialog.coffee-detail[open]',close:'header button'},
+      {name:'Room details',open:()=>window.openRoomDetails('Kitchen'),selector:'dialog.room-detail[open]',close:'header button'},
+      {name:'Groobarbs',open:()=>window.openGroobarbsDetails(),selector:'dialog.groobarbs-detail[open]',close:'header button'},
+      {name:'Household tasks',open:()=>window.openFamilyTasks(),selector:'dialog.family-task-list-dialog[open]',close:'header button'},
+      {name:'Photo settings',open:()=>openPhotoSettings(),selector:'#photoSettings[open]',close:'.settings-head button'}
+    ];
+    for(const scenario of cases){
+      await page.evaluate(scenario.open);
+      const modal=page.locator(scenario.selector);
+      await modal.waitFor({state:'visible',timeout:10000});
+      const close=modal.locator(scenario.close).first();
+      assert.equal(await close.count(),1,scenario.name+' has no close button');
+      await close.focus();
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(selector=>document.querySelector(selector)?.contains(document.activeElement),scenario.selector),true,
+        scenario.name+' remote focus escaped the modal');
+      await close.focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator(scenario.selector).count(),0,scenario.name+' did not close with OK');
+    }
+    await page.close();
+  }finally{await browser.close()}
+});
