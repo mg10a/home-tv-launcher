@@ -55,7 +55,7 @@ test('Chromecast D-pad reaches Kia and opens/closes its real dialog', {timeout:1
     await page.locator('dialog.kia-detail button').first().focus();
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(()=>!!document.activeElement?.closest('dialog.kia-detail')),true,'Tab must stay inside Kia modal');
-    const close=page.locator('dialog.kia-detail button').filter({hasText:/Close/i}).first();
+    const close=page.locator('dialog.kia-detail header button').first(); // modal-controls normalises 'Close' to ×
     await close.focus();await page.keyboard.press('Enter');
     assert.equal(await page.locator('dialog.kia-detail[open]').count(),0,'Kia Close should work from remote');
     await page.close();
