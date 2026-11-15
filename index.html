@@ -1608,20 +1608,50 @@ function openLaunchSettings(){
 }
 function render(){const cfg=configs[room];$('roomLabel').textContent=cfg.label;$('subtitle').textContent=cfg.subtitle;document.querySelectorAll('.room').forEach(b=>{b.classList.toggle('active',b.dataset.room===room);b.setAttribute('aria-pressed',String(b.dataset.room===room))});$('apps').replaceChildren(...apps.map(a=>tile(a,'app '+(a==='NOW'?'now':a==='Netflix'?'netflix':a==='Disney+'?'disney':a==='YouTube'?'youtube':a==='Prime Video'?'prime':''),()=>openEntertainment(a))))}document.querySelectorAll('.room').forEach(b=>b.onclick=()=>{room=b.dataset.room;render()});function clock(){const d=new Date();$('clock').firstChild.textContent=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});$('date').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});$('greeting').textContent=d.getHours()<12?'Good morning.':d.getHours()<17?'Good afternoon.':'Good evening.'}clock();setInterval(clock,30000);render();renderHomeOverview();renderCalendar();/* v0.5: geometry-aware D-pad and keyboard navigation */
 const arrowKeys={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
-function visibleControls(){const root=['roomsPage','historyPage','cameraPage','dashboardPage'].map(id=>$(id)).find(el=>!el.classList.contains('hidden'))||document.querySelector('main.shell');return [...document.querySelectorAll('#homeScreenNav button'),...root.querySelectorAll('button:not([disabled])')].filter(b=>{const r=b.getBoundingClientRect(),s=getComputedStyle(b);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'})}
+function visibleControls(){
+ const root=['roomsPage','historyPage','cameraPage','dashboardPage'].map(id=>$(id)).find(el=>!el.classList.contains('hidden'))||document.querySelector('main.shell');
+ // Kia and Coffee are keyboard-focusable cards, not HTML buttons. Include
+ // them, along with TV-accessible selectors, links, inputs and other cards.
+ const selectors='button:not([disabled]),[role="button"][tabindex],a[href],select,input:not([type="hidden"]),textarea,[tabindex]:not([tabindex="-1"])';
+ return [...new Set([...document.querySelectorAll('#homeScreenNav button'),...root.querySelectorAll(selectors)])]
+  .filter(b=>!b.disabled&&b.getAttribute('aria-disabled')!=='true'
+   &&!b.closest('[hidden],[inert],[aria-hidden="true"]')
+   &&b.getBoundingClientRect().width>0&&b.getBoundingClientRect().height>0
+   &&getComputedStyle(b).visibility!=='hidden'&&getComputedStyle(b).display!=='none');
+}
 function defaultControl(controls){return controls.find(b=>b.classList.contains('app'))||controls[0]}
 function navigate(direction){const controls=visibleControls();if(!controls.length)return;const current=controls.includes(document.activeElement)?document.activeElement:defaultControl(controls);if(!controls.includes(document.activeElement)){current.focus({preventScroll:true});return}
 const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;const [dx,dy]=direction;let best=null,bestScore=Infinity;
 for(const b of controls){if(b===current)continue;const r=b.getBoundingClientRect(),x=r.left+r.width/2-ax,y=r.top+r.height/2-ay;const forward=x*dx+y*dy,side=Math.abs(x*dy-y*dx);if(forward<=3)continue;const score=forward+side*2.8+(side>Math.max(a.width,a.height)*1.5?side:0);if(score<bestScore){bestScore=score;best=b}}
 if(best)best.focus({preventScroll:true})}
-document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||document.querySelector('dialog[open]')||document.querySelector('.photo-fullscreen')||!document.getElementById('haSetup').classList.contains('hidden'))return;
-const deviceModal=['petOverlay','salusOverlay'].map(id=>document.getElementById(id)).find(el=>el&&!el.classList.contains('hidden'));
-if(deviceModal){
- if(['Escape','BrowserBack'].includes(e.key)){e.preventDefault();deviceModal.id==='petOverlay'?closePetDetails():closeSalusModal();return}
- if(e.key==='Tab'){const items=[...deviceModal.querySelectorAll('button:not(:disabled),select:not([hidden])')].filter(el=>el.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}
- return;
-}
-if(e.key in arrowKeys){e.preventDefault();navigate(arrowKeys[e.key]);return}if(e.key==='Escape'||e.key==='Backspace'||e.key==='BrowserBack'){if(!document.getElementById('salusOverlay').classList.contains('hidden')){e.preventDefault();closeSalusModal();return}if(!document.getElementById('calendarOverlay').classList.contains('hidden')){e.preventDefault();closeCalendar();return}if(!$('historyPage').classList.contains('hidden')){e.preventDefault();showHistory(false)}else if(!$('cameraPage').classList.contains('hidden')){e.preventDefault();showCamera(false)}else if(!$('roomsPage').classList.contains('hidden')){e.preventDefault();showRooms(null)}else if(!$('dashboardPage').classList.contains('hidden')){e.preventDefault();showDashboard(false)}return}if(e.key==='Enter'||e.key===' '){const controls=visibleControls();if(controls.includes(document.activeElement)){e.preventDefault();document.activeElement.click()}else if(e.key==='Enter'){e.preventDefault();defaultControl(controls)?.focus({preventScroll:true})}}});
+document.addEventListener('keydown',e=>{
+ if(e.altKey||e.ctrlKey||e.metaKey||window.HaloTVRemoteModalOpen?.()
+    ||document.querySelector('dialog[open]')||document.querySelector('.photo-fullscreen'))return;
+ const editing=document.activeElement,tag=editing?.tagName?.toLowerCase();
+ if(e.key in arrowKeys){
+  // Let native text editing, date/range adjustment and select choices work.
+  if((['input','textarea'].includes(tag)&&['ArrowLeft','ArrowRight'].includes(e.key))
+     ||(tag==='select'&&['ArrowUp','ArrowDown'].includes(e.key)))return;
+  e.preventDefault();navigate(arrowKeys[e.key]);return;
+ }
+ if(e.key==='Escape'||e.key==='Backspace'||e.key==='BrowserBack'||e.key==='GoBack'){
+  if(!$('historyPage').classList.contains('hidden')){e.preventDefault();showHistory(false)}
+  else if(!$('cameraPage').classList.contains('hidden')){e.preventDefault();showCamera(false)}
+  else if(!$('roomsPage').classList.contains('hidden')){e.preventDefault();showRooms(null)}
+  else if(!$('dashboardPage').classList.contains('hidden')){e.preventDefault();showDashboard(false)}
+  return;
+ }
+ if(e.key==='Enter'||e.key===' '){
+  if(['input','textarea','select'].includes(tag))return;
+  const controls=visibleControls();
+  if(controls.includes(document.activeElement)){
+   e.preventDefault();
+   // Native card onkeydown handlers can open a modal before this document
+   // listener fires. Do not click a second time after a dialog opens.
+   if(!window.HaloTVRemoteModalOpen?.())document.activeElement.click();
+  }else if(e.key==='Enter'){e.preventDefault();defaultControl(controls)?.focus({preventScroll:true})}
+ }
+});
 document.addEventListener('pointerdown',()=>document.body.classList.add('using-pointer'),{passive:true});document.addEventListener('keydown',e=>{if(e.key in arrowKeys)document.body.classList.remove('using-pointer')});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
 </script><div class="eufy-overlay hidden" id="eufyOverlay" role="dialog" aria-modal="true" aria-label="Front Door camera">
@@ -2262,6 +2292,6 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./groobox-images.js?v=3"></script><script src="./home-screens.js?v=17"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=2"></script><script src="./family-calendar.js?v=12"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=2"></script><script src="./kia-controls.js?v=7"></script><script src="./room-controls.js?v=9"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=4"><script src="./family-shopping.js?v=1"></script><script src="./modal-controls.js?v=1"></script><script src="./pet-portraits.js?v=1"></script><script src="./pet-timeline.js?v=2"></script><link rel="stylesheet" href="./vtech-app.css?v=2"><script src="./baby-camera.js?v=3"></script><script src="./ha-remote-focus.js?v=1"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./groobox-images.js?v=3"></script><script src="./home-screens.js?v=17"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=2"></script><script src="./family-calendar.js?v=12"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=2"></script><script src="./kia-controls.js?v=7"></script><script src="./room-controls.js?v=9"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=4"><script src="./family-shopping.js?v=1"></script><script src="./modal-controls.js?v=1"></script><script src="./pet-portraits.js?v=1"></script><script src="./pet-timeline.js?v=2"></script><link rel="stylesheet" href="./vtech-app.css?v=2"><script src="./baby-camera.js?v=3"></script><script src="./ha-remote-focus.js?v=1"></script><script src="./tv-remote.js?v=1"></script></body></html>
 
 
