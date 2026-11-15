@@ -38,7 +38,7 @@ function activeModal(){
   const focused=candidates.filter(node=>node.contains(focus));
   if(focused.length)return focused.at(-1);
   if(lastModal&&candidates.includes(lastModal))return lastModal;
-  const native=candidates.filter(node=>node.matches?.('dialog:modal'));
+  const native=candidates.filter(node=>{try{return node.matches?.('dialog:modal')}catch{return false}});
   return native.at(-1)||candidates.at(-1);
 }
 const haIsOpen=()=>{const ha=document.getElementById('haSetup');return !!ha&&!ha.classList.contains('hidden')};
