@@ -1,0 +1,28 @@
+/* Clear focus feedback for Chromecast D-pad buttons, modal controls and cards.
+   No touch or pointer behaviour is changed. */
+#dashboardPage .kia-placeholder:focus-visible,
+#dashboardPage .coffee-card:focus-visible,
+#dashboardPage [role="button"][tabindex]:focus-visible,
+[role="dialog"] button:focus-visible,
+[role="dialog"] select:focus-visible,
+[role="dialog"] input:focus-visible,
+[role="dialog"] a:focus-visible,
+dialog button:focus-visible,
+dialog select:focus-visible,
+dialog input:focus-visible,
+dialog a:focus-visible {
+  outline:3px solid #d7f2ff !important;
+  outline-offset:2px;
+  position:relative;
+  z-index:1;
+}
+#eufyConnectionCheck{
+  font:inherit;font-size:clamp(11px,1.5vh,14px);
+  background:#274761;border:1px solid #789db3;
+  border-radius:8px;color:#eff7ff;padding:5px 8px;
+}
+#eufyConnectionResult{
+  color:#c8d7e6;overflow-wrap:anywhere;
+  font-size:clamp(10px,1.3vh,13px);line-height:1.4;
+  max-height:120px;overflow:auto;
+}
