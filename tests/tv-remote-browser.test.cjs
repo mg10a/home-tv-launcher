@@ -81,7 +81,7 @@ test('Eufy X, pet, heating, calendar and standard app dialogs keep remote focus'
       await page.evaluate(id=>document.getElementById(id).classList.remove('hidden'),id);
       await page.locator(selector).focus();
       await page.keyboard.press('ArrowDown');
-      assert.equal(await page.evaluate(id=>document.getElementById(id).contains(document.activeElement)),id),true,
+      assert.equal(await page.evaluate(id=>document.getElementById(id).contains(document.activeElement),id),true,
         id+' D-pad escaped the modal');
       await page.locator(selector).focus();
       await page.keyboard.press('Enter');
