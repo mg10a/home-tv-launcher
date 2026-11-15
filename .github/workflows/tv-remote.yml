@@ -1,0 +1,41 @@
+name: Chromecast remote navigation checks
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'tv-remote.*'
+      - 'tests/tv-remote-navigation.test.cjs'
+      - 'tests/tv-remote-browser.test.cjs'
+      - 'tests/production-launcher.test.cjs'
+      - '.github/workflows/tv-remote.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'tv-remote.*'
+      - 'tests/tv-remote-navigation.test.cjs'
+      - 'tests/tv-remote-browser.test.cjs'
+      - 'tests/production-launcher.test.cjs'
+      - '.github/workflows/tv-remote.yml'
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify modal focus, main-screen keyboard navigation and Eufy interface
+        run: node --test tests/tv-remote-navigation.test.cjs tests/production-launcher.test.cjs tests/ha-remote-focus.test.cjs tests/vtech-app-shortcut.test.cjs
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Verify full Halo TV navigation and close flows in Chromium
+        run: node --test tests/tv-remote-browser.test.cjs

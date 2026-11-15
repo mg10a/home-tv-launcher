@@ -1608,20 +1608,50 @@ function openLaunchSettings(){
 }
 function render(){const cfg=configs[room];$('roomLabel').textContent=cfg.label;$('subtitle').textContent=cfg.subtitle;document.querySelectorAll('.room').forEach(b=>{b.classList.toggle('active',b.dataset.room===room);b.setAttribute('aria-pressed',String(b.dataset.room===room))});$('apps').replaceChildren(...apps.map(a=>tile(a,'app '+(a==='NOW'?'now':a==='Netflix'?'netflix':a==='Disney+'?'disney':a==='YouTube'?'youtube':a==='Prime Video'?'prime':''),()=>openEntertainment(a))))}document.querySelectorAll('.room').forEach(b=>b.onclick=()=>{room=b.dataset.room;render()});function clock(){const d=new Date();$('clock').firstChild.textContent=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});$('date').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});$('greeting').textContent=d.getHours()<12?'Good morning.':d.getHours()<17?'Good afternoon.':'Good evening.'}clock();setInterval(clock,30000);render();renderHomeOverview();renderCalendar();/* v0.5: geometry-aware D-pad and keyboard navigation */
 const arrowKeys={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
-function visibleControls(){const root=['roomsPage','historyPage','cameraPage','dashboardPage'].map(id=>$(id)).find(el=>!el.classList.contains('hidden'))||document.querySelector('main.shell');return [...document.querySelectorAll('#homeScreenNav button'),...root.querySelectorAll('button:not([disabled])')].filter(b=>{const r=b.getBoundingClientRect(),s=getComputedStyle(b);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'})}
+function visibleControls(){
+ const root=['roomsPage','historyPage','cameraPage','dashboardPage'].map(id=>$(id)).find(el=>!el.classList.contains('hidden'))||document.querySelector('main.shell');
+ // Kia and Coffee are keyboard-focusable cards, not HTML buttons. Include
+ // them, along with TV-accessible selectors, links, inputs and other cards.
+ const selectors='button:not([disabled]),[role="button"][tabindex],a[href],select,input:not([type="hidden"]),textarea,[tabindex]:not([tabindex="-1"])';
+ return [...new Set([...document.querySelectorAll('#homeScreenNav button'),...root.querySelectorAll(selectors)])]
+  .filter(b=>!b.disabled&&b.getAttribute('aria-disabled')!=='true'
+   &&!b.closest('[hidden],[inert],[aria-hidden="true"]')
+   &&b.getBoundingClientRect().width>0&&b.getBoundingClientRect().height>0
+   &&getComputedStyle(b).visibility!=='hidden'&&getComputedStyle(b).display!=='none');
+}
 function defaultControl(controls){return controls.find(b=>b.classList.contains('app'))||controls[0]}
 function navigate(direction){const controls=visibleControls();if(!controls.length)return;const current=controls.includes(document.activeElement)?document.activeElement:defaultControl(controls);if(!controls.includes(document.activeElement)){current.focus({preventScroll:true});return}
 const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;const [dx,dy]=direction;let best=null,bestScore=Infinity;
 for(const b of controls){if(b===current)continue;const r=b.getBoundingClientRect(),x=r.left+r.width/2-ax,y=r.top+r.height/2-ay;const forward=x*dx+y*dy,side=Math.abs(x*dy-y*dx);if(forward<=3)continue;const score=forward+side*2.8+(side>Math.max(a.width,a.height)*1.5?side:0);if(score<bestScore){bestScore=score;best=b}}
 if(best)best.focus({preventScroll:true})}
-document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||document.querySelector('dialog[open]')||document.querySelector('.photo-fullscreen')||!document.getElementById('haSetup').classList.contains('hidden'))return;
-const deviceModal=['petOverlay','salusOverlay'].map(id=>document.getElementById(id)).find(el=>el&&!el.classList.contains('hidden'));
-if(deviceModal){
- if(['Escape','BrowserBack'].includes(e.key)){e.preventDefault();deviceModal.id==='petOverlay'?closePetDetails():closeSalusModal();return}
- if(e.key==='Tab'){const items=[...deviceModal.querySelectorAll('button:not(:disabled),select:not([hidden])')].filter(el=>el.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}
- return;
-}
-if(e.key in arrowKeys){e.preventDefault();navigate(arrowKeys[e.key]);return}if(e.key==='Escape'||e.key==='Backspace'||e.key==='BrowserBack'){if(!document.getElementById('salusOverlay').classList.contains('hidden')){e.preventDefault();closeSalusModal();return}if(!document.getElementById('calendarOverlay').classList.contains('hidden')){e.preventDefault();closeCalendar();return}if(!$('historyPage').classList.contains('hidden')){e.preventDefault();showHistory(false)}else if(!$('cameraPage').classList.contains('hidden')){e.preventDefault();showCamera(false)}else if(!$('roomsPage').classList.contains('hidden')){e.preventDefault();showRooms(null)}else if(!$('dashboardPage').classList.contains('hidden')){e.preventDefault();showDashboard(false)}return}if(e.key==='Enter'||e.key===' '){const controls=visibleControls();if(controls.includes(document.activeElement)){e.preventDefault();document.activeElement.click()}else if(e.key==='Enter'){e.preventDefault();defaultControl(controls)?.focus({preventScroll:true})}}});
+document.addEventListener('keydown',e=>{
+ if(e.altKey||e.ctrlKey||e.metaKey||window.HaloTVRemoteModalOpen?.()
+    ||document.querySelector('dialog[open]')||document.querySelector('.photo-fullscreen'))return;
+ const editing=document.activeElement,tag=editing?.tagName?.toLowerCase();
+ if(e.key in arrowKeys){
+  // Let native text editing, date/range adjustment and select choices work.
+  if((['input','textarea'].includes(tag)&&['ArrowLeft','ArrowRight'].includes(e.key))
+     ||(tag==='select'&&['ArrowUp','ArrowDown'].includes(e.key)))return;
+  e.preventDefault();navigate(arrowKeys[e.key]);return;
+ }
+ if(e.key==='Escape'||e.key==='Backspace'||e.key==='BrowserBack'||e.key==='GoBack'){
+  if(!$('historyPage').classList.contains('hidden')){e.preventDefault();showHistory(false)}
+  else if(!$('cameraPage').classList.contains('hidden')){e.preventDefault();showCamera(false)}
+  else if(!$('roomsPage').classList.contains('hidden')){e.preventDefault();showRooms(null)}
+  else if(!$('dashboardPage').classList.contains('hidden')){e.preventDefault();showDashboard(false)}
+  return;
+ }
+ if(e.key==='Enter'||e.key===' '){
+  if(['input','textarea','select'].includes(tag))return;
+  const controls=visibleControls();
+  if(controls.includes(document.activeElement)){
+   e.preventDefault();
+   // Native card onkeydown handlers can open a modal before this document
+   // listener fires. Do not click a second time after a dialog opens.
+   if(!window.HaloTVRemoteModalOpen?.())document.activeElement.click();
+  }else if(e.key==='Enter'){e.preventDefault();defaultControl(controls)?.focus({preventScroll:true})}
+ }
+});
 document.addEventListener('pointerdown',()=>document.body.classList.add('using-pointer'),{passive:true});document.addEventListener('keydown',e=>{if(e.key in arrowKeys)document.body.classList.remove('using-pointer')});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
 </script><div class="eufy-overlay hidden" id="eufyOverlay" role="dialog" aria-modal="true" aria-label="Front Door camera">
@@ -1629,7 +1659,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   <div class="eufy-dialog-head"><strong>Doorbell</strong><div class="eufy-mode-bar"><div role="group" aria-label="Camera view"><button id="eufyLiveTab" aria-pressed="true" onclick="eufySetMode('live')">Live</button><button id="eufyRecordTab" aria-pressed="false" onclick="eufySetMode('recordings')">Recordings</button></div><select id="eufyCameraSelect" class="eufy-camera-select" aria-label="Camera source" onchange="eufyCameraChanged()" hidden></select></div><div id="eufyRecordControls" class="hidden"><div class="eufy-recording-toolbar"><input id="eufyDate" type="date" aria-label="Recording date" onchange="loadEufyRecordings()"><button onclick="loadEufyRecordings()">Refresh</button></div></div><div class="eufy-actions" id="eufyLiveControls"><button id="eufyLiveButton" onclick="toggleEufyLive()">▶ Live video</button><button onclick="refreshEufySnapshot()" title="Refresh snapshot">↻ Snapshot</button><button onclick="eufyFullscreen()">⛶ Fullscreen</button></div><button id="eufyClose" onclick="closeEufyOverlay()">✕</button></div>
   <div id="eufyLivePane" class="eufy-mode-pane">
    <div class="eufy-camera-pane" id="eufyLiveFrame"><button class="eufy-exit-fullscreen" onclick="eufyFullscreen()">✕ Exit fullscreen</button><div id="eufyStillPlaceholder" class="eufy-still-placeholder">Connecting to doorbell…</div><img id="eufyStill" class="eufy-still hidden" alt="Front Door live camera"><video id="eufyLiveVideo" class="eufy-still hidden" muted autoplay playsinline aria-label="Live Front Door video"></video></div>
-   <aside class="eufy-live-info"><h3>Doorbell status</h3><p class="eufy-meta" id="eufyMeta"></p><p id="eufyLiveBattery"></p><p id="eufyLatestActivity"></p></aside>
+   <aside class="eufy-live-info"><h3>Doorbell status</h3><p class="eufy-meta" id="eufyMeta"></p><p id="eufyLiveBattery"></p><p id="eufyLatestActivity"></p><button type="button" id="eufyConnectionCheck" onclick="eufyExplainConnection()">Check connection</button><p id="eufyConnectionResult" role="status"></p></aside>
   </div>
   <div id="eufyRecordPane" class="eufy-mode-pane hidden">
    <div class="eufy-recording-stage"><img id="eufyRecordingPreview" class="hidden" alt="Selected recording preview"><span id="eufyPreviewNote">Select a recording</span><div id="eufyPlayerWrap" class="hidden"><video id="eufyPlayer" crossorigin="anonymous" controls playsinline preload="metadata"></video></div></div>
@@ -1698,7 +1728,7 @@ function eufyTileUpdate(){
  if(hint)hint.textContent=eufyTileFrameAt?'Viewed '+new Date(eufyTileFrameAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'Open live';
 }
 async function refreshEufySnapshot(){
- eufyStopLive();
+ eufyLiveAwaitingStates=false;eufyStopLive();
  const img=document.getElementById('eufyStill'),placeholder=document.getElementById('eufyStillPlaceholder'),meta=document.getElementById('eufyMeta');
  const entity=eufyCameraEntity();
  if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){img.classList.add('hidden');placeholder.classList.remove('hidden');placeholder.textContent='Connect Home Assistant and make sure the doorbell camera entity is available.';return}
@@ -1722,7 +1752,7 @@ function eufyObserveDoorEvent(change){
 }
 
 function openEufyOverlay(options={}){eufyReturnFocus=document.activeElement;const overlay=document.getElementById('eufyOverlay');if(overlay.parentElement!==document.documentElement)document.documentElement.appendChild(overlay);overlay.classList.remove('hidden');overlay.style.setProperty('display','flex','important');overlay.setAttribute('aria-hidden','false');document.getElementById('eufyClose').focus();document.getElementById('eufyDate').value=options.date||(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();eufyCameraOptions();eufySetMode(options.mode==='recordings'?'recordings':'live',options.deferLoad===true)}
-function closeEufyOverlay(){eufyStopLive();eufyStopJpeg();eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();const overlay=document.getElementById('eufyOverlay');overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','true');eufyReturnFocus?.focus?.()}
+function closeEufyOverlay(){eufyLiveAwaitingStates=false;eufyStopLive();eufyStopJpeg();eufyAbort?.abort();closeEufyPlayer();eufyClearThumbs();const overlay=document.getElementById('eufyOverlay');overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','true');eufyReturnFocus?.focus?.()}
 let eufyJpegSubscription=null,eufyJpegResolve=null,eufyJpegReject=null,eufyJpegTimer=null;
 function eufyJpegEvent(data){const ev=data.event;if(ev?.type==='frame'&&typeof ev.jpeg==='string'&&eufyJpegResolve){const resolve=eufyJpegResolve;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);resolve('data:image/jpeg;base64,'+ev.jpeg);eufyStopJpeg()}else if(ev?.type==='ended'&&eufyJpegReject){const reject=eufyJpegReject;eufyJpegResolve=null;eufyJpegReject=null;clearTimeout(eufyJpegTimer);reject(Error('Viewer ended before receiving a frame'));eufyStopJpeg()}}
 function eufyStopJpeg(){const id=eufyJpegSubscription;eufyJpegSubscription=null;if(id===null)return;eufyWsPending.delete(id);clearTimeout(eufyJpegTimer);if(eufyJpegReject){const reject=eufyJpegReject;eufyJpegResolve=null;eufyJpegReject=null;reject(Error('JPEG request cancelled'))}if(haSocket?.readyState===WebSocket.OPEN)haSocket.send(JSON.stringify({id:haRequestId++,type:'unsubscribe_events',subscription:id}))}
@@ -1733,7 +1763,7 @@ const eufyWsPending=new Map();function eufyWsCommand(command,timeoutMs=30000){re
    supported. Its own fallback retains the existing authenticated JPEG path.
    All media is lease-bound, acknowledged only when presented, and stopped
    when the overlay closes. Never start a separate P2P session for a fallback. */
-let eufyLiveSubscription=null,eufyLiveGuard=null,eufyLiveRetryTimer=null;
+let eufyLiveSubscription=null,eufyLiveGuard=null,eufyLiveRetryTimer=null,eufyLiveAwaitingStates=false;
 let eufyLiveActive=false,eufyLiveLastFrame=0,eufyLiveFrames=0,eufyLiveLastSequence=0,eufyLiveRetries=0,eufyLiveMode='jpeg';
 // On a server-initiated fallback, briefly wait for JPEG; restart a fresh
 // camera lease only when that fallback cannot deliver a single frame.
@@ -1772,7 +1802,15 @@ function eufyLiveRestart(reason){
  const retries=eufyLiveRetries+1;
  eufyStopLive();
  const meta=document.getElementById('eufyMeta');
- if(retries>2){meta.textContent='Live video stopped ('+reason+'). The last still image is not live. Press Live video to retry.';return}
+ if(retries>2){
+  meta.textContent='Live video stopped ('+reason+'). No moving frames received. Try Snapshot for a still picture or Check connection.';
+  const placeholder=document.getElementById('eufyStillPlaceholder');
+  if(document.getElementById('eufyStill').classList.contains('hidden')){
+    placeholder.textContent='No live frames received from Home Assistant. Check connection or try Snapshot.';
+    placeholder.classList.remove('hidden');
+  }
+  return;
+ }
  eufyLiveRetries=retries;
  meta.textContent='Live video interrupted ('+reason+'). Retry '+retries+'/2…';
  eufyLiveRetryTimer=setTimeout(()=>{
@@ -1911,9 +1949,18 @@ function eufyStartLive(retry=false){
  eufyStopLive();eufyStopJpeg();
  if(!retry)eufyLiveRetries=0;
  const entity=eufyCameraEntity(),meta=document.getElementById('eufyMeta');
- if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!entity){
-  meta.textContent='Home Assistant camera is disconnected. Reconnect Home Assistant to view live video.';return;
+ const ready=typeof haStatesReady==='undefined'||haStatesReady;
+ if(!haVerified||haSocket?.readyState!==WebSocket.OPEN||!ready||!entity){
+  eufyLiveAwaitingStates=true;
+  const reason=!haVerified||haSocket?.readyState!==WebSocket.OPEN||!ready
+   ?'Waiting for Home Assistant to load camera states. Live will start when connected.'
+   :'No Eufy doorbell camera entity found. Check its Home Assistant integration.';
+  meta.textContent=reason;
+  const placeholder=document.getElementById('eufyStillPlaceholder');
+  placeholder.classList.remove('hidden');placeholder.textContent=reason;
+  return;
  }
+ eufyLiveAwaitingStates=false;
  // The doorbell can decode grey WebRTC frames even while callbacks advance.
  const attributes=haStates[entity]?.attributes;
  const useJpeg=attributes?.viewer_dev_bridge===true||/doorbell|front[ ._-]*door/i.test(entity+' '+(attributes?.friendly_name||''));
@@ -1983,6 +2030,7 @@ async function eufyRecordingError(err){
 function eufyRecordingCamera(){return eufyCameraEntity()}
 let eufyMode='live',eufyPreviewRequest=0,eufyPlaybackRequest=0;
 function eufySetMode(mode,deferLoad=false){
+ eufyLiveAwaitingStates=false;
  document.getElementById('eufyLiveControls').classList.toggle('hidden',mode!=='live');
  document.getElementById('eufyRecordControls').classList.toggle('hidden',mode!=='recordings');
  eufyMode=mode;eufyAbort?.abort();closeEufyPlayer();eufyStopLive();eufyStopJpeg();
@@ -1999,6 +2047,20 @@ async function eufyFullscreen(){
  if(frame.classList.contains('eufy-expanded')){frame.classList.remove('eufy-expanded');return}
  try{if(document.fullscreenElement)await document.exitFullscreen();else if(frame.requestFullscreen)await frame.requestFullscreen();else frame.classList.add('eufy-expanded')}
  catch(e){frame.classList.add('eufy-expanded')}
+}
+function eufyExplainConnection(){
+ const camera=eufyCameraEntity(),state=camera?haStates?.[camera]:null;
+ const connected=!!haVerified&&haSocket?.readyState===WebSocket.OPEN;
+ const result=document.getElementById('eufyConnectionResult');
+ if(!result)return;
+ const info=state?.attributes||{};
+ const mode=info.viewer_dev_bridge?'DEV JPEG':info.viewer_webrtc?'WebRTC-capable':'JPEG';
+ result.textContent=[
+  'Home Assistant: '+(connected?'connected':'not connected'),
+  'Doorbell: '+(camera||'not found')+' ('+(state?.state||'unavailable')+')',
+  'Eufy Viewer: '+(info.viewer_card===true?'available on entity':'not advertised'),
+  'Stream: '+(eufyLiveActive?eufyLiveFrames+' frames received':'not currently receiving')+' · '+mode
+ ].join(' · ');
 }
 function eufyUpdateLiveInfo(){
  const battery=eufyBattery();
@@ -2085,7 +2147,15 @@ async function eufySelectRecording(){
 }
 let eufyWaitingForStates=false;
 window.addEventListener('home-states-updated',()=>{
- if(eufyWaitingForStates&&haVerified&&haStatesReady&&eufyMode==='recordings'&&!document.getElementById('eufyOverlay').classList.contains('hidden')){eufyWaitingForStates=false;loadEufyRecordings()}
+ const overlayOpen=!document.getElementById('eufyOverlay').classList.contains('hidden');
+ if(!overlayOpen||document.hidden)return;
+ if(eufyLiveAwaitingStates&&eufyMode==='live'&&haVerified&&haStatesReady
+    &&haSocket?.readyState===WebSocket.OPEN&&eufyCameraEntity()){
+   eufyLiveAwaitingStates=false;eufyStartLive();
+ }
+ if(eufyWaitingForStates&&haVerified&&haStatesReady&&eufyMode==='recordings'){
+   eufyWaitingForStates=false;loadEufyRecordings();
+ }
 });
 async function loadEufyRecordings(){
  eufyStopLive();
@@ -2262,6 +2332,6 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){photoRequest++;photoAbort?.abort();clearTimeout(photoTick)}else photoSchedule(0)});
 new MutationObserver(()=>{if(!photoVisible()){photoRequest++;photoAbort?.abort()}else photoSchedule(0)}).observe(document.querySelector('main.shell'),{attributes:true,attributeFilter:['class']});
 photoSchedule(0);
-</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./groobox-images.js?v=3"></script><script src="./home-screens.js?v=17"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=2"></script><script src="./family-calendar.js?v=12"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=2"></script><script src="./kia-controls.js?v=7"></script><script src="./room-controls.js?v=9"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=4"><script src="./family-shopping.js?v=1"></script><script src="./modal-controls.js?v=1"></script><script src="./pet-portraits.js?v=1"></script><script src="./pet-timeline.js?v=2"></script><link rel="stylesheet" href="./vtech-app.css?v=2"><script src="./baby-camera.js?v=3"></script><script src="./ha-remote-focus.js?v=1"></script></body></html>
+</script><script src="./eufy-night.js?v=1"></script><script src="./weather.js?v=13"></script><script src="./groobox-images.js?v=3"></script><script src="./home-screens.js?v=17"></script><script src="./samsung-links.js?v=1"></script><script src="./samsung-food.js?v=2"></script><script src="./samsung-planner.js?v=2"></script><script src="./family-calendar.js?v=12"></script><script src="./sensor-refresh.js?v=1"></script><script src="./coffee-controls.js?v=5"></script><script src="./kia-refresh.js?v=2"></script><script src="./kia-controls.js?v=7"></script><script src="./room-controls.js?v=9"></script><script src="./location-map.js?v=3"></script><script src="./view-state.js?v=8"></script><script src="./family-tasks.js?v=2"></script><script src="./climate-comparison.js?v=1"></script><link rel="stylesheet" href="./organiser-fit.css?v=4"><script src="./family-shopping.js?v=1"></script><script src="./modal-controls.js?v=1"></script><script src="./pet-portraits.js?v=1"></script><script src="./pet-timeline.js?v=2"></script><link rel="stylesheet" href="./vtech-app.css?v=2"><script src="./baby-camera.js?v=3"></script><script src="./ha-remote-focus.js?v=1"></script><link rel="stylesheet" href="./tv-remote.css?v=1"><script src="./tv-remote.js?v=1"></script></body></html>
 
 

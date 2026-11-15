@@ -6,6 +6,7 @@ const vm=require('node:vm');
 const html=readFileSync('index.html','utf8');
 const liveSource=html.slice(html.indexOf('/* DEV live view:'),html.indexOf("document.addEventListener('visibilitychange'",html.indexOf('/* DEV live view:')));
 assert.ok(liveSource.includes('eufyRtcReady'), 'DEV WebRTC implementation must exist');
+const stateSource=html.slice(html.indexOf('let eufyWaitingForStates=false;'),html.indexOf('async function loadEufyRecordings',html.indexOf('let eufyWaitingForStates=false;')));
 
 test('all inline scripts parse without JavaScript errors',()=>{
  const scripts=[...html.matchAll(/<script(?: [^>]*)?>([\s\S]*?)<\/script>/g)];
@@ -27,7 +28,7 @@ test('recordings use installed authenticated WebSocket metadata and HTTP signed 
 });
 
 
-function harness(dev=false,entity='camera.driveway',friendly_name){
+function harness(dev=false,entity='camera.driveway',friendly_name,statesReady=true){
  const sent=[],elements={};
  let now=100000,heartbeat=null,retryTimer=null;
  class Clock extends Date{static now(){return now}}
@@ -41,6 +42,7 @@ function harness(dev=false,entity='camera.driveway',friendly_name){
    cancelVideoFrameCallback(){this.paint=null}};
  }
  const document={getElementById(id){assert.ok(elements[id],id);return elements[id]},hidden:false};
+ const events={};const win={addEventListener(name,fn){events[name]=fn}};
  const haSocket={readyState:1,send(s){sent.push(JSON.parse(s))}};
  const WebSocket={OPEN:1};
  const haStates={[entity]:{attributes:{viewer_webrtc:true,viewer_dev_bridge:dev,friendly_name}}};
@@ -51,17 +53,29 @@ function harness(dev=false,entity='camera.driveway',friendly_name){
   async addIceCandidate(x){this.lastCandidate=x}
   close(){this.closed=true}}
  class MediaStream{constructor(){this.tracks=[]}addTrack(t){this.tracks.push(t)}getTracks(){return this.tracks}}
- const deps={document,WebSocket,haSocket,haStates,eufyWsPending:new Map(),haVerified:true,
+ const deps={document,WebSocket,haSocket,haStates,haStatesReady:statesReady,window:win,eufyMode:'live',eufyWsPending:new Map(),haVerified:true,
   RTCPeerConnection:Peer,MediaStream,eufyCameraEntity:()=>entity,
   eufyBattery:()=> '46%',eufyStopJpeg:()=>{},
   eufyWsCommand:async x=>{sent.push(x);return {success:true,result:{accepted:true}}},
   setInterval:fn=>{heartbeat=fn;return 1},clearInterval:()=>{heartbeat=null},
   setTimeout:fn=>{retryTimer=fn;return 2},clearTimeout:()=>{retryTimer=null},Date:Clock};
  const fn=new Function(...Object.keys(deps),
-  "let haRequestId=900;"+liveSource+
-  ';return {start:eufyStartLive,event:eufyLiveEvent,stop:eufyStopLive,id:()=>eufyLiveSubscription};');
- return {api:fn(...Object.values(deps)),sent,elements,Peer,advance,fireRetry};
+  "let haRequestId=900;"+liveSource+stateSource+
+  ';return {start:eufyStartLive,event:eufyLiveEvent,stop:eufyStopLive,id:()=>eufyLiveSubscription,pending:()=>eufyLiveAwaitingStates,setReady:value=>{haStatesReady=value}};');
+ return {api:fn(...Object.values(deps)),sent,elements,Peer,advance,fireRetry,fireState:()=>events['home-states-updated']?.()};
 }
+test('live doorbell waits for HA camera states and resumes without duplicate wake requests',()=>{
+ const {api,sent,elements,fireState}=harness(true,'camera.doorbell_dev','Doorbell',false);
+ api.start();
+ assert.equal(sent.filter(s=>s.type==='eufy_viewer/watch').length,0,'do not attempt a camera session before HA states load');
+ assert.match(elements.eufyMeta.textContent,/Waiting for Home Assistant/);
+ assert.equal(api.pending(),true);
+ api.setReady(true);fireState();
+ assert.equal(sent.filter(s=>s.type==='eufy_viewer/watch').length,1,'start one camera session when HA entities arrive');
+ fireState();
+ assert.equal(sent.filter(s=>s.type==='eufy_viewer/watch').length,1,'repeated state events must not launch duplicate streams');
+ api.stop();
+});
 test('WebRTC offers, accepts a displayed frame, and unsubscribes on stop',async()=>{
  const {api,sent,elements,Peer}=harness();
  api.start();
