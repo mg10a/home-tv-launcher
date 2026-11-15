@@ -57,7 +57,7 @@ function harness(){
 test('index loads the TV focus handler, stays in modal and preserves IME next',()=>{
   assert.match(html,/ha-remote-focus\.js\?v=1/);
   assert.match(html,/id="haBaseUrl" type="url" inputmode="url" enterkeyhint="next"/);
-  assert.match(html,/document\.querySelector\('\.photo-fullscreen'\)\|\|!document\.getElementById\('haSetup'\)\.classList\.contains\('hidden'\)/);
+  assert.match(html,/window\.HaloTVRemoteModalOpen\?\.\(\)/); // shared modal guard now covers all overlays
   assert.match(html,/function closeHaSetup\(\).*haSetupReturnFocus/);
   assert.doesNotThrow(()=>new vm.Script(script));
   assert.equal(/haAccessToken|haStoredUrl|camera_proxy|localStorage|token/.test(script),false,
