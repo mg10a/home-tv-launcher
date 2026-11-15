@@ -67,6 +67,10 @@ test('Eufy X, pet, heating, calendar and standard app dialogs keep remote focus'
     const page=await open(browser);
     await page.evaluate(()=>openEufyOverlay({deferLoad:true}));
     assert.equal(await page.locator('#eufyOverlay:not(.hidden)').count(),1);
+    await page.locator('#eufyConnectionCheck').focus();
+    await page.keyboard.press('Enter');
+    assert.match(await page.locator('#eufyConnectionResult').textContent(),/Home Assistant:/,
+      'Read-only Eufy connection check must work from the remote');
     await page.locator('#eufyClose').focus();
     await page.keyboard.press('ArrowLeft');
     assert.equal(await page.evaluate(()=>document.getElementById('eufyOverlay').contains(document.activeElement)),true,
