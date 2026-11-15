@@ -6,6 +6,7 @@ on:
       - 'tv-remote.*'
       - 'tests/tv-remote-navigation.test.cjs'
       - 'tests/tv-remote-browser.test.cjs'
+      - 'tests/production-launcher.test.cjs'
       - '.github/workflows/tv-remote.yml'
   pull_request:
     paths:
@@ -13,6 +14,7 @@ on:
       - 'tv-remote.*'
       - 'tests/tv-remote-navigation.test.cjs'
       - 'tests/tv-remote-browser.test.cjs'
+      - 'tests/production-launcher.test.cjs'
       - '.github/workflows/tv-remote.yml'
 permissions:
   contents: read
