@@ -58,8 +58,8 @@ function harness(){
   const ha=element('DIV','haSetup');ha.hidden=true;
   const docRoot=element('DIV','root');
   const background=element('BUTTON','background',docRoot,{x:0,y:500});
-  doc.activeElement=background;active=background;
-  doc.get activeElement(){return active};
+  active=background;
+  Object.defineProperty(doc,'activeElement',{get:()=>active});
   doc.getElementById=id=>id==='haSetup'?ha:modals.find(m=>m.id===id)||null;
   doc.querySelectorAll=()=>modals;
   doc.addEventListener=(type,fn)=>listeners.set(type,[...(listeners.get(type)||[]),fn]);
@@ -92,7 +92,7 @@ test('the HTML loads the remote handler and preserves the secure HA handler',()=
   assert.match(html,/tv-remote\.js\?v=1/);
   assert.match(html,/ha-remote-focus\.js\?v=1/);
   assert.match(html,/window\.HaloTVRemoteModalOpen\?\.\(\)/);
-  assert.match(html,/'\[role="button"\]\[tabindex\]'/);
+  assert.ok(html.includes('[role="button"][tabindex]'), 'Kia role-button is keyboard reachable');
   assert.match(styles,/kia-placeholder:focus-visible/);
   assert.doesNotThrow(()=>new vm.Script(script));
   for(const secret of ['haAccessToken','haStoredUrl','sessionStorage','camera_proxy','fetch('])
