@@ -1,0 +1,102 @@
+{
+  "refresh": {
+    "name": "Refresh delivery",
+    "description": "Read the latest delivery and box contents without changing the order."
+  },
+  "swap": {
+    "name": "Swap box item",
+    "description": "Apply a reviewed replacement to the current delivery. Changes the real Groobarbs order.",
+    "fields": {
+      "order_id": {
+        "name": "Order ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "item_id": {
+        "name": "Item ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "content_id": {
+        "name": "Content ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "revision": {
+        "name": "Reviewed box revision",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      },
+      "replacement_id": {
+        "name": "Replacement ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      }
+    }
+  },
+  "reset": {
+    "name": "Restore original box item",
+    "description": "Restore the original item after reviewing the current box. Changes the real Groobarbs order.",
+    "fields": {
+      "order_id": {
+        "name": "Order ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "item_id": {
+        "name": "Item ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "content_id": {
+        "name": "Content ID",
+        "required": true,
+        "selector": {
+          "number": {
+            "min": 1,
+            "mode": "box"
+          }
+        }
+      },
+      "revision": {
+        "name": "Reviewed box revision",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      }
+    }
+  }
+}
