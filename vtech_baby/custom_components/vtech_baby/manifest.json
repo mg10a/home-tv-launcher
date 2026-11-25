@@ -1,0 +1,19 @@
+{
+  "domain": "vtech_baby",
+  "name": "Halo VTech Baby Monitor",
+  "codeowners": [
+    "@mg10a"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "media_source"
+  ],
+  "documentation": "https://github.com/mg10a/home-tv-launcher/tree/main/vtech_baby",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/mg10a/home-tv-launcher/issues",
+  "requirements": [
+    "vtech-link==0.3.0"
+  ],
+  "version": "0.3.1"
+}
