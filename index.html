@@ -1416,7 +1416,10 @@ function salusHistoryResult(data){
  const el=document.querySelector('.salus-history-preview span');
  if(!data.success){el.textContent='History unavailable: '+(data.error?.message||'Home Assistant rejected the request');return}
  const raw=data.result;
- petHistoryThrough=petHistoryRequestedThrough;
+ // WebSocket history is keyed by entity ID; REST-style fixtures may be arrays.
+ const groups=Array.isArray(raw)
+  ?(raw.length&&!Array.isArray(raw[0])?[['',raw]]:raw.map(group=>['',group]))
+  :Object.entries(raw||{});
  const points=[];
  const timestamp=v=>{
   if(v==null)return NaN;
@@ -1424,9 +1427,9 @@ function salusHistoryResult(data){
   if(typeof v==='string'&&/^\d+(\.\d+)?$/.test(v)){const n=Number(v);return n<1e11?n*1000:n}
   return Date.parse(v);
  };
- for(const group of groups){
+ for(const [groupEntity,group] of groups){
   if(!Array.isArray(group))continue;
-  let entity='',attributes={};
+  let entity=groupEntity,attributes={};
   for(const p of group){
    if(!p||typeof p!=='object')continue;
    entity=p.entity_id||entity;
