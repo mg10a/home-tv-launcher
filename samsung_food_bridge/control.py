@@ -127,7 +127,7 @@ class Controller:
         self.state['commands'] = dict(list(self.state['commands'].items())[-30:])
         save('control', self.state)
         await emit(CONTROL, self.sync_status, {
-            'friendly_name': 'Samsung Food controls', 'version': '0.3.0',
+            'friendly_name': 'Samsung Food controls', 'version': '0.3.1',
             'commands_connected': self.connected, 'stage': self.stage, 'settings': self.state['settings'],
             'last_reset': self.state.get('last_reset'), 'last_success': self.state.get('last_success'),
             'results': self.state['commands'], 'generated': self.state['generated'],

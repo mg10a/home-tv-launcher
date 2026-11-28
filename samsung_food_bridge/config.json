@@ -1,6 +1,7 @@
 {
   "name": "Samsung Food — meal planner and shopping",
-  "version": "0.3.0",
+  "version": "0.3.1",
+  "image": "ghcr.io/mg10a/halo-samsung-food",
   "slug": "samsung_food_bridge",
   "description": "Plan meals from saved Samsung Food recipes and generate weekly shopping lists.",
   "arch": [
