@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!bridge.py
+!control.py
+!extract.js
+!extract-shopping.js
