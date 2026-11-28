@@ -69,3 +69,18 @@ saving rather than adding apparent image sizes, since layers can be shared.
 The prebuilt-image change also avoids creating Samsung Food image exports during
 future backups. Do not generalize this cleanup into deleting Docker's live
 overlay, image, container or volume directories.
+
+## Deployment verification
+
+On 28 November 2026, native AMD64 and ARM64 build/smoke tests passed, anonymous
+registry pulls were verified, and 0.3.1 was installed in place on the Yellow.
+Meal plan, shopping list and control sensors reported `ok`; four saved recipes
+were present. Twenty Python tests and eleven dashboard tests also passed.
+
+The new native encrypted backup `07a1e34a`, created at 14:52 UTC, contains all nine
+apps and Home Assistant settings/history. Its total size is 926.25 MiB. The
+Samsung Food component is 5,634,347 bytes and completed in about two seconds.
+All 421 members were decrypted and read sequentially in memory using Supervisor's
+installed SecureTar reader. Options and the browser profile are present, and
+`image.tar` is absent. This verifies archive readability, not a full disaster
+restore; no live data was overwritten by the check.
