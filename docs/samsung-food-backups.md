@@ -84,3 +84,8 @@ All 421 members were decrypted and read sequentially in memory using Supervisor'
 installed SecureTar reader. Options and the browser profile are present, and
 `image.tar` is absent. This verifies archive readability, not a full disaster
 restore; no live data was overwritten by the check.
+
+Final verification: Home Assistant reported the backup complete in all three
+locations (Yellow, Home Assistant Cloud and OneDrive). Retention left exactly one
+local backup; older automatic backups remained in OneDrive. System storage showed
+9.1 GB free, and the Repairs page reported no pending repairs.
