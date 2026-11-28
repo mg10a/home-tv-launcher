@@ -1689,7 +1689,19 @@ function eufyCameraChanged(){
  document.getElementById('eufyStillPlaceholder').textContent='Connecting to selected doorbell…';
  eufySetMode(eufyMode);
 }
-function eufyBattery(){const entry=Object.entries(haStates||{}).sort(([a],[b])=>Number(b.includes('doorbell_dev'))-Number(a.includes('doorbell_dev'))).find(([id,v])=>id.startsWith('sensor.')&&/doorbell.*battery|battery.*doorbell/i.test(id+' '+(v?.attributes?.friendly_name||'')));return entry&&Number.isFinite(Number(entry[1].state))?Math.round(Number(entry[1].state))+'%':null}
+function eufyBattery(){
+ const preferDev=eufyCameraEntity()==='camera.doorbell_dev';
+ const entries=Object.entries(haStates||{}).filter(([id,v])=>{
+  if(!id.startsWith('sensor.')||!/doorbell.*battery|battery.*doorbell/i.test(id+' '+(v?.attributes?.friendly_name||'')))return false;
+  const raw=v?.state;
+  if(raw===null||raw===undefined||String(raw).trim()==='')return false;
+  const value=Number(raw);
+  return Number.isFinite(value)&&value>=0&&value<=100;
+ });
+ // Skip unavailable bridge sensors before choosing the active camera's reading.
+ entries.sort(([a],[b])=>Number(b.includes('doorbell_dev')===preferDev)-Number(a.includes('doorbell_dev')===preferDev));
+ return entries.length?Math.round(Number(entries[0][1].state))+'%':null;
+}
 let eufyTileFrameAt=0;
 function eufyTileRemember(src){
  if(eufyCameraEntity()!=='camera.doorbell_dev'||!src?.startsWith('data:image/jpeg;base64,'))return;
