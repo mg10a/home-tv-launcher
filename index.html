@@ -1677,9 +1677,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 /* Front Door snapshot — authenticated Home Assistant camera_proxy, no stored image or credentials. */
 let eufyReturnFocus=null,eufyImageUrl=null;
 let eufySelectedCamera=null;
+function eufyCameraAvailable(id){
+ const state=haStates?.[id];
+ return !!state&&!['unknown','unavailable'].includes(state.state);
+}
 function eufyCameraChoices(){
- const ids=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&haStates[id]?.attributes?.viewer_card===true);
- // These are two integrations for the same physical doorbell. Keep the verified feed.
+ const ids=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&
+  haStates[id]?.attributes?.viewer_card===true&&eufyCameraAvailable(id));
+ // Deduplicate only available feeds: a stopped DEV bridge must not hide production.
  return ids.filter(id=>!(id==='camera.doorbell'&&ids.includes('camera.doorbell_dev')));
 }
 function eufyCameraEntity(){
@@ -1689,7 +1694,7 @@ function eufyCameraEntity(){
  if(dev)return dev;
  if(ids.length)return ids[0];
  // Preserve the original snapshot camera fallback for older HA installations.
- const fallback=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&
+ const fallback=Object.keys(haStates||{}).filter(id=>id.startsWith('camera.')&&eufyCameraAvailable(id)&&
   /doorbell|front.?door|eufy/i.test(id+' '+(haStates[id]?.attributes?.friendly_name||'')));
  return fallback[0]||null;
 }
